@@ -102,7 +102,10 @@
 <header>
   <div class="wrap">
     <a class="brand" href="index.html"><span class="dot"></span>TEAM SIXX <span class="tag">ADMIN</span></a>
-    <button type="button" class="btn btn-ghost" id="logout-btn" hidden>로그아웃</button>
+    <div style="display:flex; gap:8px;">
+      <a class="btn btn-ghost" href="portal.html">스터디룸 보기</a>
+      <button type="button" class="btn btn-ghost" id="logout-btn" hidden>로그아웃</button>
+    </div>
   </div>
 </header>
 
@@ -154,7 +157,8 @@
       </select>
       <input type="text" id="post-title" placeholder="제목">
       <textarea id="post-content" placeholder="내용을 입력하세요"></textarea>
-      <input type="file" id="post-image" accept="image/*">
+      <input type="file" id="post-image" accept="image/*,application/pdf">
+      <p style="color:var(--text-dim); font-size:0.78rem; margin:-4px 0 0;">이미지 또는 PDF 1개 첨부 가능 (최대 약 1.5MB). 영상은 용량이 커서 아직 지원 안 됨 — 필요하면 말씀해주세요.</p>
       <div style="display:flex; gap:8px;">
         <button type="submit" class="btn btn-primary">등록하기</button>
         <button type="button" class="btn btn-ghost" id="cancel-edit-btn" hidden>취소</button>

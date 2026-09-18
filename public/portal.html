@@ -111,6 +111,7 @@
       <button type="button" class="tab-link" data-cat="lecture">강의</button>
       <button type="button" class="tab-link" data-cat="question">질문</button>
       <button type="button" class="tab-link" data-cat="profit">수익인증</button>
+      <a class="icon-btn" id="admin-link" href="admin.html" hidden>관리자 페이지로</a>
       <button type="button" class="icon-btn" id="profile-btn">내 정보</button>
       <button type="button" class="icon-btn" id="logout-btn">로그아웃</button>
     </div>
@@ -226,6 +227,8 @@
   var signupForm = document.getElementById('signup-form');
   var logoutBtn = document.getElementById('logout-btn');
   var profileBtn = document.getElementById('profile-btn');
+  var adminLink = document.getElementById('admin-link');
+  var viewMode = 'member';
 
   var currentCategory = 'notice';
   var catMeta = {
@@ -238,7 +241,13 @@
   function showResult(el, text, kind){ el.hidden = false; el.textContent = text; el.className = 'result-box ' + kind; }
   function clearResult(el){ el.hidden = true; }
 
-  function unlock(){ authGate.hidden = true; content.hidden = false; tabs.hidden = false; loadPosts(); }
+  function unlock(mode){
+    viewMode = mode || 'member';
+    authGate.hidden = true; content.hidden = false; tabs.hidden = false;
+    profileBtn.hidden = viewMode === 'admin';
+    adminLink.hidden = viewMode !== 'admin';
+    loadPosts();
+  }
   function lock(){ authGate.hidden = false; content.hidden = true; tabs.hidden = true; }
 
   // ── 로그인/회원가입 탭 ──
@@ -259,7 +268,14 @@
     try{
       var res = await fetch('/api/me', { credentials: 'same-origin' });
       var data = await res.json();
-      if (data.ok) { currentUid = data.uid; currentNickname = data.nickname; unlock(); } else lock();
+      if (data.ok) { currentUid = data.uid; currentNickname = data.nickname; unlock('member'); return; }
+
+      // 회원 세션이 없으면 관리자로 로그인된 상태인지 확인 (관리자도 스터디룸을 둘러볼 수 있게)
+      var adminRes = await fetch('/api/admin/me', { credentials: 'same-origin' });
+      var adminData = await adminRes.json();
+      if (adminData.ok) { unlock('admin'); return; }
+
+      lock();
     } catch(e){ lock(); }
   }
   checkSession();
@@ -305,7 +321,8 @@
   });
 
   logoutBtn.addEventListener('click', async function(){
-    try{ await fetch('/api/logout', { method:'POST', credentials:'same-origin' }); } catch(e){}
+    var endpoint = viewMode === 'admin' ? '/api/admin/logout' : '/api/logout';
+    try{ await fetch(endpoint, { method:'POST', credentials:'same-origin' }); } catch(e){}
     lock();
   });
 
@@ -403,11 +420,22 @@
       var existingImg = document.getElementById('pm-image');
       if (existingImg) existingImg.remove();
       if (data.post.image_data) {
-        var img = document.createElement('img');
-        img.id = 'pm-image';
-        img.src = data.post.image_data;
-        img.style.cssText = 'width:100%; border-radius:10px; margin-bottom:16px; display:block;';
-        pmBody.parentNode.insertBefore(img, pmBody);
+        var attachEl;
+        if (data.post.image_data.indexOf('data:application/pdf') === 0) {
+          attachEl = document.createElement('a');
+          attachEl.href = data.post.image_data;
+          attachEl.target = '_blank';
+          attachEl.rel = 'noopener';
+          attachEl.textContent = '📄 첨부 PDF 열기';
+          attachEl.className = 'btn btn-ghost';
+          attachEl.style.cssText = 'display:inline-flex; margin-bottom:16px;';
+        } else {
+          attachEl = document.createElement('img');
+          attachEl.src = data.post.image_data;
+          attachEl.style.cssText = 'width:100%; border-radius:10px; margin-bottom:16px; display:block;';
+        }
+        attachEl.id = 'pm-image';
+        pmBody.parentNode.insertBefore(attachEl, pmBody);
       }
       renderComments(data.comments);
       postModal.classList.add('open');
