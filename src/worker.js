@@ -16,7 +16,7 @@
 //   POST /api/comments               댓글 작성 (회원 또는 관리자)
 //
 // 관리자 API:
-//   POST /api/admin/login            IP 허용목록 + 아이디/비번 확인
+//   POST /api/admin/login            아이디/비번 확인
 //   GET  /api/admin/me
 //   POST /api/admin/logout
 //   POST /api/admin/reset-password   회원 비밀번호 강제 재설정 (본인 문의 시 수동 처리)
@@ -24,7 +24,6 @@
 // 필요한 환경변수(Settings > Variables and Secrets):
 //   GATE_API_KEY, GATE_API_SECRET   Gate.io API
 //   ADMIN_USERNAME, ADMIN_PASSWORD  관리자 로그인
-//   ADMIN_ALLOWED_IPS               콤마로 구분한 허용 IP 목록 (예: "1.2.3.4,5.6.7.8")
 // 필요한 바인딩: D1 데이터베이스 → env.DB
 
 const SESSION_COOKIE = 'session';
@@ -354,17 +353,7 @@ async function handleAdminStats(request, env) {
 
 // ───────────────────────── 관리자 인증 ─────────────────────────
 
-function isAllowedAdminIp(request, env) {
-  const list = (env.ADMIN_ALLOWED_IPS || '').split(',').map((s) => s.trim()).filter(Boolean);
-  if (list.length === 0) return true; // 설정 안 했으면 막지 않음 (설정 권장)
-  const ip = request.headers.get('CF-Connecting-IP') || '';
-  return list.includes(ip);
-}
-
 async function handleAdminLogin(request, env) {
-  if (!isAllowedAdminIp(request, env)) {
-    return json({ ok: false, error: '허용되지 않은 접속입니다.' }, 403);
-  }
   const body = await safeJson(request);
   const username = body.username || '';
   const password = body.password || '';

@@ -29,7 +29,7 @@ public/index.html       메인 랜딩페이지
 public/requirements.html  입장 조건 상세
 public/join.html        입장 절차 3단계 + UID 사전 확인 모달
 public/portal.html      스터디룸 (회원 로그인/회원가입, 공지·강의·질문·수익인증 게시판)
-public/admin.html       관리자 전용 (IP 제한, 글쓰기/수정/삭제, 회원 비밀번호 재설정, 통계)
+public/admin.html       관리자 전용 (글쓰기/수정/삭제, 회원 비밀번호 재설정, 통계)
 ```
 
 ## 디자인 톤
@@ -50,7 +50,7 @@ public/admin.html       관리자 전용 (IP 제한, 글쓰기/수정/삭제, �
 
 **관리자(admin) 인증** — 회원 인증과 완전히 분리
 - `admin.html`에서만 로그인, 아이디/비번은 환경변수(`ADMIN_USERNAME`, `ADMIN_PASSWORD`)로 관리 (DB에 관리자 계정 테이블 없음, 1인 운영 가정)
-- 로그인 시도 자체를 `ADMIN_ALLOWED_IPS` 환경변수의 IP 목록으로 먼저 검증 — 목록에 없는 IP는 아이디/비번 확인도 안 하고 403
+- IP 제한은 도입했다가 제거함 — 운영자 IP가 계속 바뀌어서 적용이 번거로워 아이디/비번 확인만으로 전환 (`ADMIN_ALLOWED_IPS` 환경변수/로직 삭제됨)
 - 세션은 `admin_sessions` 테이블 + `admin_session` 쿠키, 12시간 유지
 
 ## Gate.io API 연동
@@ -84,7 +84,6 @@ GATE_API_KEY          Gate.io API 키
 GATE_API_SECRET        Gate.io API 시크릿
 ADMIN_USERNAME         관리자 로그인 아이디
 ADMIN_PASSWORD         관리자 로그인 비밀번호
-ADMIN_ALLOWED_IPS       관리자 접속 허용 IP (콤마 구분, 비워두면 제한 없음)
 ```
 
 ## 대화 중 나온 운영 정책 메모
