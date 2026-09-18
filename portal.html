@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>스터디룸 — TEAM SIXX</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
+  :root{
+    --bg:#0a0908; --bg-soft:#141210; --panel:#18140f; --line:rgba(255,255,255,0.08);
+    --text:#f5f0e8; --text-dim:#a89d8f; --cyan:#ff7a29; --violet:#c2540f; --amber:#ffb648; --danger:#ff5c7a;
+  }
+  *{ box-sizing: border-box; }
+  html{ scroll-behavior: smooth; }
+  body{ margin:0; background:var(--bg); color:var(--text); font-family:'Inter',sans-serif; line-height:1.6; -webkit-font-smoothing:antialiased; }
+  h1,h2,h3{ font-family:'Space Grotesk',sans-serif; margin:0; letter-spacing:-0.01em; }
+  .mono{ font-family:'IBM Plex Mono',monospace; }
+  a{ color:inherit; text-decoration:none; }
+  .bg-grid{ position:fixed; inset:0; z-index:-2; background-image:linear-gradient(rgba(255,255,255,0.035) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.035) 1px,transparent 1px); background-size:64px 64px; mask-image:radial-gradient(ellipse 80% 60% at 50% 0%, black 40%, transparent 90%); }
+  .bg-glow{ position:fixed; z-index:-1; filter:blur(120px); opacity:0.3; border-radius:50%; pointer-events:none; }
+  .glow-1{ width:560px; height:560px; top:-180px; left:-120px; background:var(--cyan); }
+  .wrap{ max-width:920px; margin:0 auto; padding:0 24px; }
+
+  header{ position:sticky; top:0; z-index:50; backdrop-filter:blur(14px); background:rgba(10,9,8,0.75); border-bottom:1px solid var(--line); }
+  .nav{ display:flex; align-items:center; justify-content:space-between; padding:16px 24px; max-width:920px; margin:0 auto; flex-wrap: wrap; gap: 10px; }
+  .brand{ display:flex; align-items:center; gap:10px; font-weight:700; font-size:1.05rem; }
+  .brand .dot{ width:9px; height:9px; border-radius:50%; background:var(--cyan); box-shadow:0 0 10px var(--cyan),0 0 22px var(--cyan); }
+  .brand .tag{ font-family:'IBM Plex Mono',monospace; font-size:0.7rem; color:var(--text-dim); border:1px solid var(--line); padding:2px 8px; border-radius:999px; margin-left:6px; }
+  .tabs{ display:flex; gap:4px; align-items:center; flex-wrap: wrap; }
+  .tab-link{ padding:8px 14px; border-radius:8px; font-size:0.9rem; font-weight:600; color:var(--text-dim); border:none; background:none; cursor:pointer; }
+  .tab-link:hover{ color:var(--text); background:rgba(255,255,255,0.04); }
+  .tab-link.active{ color:var(--cyan); background:rgba(255,122,41,0.08); }
+  .icon-btn{ padding:7px 12px; border-radius:8px; font-size:0.82rem; color:var(--text-dim); border:1px solid var(--line); background:none; cursor:pointer; }
+  .icon-btn:hover{ color:var(--text); border-color:rgba(255,255,255,0.25); }
+
+  .btn{ display:inline-flex; align-items:center; justify-content:center; gap:8px; padding:11px 18px; border-radius:8px; font-weight:600; font-size:0.9rem; cursor:pointer; border:1px solid var(--line); transition:transform .15s ease; }
+  .btn:hover{ transform:translateY(-1px); }
+  .btn-primary{ background:linear-gradient(135deg,var(--cyan),#ffb056); color:#170d03; border:none; box-shadow:0 0 0 1px rgba(255,122,41,0.2),0 8px 24px -8px rgba(255,122,41,0.55); }
+  .btn-primary:disabled{ opacity:0.6; cursor:default; transform:none; }
+  .btn-block{ width:100%; }
+  .btn-ghost{ background:rgba(255,255,255,0.03); color:var(--text); }
+
+  .gate-wrap{ min-height:calc(100vh - 73px); display:flex; align-items:center; justify-content:center; padding:40px 20px; }
+  .gate-card{ width:100%; max-width:400px; background:var(--panel); border:1px solid var(--line); border-radius:16px; padding:32px; }
+  .gate-card h1{ font-size:1.3rem; margin-bottom:6px; text-align:center; }
+  .gate-card > p.desc{ color:var(--text-dim); font-size:0.86rem; margin:0 0 22px; text-align:center; }
+  .auth-tabs{ display:flex; gap:4px; background:var(--bg-soft); border-radius:10px; padding:4px; margin-bottom:20px; }
+  .auth-tab{ flex:1; padding:9px; border:none; background:none; border-radius:8px; color:var(--text-dim); font-weight:600; font-size:0.9rem; cursor:pointer; }
+  .auth-tab.active{ background:var(--panel); color:var(--cyan); box-shadow:0 0 0 1px var(--line); }
+  .auth-form{ display:flex; flex-direction:column; gap:10px; }
+  input, textarea{ padding:12px 14px; border-radius:8px; border:1px solid var(--line); background:var(--bg-soft); color:var(--text); font-family:'IBM Plex Mono',monospace; font-size:0.92rem; }
+  input:focus, textarea:focus{ outline:none; border-color:rgba(255,122,41,0.5); }
+  textarea{ font-family:'Inter',sans-serif; resize:vertical; min-height:120px; }
+  .auth-form .btn{ margin-top:6px; }
+
+  .result-box{ margin-top:16px; padding:12px 14px; border-radius:8px; font-size:0.85rem; font-family:'IBM Plex Mono',monospace; }
+  .result-box.good{ background:rgba(255,122,41,0.1); border:1px solid rgba(255,122,41,0.35); color:var(--cyan); }
+  .result-box.warn{ background:rgba(255,182,72,0.1); border:1px solid rgba(255,182,72,0.35); color:var(--amber); }
+  .result-box.pending{ background:rgba(255,255,255,0.04); border:1px solid var(--line); color:var(--text-dim); }
+  .gate-help{ margin-top:18px; font-size:0.82rem; color:var(--text-dim); text-align:center; }
+  .gate-help a{ color:var(--cyan); font-weight:600; }
+
+  section{ padding:40px 0; scroll-margin-top:90px; }
+  .section-head{ margin-bottom:20px; display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap: wrap; }
+  .section-head h2{ font-size:1.3rem; }
+  .section-head .kicker{ font-family:'IBM Plex Mono',monospace; font-size:0.78rem; color:var(--violet); display:block; margin-bottom:4px; }
+  .section-note{ color:var(--text-dim); font-size:0.85rem; margin-top:4px; }
+
+  .post-list{ display:flex; flex-direction:column; gap:10px; }
+  .post-card{ background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:16px 20px; display:flex; align-items:center; justify-content:space-between; gap:16px; cursor:pointer; }
+  .post-card:hover{ border-color:rgba(255,122,41,0.3); }
+  .post-card .meta{ display:flex; align-items:center; gap:10px; margin-bottom:6px; font-size:0.76rem; color:var(--text-dim); font-family:'IBM Plex Mono',monospace; }
+  .post-card h3{ font-size:0.98rem; font-weight:600; }
+  .post-card .arrow{ color:var(--text-dim); flex-shrink:0; }
+  .empty-note{ text-align:center; padding:36px 20px; color:var(--text-dim); font-size:0.88rem; border:1px dashed var(--line); border-radius:12px; }
+
+  .new-post-form{ background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:20px; margin-bottom:20px; display:flex; flex-direction:column; gap:10px; }
+
+  /* 게시글 상세 모달 */
+  .modal-backdrop{ display:none; position:fixed; inset:0; z-index:100; background:rgba(3,4,8,0.75); backdrop-filter:blur(4px); align-items:center; justify-content:center; padding:20px; }
+  .modal-backdrop.open{ display:flex; }
+  .modal{ position:relative; width:100%; max-width:560px; max-height:82vh; overflow-y:auto; background:var(--panel); border:1px solid var(--line); border-radius:16px; padding:32px; }
+  .modal-close{ position:absolute; top:16px; right:16px; width:28px; height:28px; border-radius:50%; border:1px solid var(--line); background:rgba(255,255,255,0.04); color:var(--text-dim); cursor:pointer; }
+  .modal h2{ font-size:1.15rem; margin-bottom:8px; padding-right:24px; }
+  .modal .post-meta{ font-size:0.78rem; color:var(--text-dim); font-family:'IBM Plex Mono',monospace; margin-bottom:16px; }
+  .modal .post-body{ white-space:pre-wrap; font-size:0.94rem; line-height:1.7; margin-bottom:24px; }
+  .comment-list{ display:flex; flex-direction:column; gap:10px; margin-bottom:16px; }
+  .comment-item{ background:var(--bg-soft); border:1px solid var(--line); border-radius:10px; padding:12px 14px; }
+  .comment-item .who{ font-size:0.74rem; color:var(--cyan); font-family:'IBM Plex Mono',monospace; margin-bottom:4px; }
+  .comment-item .who.admin{ color:var(--amber); }
+  .comment-item p{ margin:0; font-size:0.88rem; }
+  .comment-form{ display:flex; gap:8px; }
+  .comment-form textarea{ flex:1; min-height:44px; }
+
+  footer{ border-top:1px solid var(--line); padding:32px 0; }
+  .footer-row{ display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px; }
+  .footer-row .disclaimer{ color:var(--text-dim); font-size:0.8rem; }
+</style>
+</head>
+<body>
+
+<div class="bg-grid"></div>
+<div class="bg-glow glow-1"></div>
+
+<header>
+  <div class="nav">
+    <a class="brand" href="index.html"><span class="dot"></span> TEAM SIXX <span class="tag">STUDY ROOM</span></a>
+    <div class="tabs" id="tabs" hidden>
+      <button type="button" class="tab-link active" data-cat="notice">공지사항</button>
+      <button type="button" class="tab-link" data-cat="lecture">강의</button>
+      <button type="button" class="tab-link" data-cat="question">질문</button>
+      <button type="button" class="tab-link" data-cat="profit">수익인증</button>
+      <button type="button" class="icon-btn" id="profile-btn">내 정보</button>
+      <button type="button" class="icon-btn" id="logout-btn">로그아웃</button>
+    </div>
+  </div>
+</header>
+
+<!-- 로그인 / 회원가입 -->
+<div class="gate-wrap" id="auth-gate">
+  <div class="gate-card">
+    <h1>스터디룸</h1>
+    <p class="desc">가입 시 등록한 UID로 로그인하세요.</p>
+    <div class="auth-tabs">
+      <button type="button" class="auth-tab active" data-tab="login">로그인</button>
+      <button type="button" class="auth-tab" data-tab="signup">회원가입</button>
+    </div>
+    <form id="login-form" class="auth-form">
+      <input type="text" id="login-uid" placeholder="Gate.io UID" inputmode="numeric" autocomplete="username">
+      <input type="password" id="login-pw" placeholder="비밀번호" autocomplete="current-password">
+      <button type="submit" class="btn btn-primary">로그인</button>
+    </form>
+    <form id="signup-form" class="auth-form" hidden>
+      <input type="text" id="signup-uid" placeholder="Gate.io UID" inputmode="numeric" autocomplete="username">
+      <input type="password" id="signup-pw" placeholder="비밀번호 (8자 이상)" autocomplete="new-password">
+      <input type="password" id="signup-pw2" placeholder="비밀번호 확인" autocomplete="new-password">
+      <button type="submit" class="btn btn-primary">회원가입</button>
+    </form>
+    <div id="auth-result" class="result-box" hidden></div>
+    <div class="gate-help">비밀번호를 잊으셨나요? <a href="https://t.me/team_sixx" target="_blank" rel="noopener">@team_sixx</a>로 UID를 보내주시면 재설정해드립니다.</div>
+    <div class="gate-help">아직 가입 전이신가요? <a href="join.html">입장 절차 보기 →</a></div>
+  </div>
+</div>
+
+<!-- 로그인 후 콘텐츠 -->
+<div id="gated-content" hidden>
+  <section id="board">
+    <div class="wrap">
+      <div class="section-head">
+        <div>
+          <span class="kicker" id="board-kicker">NOTICE</span>
+          <h2 id="board-title">공지사항</h2>
+          <p class="section-note" id="board-note">실시간 코인 브리핑은 텔레그램에서 진행됩니다.</p>
+        </div>
+      </div>
+
+      <form id="new-post-form" class="new-post-form" hidden>
+        <input type="text" id="new-post-title" placeholder="제목">
+        <textarea id="new-post-content" placeholder="내용을 입력하세요"></textarea>
+        <button type="submit" class="btn btn-primary">등록하기</button>
+      </form>
+
+      <div id="post-list" class="post-list"></div>
+      <div id="empty-note" class="empty-note" hidden>아직 등록된 글이 없습니다.</div>
+    </div>
+  </section>
+</div>
+
+<footer>
+  <div class="wrap footer-row">
+    <a href="index.html" style="font-weight:700;">TEAM SIXX</a>
+    <div class="disclaimer">본 콘텐츠는 투자 권유가 아니며, 선물거래는 원금 손실 위험이 있습니다.</div>
+  </div>
+</footer>
+
+<!-- 게시글 상세 모달 -->
+<div class="modal-backdrop" id="post-modal">
+  <div class="modal">
+    <button type="button" class="modal-close" id="post-modal-close">✕</button>
+    <h2 id="pm-title"></h2>
+    <div class="post-meta" id="pm-meta"></div>
+    <div class="post-body" id="pm-body"></div>
+    <div class="comment-list" id="pm-comments"></div>
+    <form class="comment-form" id="comment-form">
+      <textarea id="comment-input" placeholder="댓글을 입력하세요" rows="1"></textarea>
+      <button type="submit" class="btn btn-primary">등록</button>
+    </form>
+  </div>
+</div>
+
+<!-- 내 정보(비밀번호 변경) 모달 -->
+<div class="modal-backdrop" id="profile-modal">
+  <div class="modal" style="max-width:400px;">
+    <button type="button" class="modal-close" id="profile-modal-close">✕</button>
+    <h2>비밀번호 변경</h2>
+    <form id="password-form" class="auth-form" style="margin-top:16px;">
+      <input type="password" id="current-pw" placeholder="현재 비밀번호" autocomplete="current-password">
+      <input type="password" id="new-pw" placeholder="새 비밀번호 (8자 이상)" autocomplete="new-password">
+      <input type="password" id="new-pw2" placeholder="새 비밀번호 확인" autocomplete="new-password">
+      <button type="submit" class="btn btn-primary">변경하기</button>
+    </form>
+    <div id="profile-result" class="result-box" hidden></div>
+  </div>
+</div>
+
+<script>
+(function(){
+  var authGate = document.getElementById('auth-gate');
+  var content = document.getElementById('gated-content');
+  var tabs = document.getElementById('tabs');
+  var authResult = document.getElementById('auth-result');
+
+  var authTabs = document.querySelectorAll('.auth-tab');
+  var loginForm = document.getElementById('login-form');
+  var signupForm = document.getElementById('signup-form');
+  var logoutBtn = document.getElementById('logout-btn');
+  var profileBtn = document.getElementById('profile-btn');
+
+  var currentCategory = 'notice';
+  var catMeta = {
+    notice:   { kicker:'NOTICE',   title:'공지사항', note:'실시간 코인 브리핑은 텔레그램에서 진행됩니다.', canWrite:false },
+    lecture:  { kicker:'LECTURES', title:'강의',     note:'', canWrite:false },
+    question: { kicker:'Q&A',      title:'질문',     note:'궁금한 점을 자유롭게 남겨주세요.', canWrite:true },
+    profit:   { kicker:'PROFIT',   title:'수익인증', note:'', canWrite:false }
+  };
+
+  function showResult(el, text, kind){ el.hidden = false; el.textContent = text; el.className = 'result-box ' + kind; }
+  function clearResult(el){ el.hidden = true; }
+
+  function unlock(){ authGate.hidden = true; content.hidden = false; tabs.hidden = false; loadPosts(); }
+  function lock(){ authGate.hidden = false; content.hidden = true; tabs.hidden = true; }
+
+  // ── 로그인/회원가입 탭 ──
+  authTabs.forEach(function(tab){
+    tab.addEventListener('click', function(){
+      authTabs.forEach(function(t){ t.classList.remove('active'); });
+      tab.classList.add('active');
+      clearResult(authResult);
+      loginForm.hidden = tab.dataset.tab !== 'login';
+      signupForm.hidden = tab.dataset.tab !== 'signup';
+    });
+  });
+
+  async function checkSession(){
+    try{
+      var res = await fetch('/api/me', { credentials: 'same-origin' });
+      var data = await res.json();
+      if (data.ok) unlock(); else lock();
+    } catch(e){ lock(); }
+  }
+  checkSession();
+
+  loginForm.addEventListener('submit', async function(e){
+    e.preventDefault();
+    var uid = document.getElementById('login-uid').value.trim();
+    var pw = document.getElementById('login-pw').value;
+    if(!uid || !pw){ showResult(authResult, 'UID와 비밀번호를 입력해주세요.', 'warn'); return; }
+    var btn = loginForm.querySelector('button'); btn.disabled = true;
+    showResult(authResult, '로그인 중입니다...', 'pending');
+    try{
+      var res = await fetch('/api/login', { method:'POST', credentials:'same-origin', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ uid: uid, password: pw }) });
+      var data = await res.json();
+      if (data.ok) unlock(); else showResult(authResult, data.error || '로그인에 실패했습니다.', 'warn');
+    } catch(e){ showResult(authResult, '오류가 발생했습니다.', 'warn'); }
+    finally{ btn.disabled = false; }
+  });
+
+  signupForm.addEventListener('submit', async function(e){
+    e.preventDefault();
+    var uid = document.getElementById('signup-uid').value.trim();
+    var pw = document.getElementById('signup-pw').value;
+    var pw2 = document.getElementById('signup-pw2').value;
+    if(!/^[0-9]{3,15}$/.test(uid)){ showResult(authResult, 'UID는 숫자만 입력해주세요.', 'warn'); return; }
+    if(pw.length < 8){ showResult(authResult, '비밀번호는 8자 이상이어야 합니다.', 'warn'); return; }
+    if(pw !== pw2){ showResult(authResult, '비밀번호가 서로 다릅니다.', 'warn'); return; }
+    var btn = signupForm.querySelector('button'); btn.disabled = true;
+    showResult(authResult, 'UID 확인 중입니다...', 'pending');
+    try{
+      var res = await fetch('/api/signup', { method:'POST', credentials:'same-origin', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ uid: uid, password: pw }) });
+      var data = await res.json();
+      if (data.ok) unlock(); else showResult(authResult, data.error || '회원가입에 실패했습니다.', 'warn');
+    } catch(e){ showResult(authResult, '오류가 발생했습니다.', 'warn'); }
+    finally{ btn.disabled = false; }
+  });
+
+  logoutBtn.addEventListener('click', async function(){
+    try{ await fetch('/api/logout', { method:'POST', credentials:'same-origin' }); } catch(e){}
+    lock();
+  });
+
+  // ── 게시판 탭 ──
+  var tabLinks = document.querySelectorAll('.tab-link[data-cat]');
+  tabLinks.forEach(function(tab){
+    tab.addEventListener('click', function(){
+      tabLinks.forEach(function(t){ t.classList.remove('active'); });
+      tab.classList.add('active');
+      currentCategory = tab.dataset.cat;
+      loadPosts();
+    });
+  });
+
+  var newPostForm = document.getElementById('new-post-form');
+  var newPostTitle = document.getElementById('new-post-title');
+  var newPostContent = document.getElementById('new-post-content');
+
+  async function loadPosts(){
+    var meta = catMeta[currentCategory];
+    document.getElementById('board-kicker').textContent = meta.kicker;
+    document.getElementById('board-title').textContent = meta.title;
+    document.getElementById('board-note').textContent = meta.note;
+    newPostForm.hidden = !meta.canWrite;
+
+    var listEl = document.getElementById('post-list');
+    var emptyEl = document.getElementById('empty-note');
+    listEl.innerHTML = '';
+    emptyEl.hidden = true;
+
+    try{
+      var res = await fetch('/api/posts?category=' + currentCategory, { credentials:'same-origin' });
+      var data = await res.json();
+      var posts = (data.ok && data.posts) ? data.posts : [];
+      if(posts.length === 0){ emptyEl.hidden = false; return; }
+      posts.forEach(function(p){
+        var card = document.createElement('div');
+        card.className = 'post-card';
+        var isNew = (Date.now() - p.created_at) < (3 * 24 * 60 * 60 * 1000);
+        card.innerHTML =
+          '<div><div class="meta">' + fmtDate(p.created_at) + (p.author_type === 'admin' ? ' · 관리자' : '') + '</div>' +
+          '<h3>' + (isNew ? '<span style="color:var(--cyan); font-size:0.7rem; font-family:\'IBM Plex Mono\',monospace; margin-right:6px;">NEW</span>' : '') + escapeHtml(p.title) + '</h3></div><span class="arrow">→</span>';
+        card.addEventListener('click', function(){ openPost(p.id); });
+        listEl.appendChild(card);
+      });
+    } catch(e){ emptyEl.hidden = false; }
+  }
+
+  newPostForm.addEventListener('submit', async function(e){
+    e.preventDefault();
+    var title = newPostTitle.value.trim();
+    var content = newPostContent.value.trim();
+    if(!title || !content) return;
+    var btn = newPostForm.querySelector('button'); btn.disabled = true;
+    try{
+      await fetch('/api/posts', { method:'POST', credentials:'same-origin', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ category: currentCategory, title: title, content: content }) });
+      newPostTitle.value = ''; newPostContent.value = '';
+      loadPosts();
+    } finally { btn.disabled = false; }
+  });
+
+  // ── 게시글 상세 / 댓글 ──
+  var postModal = document.getElementById('post-modal');
+  var pmTitle = document.getElementById('pm-title');
+  var pmMeta = document.getElementById('pm-meta');
+  var pmBody = document.getElementById('pm-body');
+  var pmComments = document.getElementById('pm-comments');
+  var commentForm = document.getElementById('comment-form');
+  var commentInput = document.getElementById('comment-input');
+  var currentPostId = null;
+
+  async function openPost(id){
+    currentPostId = id;
+    try{
+      var res = await fetch('/api/posts/detail?id=' + id, { credentials:'same-origin' });
+      var data = await res.json();
+      if(!data.ok) return;
+      pmTitle.textContent = data.post.title;
+      pmMeta.textContent = fmtDate(data.post.created_at) + (data.post.author_type === 'admin' ? ' · 관리자' : ' · 회원');
+      pmBody.textContent = data.post.content;
+      var existingImg = document.getElementById('pm-image');
+      if (existingImg) existingImg.remove();
+      if (data.post.image_data) {
+        var img = document.createElement('img');
+        img.id = 'pm-image';
+        img.src = data.post.image_data;
+        img.style.cssText = 'width:100%; border-radius:10px; margin-bottom:16px; display:block;';
+        pmBody.parentNode.insertBefore(img, pmBody);
+      }
+      renderComments(data.comments);
+      postModal.classList.add('open');
+    } catch(e){}
+  }
+  function renderComments(list){
+    pmComments.innerHTML = '';
+    list.forEach(function(c){
+      var item = document.createElement('div');
+      item.className = 'comment-item';
+      item.innerHTML = '<div class="who' + (c.author_type === 'admin' ? ' admin' : '') + '">' +
+        (c.author_type === 'admin' ? '관리자' : 'UID ' + c.author_id) + ' · ' + fmtDate(c.created_at) + '</div>' +
+        '<p>' + escapeHtml(c.content) + '</p>';
+      pmComments.appendChild(item);
+    });
+  }
+  document.getElementById('post-modal-close').addEventListener('click', function(){ postModal.classList.remove('open'); });
+  postModal.addEventListener('click', function(e){ if(e.target === postModal) postModal.classList.remove('open'); });
+
+  commentForm.addEventListener('submit', async function(e){
+    e.preventDefault();
+    var text = commentInput.value.trim();
+    if(!text || !currentPostId) return;
+    var btn = commentForm.querySelector('button'); btn.disabled = true;
+    try{
+      await fetch('/api/comments', { method:'POST', credentials:'same-origin', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ post_id: currentPostId, content: text }) });
+      commentInput.value = '';
+      openPost(currentPostId);
+    } finally { btn.disabled = false; }
+  });
+
+  // ── 내 정보(비밀번호 변경) ──
+  var profileModal = document.getElementById('profile-modal');
+  var passwordForm = document.getElementById('password-form');
+  var profileResult = document.getElementById('profile-result');
+
+  profileBtn.addEventListener('click', function(){
+    clearResult(profileResult);
+    passwordForm.reset();
+    profileModal.classList.add('open');
+  });
+  document.getElementById('profile-modal-close').addEventListener('click', function(){ profileModal.classList.remove('open'); });
+  profileModal.addEventListener('click', function(e){ if(e.target === profileModal) profileModal.classList.remove('open'); });
+
+  passwordForm.addEventListener('submit', async function(e){
+    e.preventDefault();
+    var current = document.getElementById('current-pw').value;
+    var next = document.getElementById('new-pw').value;
+    var next2 = document.getElementById('new-pw2').value;
+    if(next.length < 8){ showResult(profileResult, '새 비밀번호는 8자 이상이어야 합니다.', 'warn'); return; }
+    if(next !== next2){ showResult(profileResult, '새 비밀번호가 서로 다릅니다.', 'warn'); return; }
+    var btn = passwordForm.querySelector('button'); btn.disabled = true;
+    showResult(profileResult, '변경 중입니다...', 'pending');
+    try{
+      var res = await fetch('/api/account/change-password', { method:'POST', credentials:'same-origin', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ currentPassword: current, newPassword: next }) });
+      var data = await res.json();
+      if(data.ok){ showResult(profileResult, '비밀번호가 변경되었습니다.', 'good'); passwordForm.reset(); }
+      else showResult(profileResult, data.error || '변경에 실패했습니다.', 'warn');
+    } catch(e){ showResult(profileResult, '오류가 발생했습니다.', 'warn'); }
+    finally{ btn.disabled = false; }
+  });
+
+  // ── 유틸 ──
+  function fmtDate(ts){
+    var d = new Date(ts);
+    return d.getFullYear() + '.' + String(d.getMonth()+1).padStart(2,'0') + '.' + String(d.getDate()).padStart(2,'0');
+  }
+  function escapeHtml(s){
+    return String(s).replace(/[&<>"']/g, function(c){
+      return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c];
+    });
+  }
+})();
+</script>
+
+</body>
+</html>
