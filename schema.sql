@@ -47,10 +47,3 @@ CREATE TABLE IF NOT EXISTS comments (
   created_at INTEGER NOT NULL
 );
 
--- 로그인 실패 잠금 (무차별 대입 방지)
-CREATE TABLE IF NOT EXISTS login_attempts (
-  uid TEXT PRIMARY KEY,
-  fail_count INTEGER NOT NULL DEFAULT 0,
-  locked_until INTEGER NOT NULL DEFAULT 0
-);
-

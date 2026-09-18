@@ -46,7 +46,7 @@ public/admin.html       관리자 전용 (글쓰기/수정/삭제, 회원 비밀
 - UID는 `users.uid`에 `UNIQUE` 제약 — 계정당 UID 1개만 허용
 - 비밀번호는 PBKDF2-SHA256(100,000회 반복)으로 해시 저장
 - 로그인 성공 시 세션 토큰을 `sessions` 테이블에 저장하고 httpOnly 쿠키(`session`)로 발급, 7일 유지
-- 로그인 실패 5회 시 15분 잠금 (`login_attempts` 테이블)
+- 로그인 실패 횟수 제한/잠금 없음 (`login_attempts` 테이블 및 관련 로직 제거함 — 운영자 요청으로 삭제)
 
 **관리자(admin) 인증** — 회원 인증과 완전히 분리
 - `admin.html`에서 로그인, 아이디/비번은 환경변수(`ADMIN_USERNAME`, `ADMIN_PASSWORD`)로 관리 (DB에 관리자 계정 테이블 없음, 1인 운영 가정)

@@ -126,27 +126,13 @@ async function handleLogin(request, env) {
   const password = body.password || '';
   if (!uid || !password) return json({ ok: false, error: 'UID와 비밀번호를 입력해주세요.' }, 400);
 
-  const now = Date.now();
-  const attempt = await env.DB.prepare('SELECT * FROM login_attempts WHERE uid = ?').bind(uid).first();
-  if (attempt && attempt.locked_until > now) {
-    const minutes = Math.ceil((attempt.locked_until - now) / 60000);
-    return json({ ok: false, error: `너무 많은 시도가 있었습니다. ${minutes}분 후 다시 시도해주세요.` }, 429);
-  }
-
   const user = await env.DB.prepare('SELECT * FROM users WHERE uid = ?').bind(uid).first();
   const { hash } = user ? await hashPassword(password, user.salt) : { hash: null };
 
   if (!user || hash !== user.password_hash) {
-    const failCount = (attempt ? attempt.fail_count : 0) + 1;
-    const lockedUntil = failCount >= 5 ? now + 15 * 60 * 1000 : 0;
-    await env.DB.prepare(
-      'INSERT INTO login_attempts (uid, fail_count, locked_until) VALUES (?, ?, ?) ' +
-      'ON CONFLICT(uid) DO UPDATE SET fail_count = ?, locked_until = ?'
-    ).bind(uid, failCount, lockedUntil, failCount, lockedUntil).run();
     return json({ ok: false, error: 'UID 또는 비밀번호가 올바르지 않습니다.' }, 401);
   }
 
-  await env.DB.prepare('DELETE FROM login_attempts WHERE uid = ?').bind(uid).run();
   const token = await createSession(env, uid);
   return json({ ok: true, uid, nickname: user.nickname || null }, 200, { 'Set-Cookie': sessionCookie(token) });
 }
@@ -556,11 +542,6 @@ async function ensureSchema(env) {
       author_id TEXT NOT NULL,
       content TEXT NOT NULL,
       created_at INTEGER NOT NULL
-    )`),
-    env.DB.prepare(`CREATE TABLE IF NOT EXISTS login_attempts (
-      uid TEXT PRIMARY KEY,
-      fail_count INTEGER NOT NULL DEFAULT 0,
-      locked_until INTEGER NOT NULL DEFAULT 0
     )`),
   ]);
   // 예전 DB에 없던 컬럼들 보강 (이미 있으면 무시)

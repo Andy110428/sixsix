@@ -39,9 +39,3 @@ CREATE TABLE IF NOT EXISTS comments (
   content TEXT NOT NULL,
   created_at INTEGER NOT NULL
 );
-
-CREATE TABLE IF NOT EXISTS login_attempts (
-  uid TEXT PRIMARY KEY,
-  fail_count INTEGER NOT NULL DEFAULT 0,
-  locked_until INTEGER NOT NULL DEFAULT 0
-);
