@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>입장 조건 — TEAM SIXX</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
+  :root{
+    --bg:#0a0908; --bg-soft:#141210; --panel:#18140f; --panel-2:#1e1811;
+    --line:rgba(255,255,255,0.08); --line-soft:rgba(255,255,255,0.05);
+    --text:#f5f0e8; --text-dim:#a89d8f; --text-faint:#6b6156;
+    --cyan:#ff7a29; --violet:#c2540f; --amber:#ffb648; --danger:#ff5c7a;
+    --radius-lg:18px; --radius-md:12px; --radius-sm:8px;
+  }
+  *{ box-sizing:border-box; }
+  [hidden]{ display:none !important; }
+  html{ scroll-behavior:smooth; }
+  body{ margin:0; background:var(--bg); color:var(--text); font-family:'Inter',sans-serif; line-height:1.6; -webkit-font-smoothing:antialiased; }
+  h1,h2,h3{ font-family:'Space Grotesk',sans-serif; margin:0; letter-spacing:-0.01em; }
+  .mono{ font-family:'IBM Plex Mono',monospace; }
+  a{ color:inherit; text-decoration:none; }
+  ::selection{ background:rgba(255,122,41,0.28); color:#fff; }
+  .bg-grid{ position:fixed; inset:0; z-index:-2; background-image:linear-gradient(rgba(255,255,255,0.035) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.035) 1px,transparent 1px); background-size:64px 64px; mask-image:radial-gradient(ellipse 80% 55% at 50% 0%, black 40%, transparent 90%); }
+  .bg-glow{ position:fixed; z-index:-1; width:520px; height:520px; top:-200px; right:-140px; filter:blur(130px); opacity:0.22; border-radius:50%; background:var(--cyan); pointer-events:none; }
+  .wrap{ max-width:760px; margin:0 auto; padding:0 24px; }
+
+  header{ position:sticky; top:0; z-index:50; backdrop-filter:blur(14px); background:rgba(10,9,8,0.75); border-bottom:1px solid var(--line); }
+  .nav{ display:flex; align-items:center; justify-content:space-between; padding:16px 24px; max-width:760px; margin:0 auto; }
+  .brand{ display:flex; align-items:center; gap:10px; font-weight:700; font-size:1.05rem; }
+  .brand .dot{ width:9px; height:9px; border-radius:50%; background:var(--cyan); box-shadow:0 0 10px var(--cyan),0 0 22px var(--cyan); }
+
+  .btn{ display:inline-flex; align-items:center; justify-content:center; gap:8px; padding:12px 22px; border-radius:10px; font-weight:600; font-size:0.92rem; cursor:pointer; border:1px solid var(--line); transition:transform .15s ease, box-shadow .15s ease; }
+  .btn:hover{ transform:translateY(-1px); }
+  .btn-primary{ background:linear-gradient(135deg,var(--cyan),#ffb056); color:#170d03; border:none; box-shadow:0 0 0 1px rgba(255,122,41,0.2),0 10px 28px -10px rgba(255,122,41,0.6); }
+  .btn-ghost{ background:rgba(255,255,255,0.03); color:var(--text); }
+
+  main{ padding:48px 0 70px; }
+  .page-head{ margin-bottom:32px; }
+  .page-head .kicker{ font-family:'IBM Plex Mono',monospace; font-size:0.76rem; color:var(--violet); letter-spacing:0.08em; display:block; margin-bottom:8px; }
+  .page-head h1{ font-size:1.9rem; margin-bottom:10px; }
+  .page-head p{ color:var(--text-dim); font-size:0.94rem; margin:0; }
+
+  .req-card{ background:var(--panel); border:1px solid var(--line); border-radius:var(--radius-lg); padding:26px 28px; margin-bottom:16px; display:flex; gap:18px; position:relative; }
+  .req-card .num{ font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:1.3rem; color:var(--cyan); flex-shrink:0; width:36px; }
+  .req-card h3{ font-size:1.05rem; margin-bottom:8px; }
+  .req-card p{ color:var(--text-dim); font-size:0.9rem; margin:0; }
+  .req-card p + p{ margin-top:8px; }
+
+  .faq{ margin-top:40px; }
+  .faq h2{ font-size:1.2rem; margin-bottom:16px; }
+  .faq-item{ border-top:1px solid var(--line-soft); padding:16px 0; }
+  .faq-item:first-of-type{ border-top:none; }
+  .faq-item .q{ font-weight:600; font-size:0.92rem; margin-bottom:6px; display:flex; gap:8px; }
+  .faq-item .q .mark{ color:var(--cyan); }
+  .faq-item .a{ color:var(--text-dim); font-size:0.88rem; margin:0; padding-left:22px; }
+
+  .cta-panel{ margin-top:40px; background:var(--panel); border:1px solid var(--line); border-radius:var(--radius-lg); padding:28px; text-align:center; position:relative; overflow:hidden; }
+  .cta-panel::before{ content:""; position:absolute; top:0; left:0; right:0; height:2px; background:linear-gradient(90deg, transparent, var(--cyan), transparent); }
+  .cta-panel p{ color:var(--text-dim); font-size:0.9rem; margin:0 0 16px; }
+
+  footer{ border-top:1px solid var(--line); padding:32px 0; }
+  .footer-row{ display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px; }
+  .footer-row .disclaimer{ color:var(--text-faint); font-size:0.8rem; }
+</style>
+</head>
+<body>
+
+<div class="bg-grid"></div>
+<div class="bg-glow"></div>
+
+<header>
+  <div class="nav">
+    <a class="brand" href="index.html"><span class="dot"></span> TEAM SIXX</a>
+    <a class="btn btn-ghost" href="portal.html">로그인</a>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="page-head">
+    <span class="kicker">REQUIREMENTS</span>
+    <h1>입장 조건</h1>
+    <p>아래 세 가지 조건을 모두 충족해야 스터디룸에 입장할 수 있습니다.</p>
+  </div>
+
+  <div class="req-card">
+    <div class="num">01</div>
+    <div>
+      <h3>협력 거래소 전용 링크로 신규 가입</h3>
+      <p>협력 거래소는 Gate.io 한 곳만 사용합니다. 반드시 저희가 안내하는 전용 레퍼럴 링크로 <b>새로 가입</b>해야 인정되며, 기존에 사용하던 계정은 인정되지 않습니다.</p>
+      <p>가입 여부는 Gate.io API로 레퍼럴 관계를 확인해 자동으로 검증됩니다.</p>
+    </div>
+  </div>
+
+  <div class="req-card">
+    <div class="num">02</div>
+    <div>
+      <h3>최소 시드 $700 이상 예치</h3>
+      <p>가입 후 거래소 계정에 최소 $700 이상의 시드를 입금해야 합니다. 예치 금액은 API로 조회할 수 없는 정보라, 입금 내역 스크린샷을 제출하면 운영자가 직접 확인합니다.</p>
+    </div>
+  </div>
+
+  <div class="req-card">
+    <div class="num">03</div>
+    <div>
+      <h3>UID 인증 및 개별 초대</h3>
+      <p>가입 절차 페이지에서 UID를 입력하면 레퍼럴 관계를 즉시 확인할 수 있습니다. 통과 후 예치 스크린샷까지 확인되면, 운영자가 개별적으로 텔레그램 비공개 채널에 초대합니다.</p>
+    </div>
+  </div>
+
+  <div class="faq">
+    <h2>자주 묻는 질문</h2>
+    <div class="faq-item">
+      <div class="q"><span class="mark">Q.</span>이미 Gate.io 계정이 있는데 그대로 써도 되나요?</div>
+      <p class="a">안 됩니다. 반드시 전용 링크로 새로 가입한 계정만 인정됩니다.</p>
+    </div>
+    <div class="faq-item">
+      <div class="q"><span class="mark">Q.</span>예치 확인은 얼마나 걸리나요?</div>
+      <p class="a">스크린샷 제출 후 운영자가 순차적으로 확인하며, 확인되는 대로 텔레그램 채널에 개별 초대해드립니다.</p>
+    </div>
+    <div class="faq-item">
+      <div class="q"><span class="mark">Q.</span>가입 후 시드를 빼면 어떻게 되나요?</div>
+      <p class="a">현재는 가입 시점에만 레퍼럴 관계를 확인하며, 이후 별도의 주기적인 재검증은 진행하지 않습니다.</p>
+    </div>
+  </div>
+
+  <div class="cta-panel">
+    <p>조건을 확인하셨다면 바로 입장 절차를 시작해보세요.</p>
+    <a class="btn btn-primary" href="join.html">입장 절차 시작하기</a>
+  </div>
+</main>
+
+<footer>
+  <div class="wrap footer-row">
+    <a href="index.html" style="font-weight:700;">TEAM SIXX</a>
+    <div class="disclaimer">본 콘텐츠는 투자 권유가 아니며, 선물거래는 원금 손실 위험이 있습니다.</div>
+  </div>
+</footer>
+
+</body>
+</html>

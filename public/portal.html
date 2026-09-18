@@ -14,6 +14,7 @@
     --radius-lg:18px; --radius-md:12px; --radius-sm:8px;
   }
   *{ box-sizing: border-box; }
+  [hidden]{ display:none !important; }
   html{ scroll-behavior: smooth; }
   body{ margin:0; background:var(--bg); color:var(--text); font-family:'Inter',sans-serif; line-height:1.6; -webkit-font-smoothing:antialiased; }
   h1,h2,h3{ font-family:'Space Grotesk',sans-serif; margin:0; letter-spacing:-0.01em; }
@@ -51,9 +52,6 @@
   .gate-card::before{ content:""; position:absolute; top:0; left:0; right:0; height:2px; background:linear-gradient(90deg, transparent, var(--cyan), transparent); }
   .gate-card h1{ font-size:1.3rem; margin-bottom:6px; text-align:center; }
   .gate-card > p.desc{ color:var(--text-dim); font-size:0.86rem; margin:0 0 22px; text-align:center; }
-  .auth-tabs{ display:flex; gap:4px; background:var(--bg-soft); border-radius:10px; padding:4px; margin-bottom:20px; }
-  .auth-tab{ flex:1; padding:9px; border:none; background:none; border-radius:8px; color:var(--text-dim); font-weight:600; font-size:0.9rem; cursor:pointer; transition:background .15s ease, color .15s ease; }
-  .auth-tab.active{ background:var(--panel-2); color:var(--cyan); box-shadow:0 0 0 1px var(--line); }
   .auth-form{ display:flex; flex-direction:column; gap:10px; }
   input, textarea{ padding:12px 14px; border-radius:8px; border:1px solid var(--line); background:var(--bg-soft); color:var(--text); font-family:'IBM Plex Mono',monospace; font-size:0.92rem; }
   input:focus, textarea:focus{ outline:none; border-color:rgba(255,122,41,0.5); box-shadow:0 0 0 3px rgba(255,122,41,0.12); }
@@ -128,29 +126,19 @@
   </div>
 </header>
 
-<!-- 로그인 / 회원가입 -->
+<!-- 로그인 -->
 <div class="gate-wrap" id="auth-gate">
   <div class="gate-card">
-    <h1>스터디룸</h1>
+    <h1>스터디룸 로그인</h1>
     <p class="desc">가입 시 등록한 UID로 로그인하세요.</p>
-    <div class="auth-tabs">
-      <button type="button" class="auth-tab active" data-tab="login">로그인</button>
-      <button type="button" class="auth-tab" data-tab="signup">회원가입</button>
-    </div>
     <form id="login-form" class="auth-form">
       <input type="text" id="login-uid" placeholder="Gate.io UID" inputmode="numeric" autocomplete="username">
       <input type="password" id="login-pw" placeholder="비밀번호" autocomplete="current-password">
       <button type="submit" class="btn btn-primary">로그인</button>
     </form>
-    <form id="signup-form" class="auth-form" hidden>
-      <input type="text" id="signup-uid" placeholder="Gate.io UID" inputmode="numeric" autocomplete="username">
-      <input type="password" id="signup-pw" placeholder="비밀번호 (8자 이상)" autocomplete="new-password">
-      <input type="password" id="signup-pw2" placeholder="비밀번호 확인" autocomplete="new-password">
-      <button type="submit" class="btn btn-primary">회원가입</button>
-    </form>
     <div id="auth-result" class="result-box" hidden></div>
     <div class="gate-help">비밀번호를 잊으셨나요? <a href="https://t.me/team_sixx" target="_blank" rel="noopener">@team_sixx</a>로 UID를 보내주시면 재설정해드립니다.</div>
-    <div class="gate-help">아직 가입 전이신가요? <a href="https://t.me/team_sixx" target="_blank" rel="noopener">@team_sixx</a>로 문의해주세요.</div>
+    <div class="gate-help">아직 회원이 아니신가요? <a href="join.html">입장 절차 보기 →</a></div>
   </div>
 </div>
 
@@ -222,9 +210,7 @@
   var tabs = document.getElementById('tabs');
   var authResult = document.getElementById('auth-result');
 
-  var authTabs = document.querySelectorAll('.auth-tab');
   var loginForm = document.getElementById('login-form');
-  var signupForm = document.getElementById('signup-form');
   var logoutBtn = document.getElementById('logout-btn');
   var profileBtn = document.getElementById('profile-btn');
 
@@ -241,17 +227,6 @@
 
   function unlock(){ authGate.hidden = true; content.hidden = false; tabs.hidden = false; loadPosts(); }
   function lock(){ authGate.hidden = false; content.hidden = true; tabs.hidden = true; }
-
-  // ── 로그인/회원가입 탭 ──
-  authTabs.forEach(function(tab){
-    tab.addEventListener('click', function(){
-      authTabs.forEach(function(t){ t.classList.remove('active'); });
-      tab.classList.add('active');
-      clearResult(authResult);
-      loginForm.hidden = tab.dataset.tab !== 'login';
-      signupForm.hidden = tab.dataset.tab !== 'signup';
-    });
-  });
 
   async function checkSession(){
     try{
@@ -273,24 +248,6 @@
       var res = await fetch('/api/login', { method:'POST', credentials:'same-origin', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ uid: uid, password: pw }) });
       var data = await res.json();
       if (data.ok) unlock(); else showResult(authResult, data.error || '로그인에 실패했습니다.', 'warn');
-    } catch(e){ showResult(authResult, '오류가 발생했습니다.', 'warn'); }
-    finally{ btn.disabled = false; }
-  });
-
-  signupForm.addEventListener('submit', async function(e){
-    e.preventDefault();
-    var uid = document.getElementById('signup-uid').value.trim();
-    var pw = document.getElementById('signup-pw').value;
-    var pw2 = document.getElementById('signup-pw2').value;
-    if(!/^[0-9]{3,15}$/.test(uid)){ showResult(authResult, 'UID는 숫자만 입력해주세요.', 'warn'); return; }
-    if(pw.length < 8){ showResult(authResult, '비밀번호는 8자 이상이어야 합니다.', 'warn'); return; }
-    if(pw !== pw2){ showResult(authResult, '비밀번호가 서로 다릅니다.', 'warn'); return; }
-    var btn = signupForm.querySelector('button'); btn.disabled = true;
-    showResult(authResult, 'UID 확인 중입니다...', 'pending');
-    try{
-      var res = await fetch('/api/signup', { method:'POST', credentials:'same-origin', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ uid: uid, password: pw }) });
-      var data = await res.json();
-      if (data.ok) unlock(); else showResult(authResult, data.error || '회원가입에 실패했습니다.', 'warn');
     } catch(e){ showResult(authResult, '오류가 발생했습니다.', 'warn'); }
     finally{ btn.disabled = false; }
   });
