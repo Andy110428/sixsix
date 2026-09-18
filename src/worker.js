@@ -16,7 +16,7 @@
 //   POST /api/comments               댓글 작성 (회원 또는 관리자)
 //
 // 관리자 API:
-//   POST /api/admin/login            IP 허용목록 + 아이디/비번 확인
+//   POST /api/admin/login            아이디/비번 확인
 //   GET  /api/admin/me
 //   POST /api/admin/logout
 //   POST /api/admin/reset-password   회원 비밀번호 강제 재설정 (본인 문의 시 수동 처리)
@@ -24,7 +24,6 @@
 // 필요한 환경변수(Settings > Variables and Secrets):
 //   GATE_API_KEY, GATE_API_SECRET   Gate.io API
 //   ADMIN_USERNAME, ADMIN_PASSWORD  관리자 로그인
-//   ADMIN_ALLOWED_IPS               콤마로 구분한 허용 IP 목록 (예: "1.2.3.4,5.6.7.8")
 // 필요한 바인딩: D1 데이터베이스 → env.DB
 
 const SESSION_COOKIE = 'session';
@@ -39,6 +38,8 @@ export default {
     const method = request.method;
 
     try {
+      if (path.startsWith('/api/') && env.DB) await ensureSchema(env);
+
       if (path === '/api/check-uid' && method === 'GET') return await handleCheckUid(request, env);
       if (path === '/api/signup' && method === 'POST') return await handleSignup(request, env);
       if (path === '/api/login' && method === 'POST') return await handleLogin(request, env);
@@ -354,17 +355,7 @@ async function handleAdminStats(request, env) {
 
 // ───────────────────────── 관리자 인증 ─────────────────────────
 
-function isAllowedAdminIp(request, env) {
-  const list = (env.ADMIN_ALLOWED_IPS || '').split(',').map((s) => s.trim()).filter(Boolean);
-  if (list.length === 0) return true; // 설정 안 했으면 막지 않음 (설정 권장)
-  const ip = request.headers.get('CF-Connecting-IP') || '';
-  return list.includes(ip);
-}
-
 async function handleAdminLogin(request, env) {
-  if (!isAllowedAdminIp(request, env)) {
-    return json({ ok: false, error: '허용되지 않은 접속입니다.' }, 403);
-  }
   const body = await safeJson(request);
   const username = body.username || '';
   const password = body.password || '';
@@ -462,6 +453,66 @@ async function checkGateReferral(uid, env) {
   else if (entry.type === 5) { status = 'not_my_referral'; message = '전용 링크로 가입한 회원이 아닙니다.'; }
 
   return { uid: entry.uid, type: entry.type, status, message };
+}
+
+// ───────────────────────── 스키마 자동 초기화 ─────────────────────────
+// D1 콘솔에 schema-console.sql을 붙여넣는 걸 깜빡해도 첫 API 요청에서
+// 필요한 테이블을 자동으로 만들어준다 (이미 있으면 아무 것도 하지 않음).
+
+let schemaReady = false;
+
+async function ensureSchema(env) {
+  if (schemaReady) return;
+  await env.DB.batch([
+    env.DB.prepare(`CREATE TABLE IF NOT EXISTS users (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      uid TEXT UNIQUE NOT NULL,
+      salt TEXT NOT NULL,
+      password_hash TEXT NOT NULL,
+      created_at INTEGER NOT NULL
+    )`),
+    env.DB.prepare(`CREATE TABLE IF NOT EXISTS sessions (
+      token TEXT PRIMARY KEY,
+      uid TEXT NOT NULL,
+      created_at INTEGER NOT NULL,
+      expires_at INTEGER NOT NULL
+    )`),
+    env.DB.prepare(`CREATE TABLE IF NOT EXISTS admin_sessions (
+      token TEXT PRIMARY KEY,
+      created_at INTEGER NOT NULL,
+      expires_at INTEGER NOT NULL
+    )`),
+    env.DB.prepare(`CREATE TABLE IF NOT EXISTS posts (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      category TEXT NOT NULL,
+      title TEXT NOT NULL,
+      content TEXT NOT NULL,
+      image_data TEXT,
+      author_type TEXT NOT NULL,
+      author_id TEXT NOT NULL,
+      created_at INTEGER NOT NULL
+    )`),
+    env.DB.prepare(`CREATE TABLE IF NOT EXISTS comments (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      post_id INTEGER NOT NULL,
+      author_type TEXT NOT NULL,
+      author_id TEXT NOT NULL,
+      content TEXT NOT NULL,
+      created_at INTEGER NOT NULL
+    )`),
+    env.DB.prepare(`CREATE TABLE IF NOT EXISTS login_attempts (
+      uid TEXT PRIMARY KEY,
+      fail_count INTEGER NOT NULL DEFAULT 0,
+      locked_until INTEGER NOT NULL DEFAULT 0
+    )`),
+  ]);
+  // 예전 DB에 image_data 컬럼 없이 posts 테이블만 있는 경우 보강 (이미 있으면 무시)
+  try {
+    await env.DB.prepare('ALTER TABLE posts ADD COLUMN image_data TEXT').run();
+  } catch (e) {
+    // 컬럼이 이미 있으면 여기로 오는 게 정상
+  }
+  schemaReady = true;
 }
 
 // ───────────────────────── 세션 / 쿠키 ─────────────────────────
