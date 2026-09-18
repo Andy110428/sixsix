@@ -59,8 +59,8 @@
     border-radius: 50%;
     pointer-events: none;
   }
-  .glow-1{ width: 560px; height: 560px; top: -180px; left: -120px; background: var(--cyan); }
-  .glow-2{ width: 640px; height: 640px; top: 20%; right: -220px; background: var(--violet); opacity: 0.28; }
+  .glow-1{ width: 560px; height: 560px; top: -180px; left: -120px; background: var(--cyan); opacity: 0.16; }
+  .glow-2{ width: 640px; height: 640px; top: 20%; right: -220px; background: var(--violet); opacity: 0.12; }
 
   .wrap{ max-width: 1080px; margin: 0 auto; padding: 0 24px; }
 
@@ -76,13 +76,9 @@
     padding: 16px 24px; max-width: 1080px; margin: 0 auto;
   }
   .brand{
-    display:flex; align-items:center; gap:10px;
-    font-weight: 700; font-size: 1.05rem;
-  }
-  .brand .dot{
-    width:9px; height:9px; border-radius:50%;
-    background: var(--cyan);
-    box-shadow: 0 0 10px var(--cyan), 0 0 22px var(--cyan);
+    font-weight: 600; font-size: 1rem;
+    letter-spacing: 0.04em;
+    color: var(--text-dim);
   }
   .nav-cta{
     display:flex; gap:10px;
@@ -124,22 +120,13 @@
     padding: 96px 0 64px;
   }
   .eyebrow{
-    display:inline-flex; align-items:center; gap:8px;
-    padding: 6px 12px;
-    border: 1px solid rgba(255,122,41,0.3);
-    border-radius: 999px;
-    color: var(--cyan);
-    font-size: 0.82rem;
+    display:block;
+    color: var(--violet);
+    font-size: 0.8rem;
     font-family: 'IBM Plex Mono', monospace;
-    background: rgba(255,122,41,0.06);
-    margin-bottom: 24px;
+    letter-spacing: 0.08em;
+    margin-bottom: 18px;
   }
-  .eyebrow .blink{
-    width:6px; height:6px; border-radius:50%; background: var(--cyan);
-    box-shadow: 0 0 8px var(--cyan);
-    animation: blink 1.6s ease-in-out infinite;
-  }
-  @keyframes blink{ 0%,100%{ opacity:1; } 50%{ opacity:0.25; } }
 
   .hero h1{
     font-size: clamp(2.1rem, 5vw, 3.4rem);
@@ -172,25 +159,6 @@
   .already-member a{ color: var(--cyan); font-weight: 600; }
   .already-member a:hover{ text-decoration: underline; }
 
-  .ticker{
-    margin-top: 56px;
-    border-top: 1px solid var(--line);
-    border-bottom: 1px solid var(--line);
-    padding: 14px 0;
-    overflow: hidden;
-    white-space: nowrap;
-  }
-  .ticker-track{
-    display:inline-flex; gap: 48px;
-    animation: scroll 22s linear infinite;
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 0.85rem;
-    color: var(--text-dim);
-  }
-  .ticker-track span b{ color: var(--cyan); font-weight: 500; }
-  .ticker-track span.down b{ color: var(--danger); }
-  @keyframes scroll{ from{ transform: translateX(0);} to{ transform: translateX(-50%);} }
-
   /* section shared */
   section{ padding: 88px 0; scroll-margin-top: 90px; }
   .section-head{ max-width: 620px; margin-bottom: 48px; }
@@ -206,24 +174,6 @@
     font-weight: 700;
   }
   .section-head p{ color: var(--text-dim); margin-top: 14px; font-size: 1rem; }
-
-  /* story */
-  .story-grid{
-    display:grid; grid-template-columns: 1fr 1fr; gap: 40px;
-    align-items: start;
-  }
-  .story-card{
-    background: var(--panel);
-    border: 1px solid var(--line);
-    border-radius: 14px;
-    padding: 28px;
-  }
-  .story-card h3{ font-size: 1.1rem; margin-bottom: 12px; }
-  .story-card p{ color: var(--text-dim); font-size: 0.96rem; }
-  .story-card.old{ opacity: 0.75; }
-  .story-card.old h3{ color: var(--text-dim); text-decoration: line-through; text-decoration-color: var(--danger); text-decoration-thickness: 1.5px; }
-  .story-card.new{ border-color: rgba(255,122,41,0.35); box-shadow: 0 0 0 1px rgba(255,122,41,0.08) inset; }
-  .story-card.new h3{ color: var(--cyan); }
 
   /* requirements */
   .req-grid{
@@ -261,102 +211,6 @@
   }
   .req-card .value small{ font-size: 1rem; color: var(--text-dim); font-weight: 500; }
 
-  /* proof */
-  .proof-grid{
-    display:grid; grid-template-columns: 1fr 1fr; gap: 24px;
-  }
-  .stat-card{
-    position: relative;
-    border-radius: 16px;
-    overflow: hidden;
-    border: 1px solid rgba(255,122,41,0.22);
-    background: linear-gradient(165deg, var(--panel), var(--bg-soft));
-    padding: 28px;
-  }
-  .stat-card::after{
-    content:'';
-    position:absolute; right:-30%; bottom:-40%;
-    width: 220px; height: 220px;
-    background: radial-gradient(circle, rgba(255,122,41,0.12), transparent 70%);
-    pointer-events: none;
-  }
-  .stat-top{
-    display:flex; justify-content: space-between; align-items:center;
-    margin-bottom: 22px;
-  }
-  .stat-top .pair{ font-family: 'Space Grotesk', sans-serif; font-weight: 600; font-size: 0.98rem; }
-  .stat-top .pair em{ font-style: normal; color: var(--text-dim); font-size: 0.82rem; margin-left: 4px; }
-  .stat-top .side{
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 0.76rem;
-    padding: 4px 10px;
-    border-radius: 999px;
-  }
-  .stat-top .side.short{ color: var(--danger); background: rgba(255,92,122,0.1); border: 1px solid rgba(255,92,122,0.3); }
-  .stat-roi{
-    font-family: 'Space Grotesk', sans-serif;
-    font-weight: 700;
-    font-size: 2.6rem;
-    line-height: 1;
-    display:flex; align-items: baseline; gap: 8px;
-    margin-bottom: 24px;
-  }
-  .stat-roi.up{ color: var(--cyan); text-shadow: 0 0 24px rgba(255,122,41,0.35); }
-  .stat-roi small{
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 0.72rem;
-    font-weight: 400;
-    color: var(--text-dim);
-    letter-spacing: 0.04em;
-  }
-  .stat-rows{ border-top: 1px solid var(--line); padding-top: 16px; }
-  .stat-row{
-    display:flex; justify-content: space-between;
-    font-size: 0.9rem;
-    padding: 6px 0;
-  }
-  .stat-row span:first-child{ color: var(--text-dim); }
-  .stat-row span:last-child{ font-family: 'IBM Plex Mono', monospace; }
-  .stat-date{
-    margin-top: 16px;
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 0.75rem;
-    color: var(--text-dim);
-    opacity: 0.7;
-  }
-
-  /* reviews */
-  .review-grid{
-    display:grid; grid-template-columns: repeat(3, 1fr); gap: 20px;
-  }
-  .review-card{
-    background: var(--panel);
-    border: 1px solid var(--line);
-    border-radius: 14px;
-    padding: 26px;
-    display:flex; flex-direction: column; justify-content: space-between;
-  }
-  .review-card .quote{
-    font-size: 0.95rem;
-    color: var(--text);
-    margin-bottom: 20px;
-  }
-  .review-card .reviewer{
-    display:flex; align-items:center; gap: 10px;
-    color: var(--text-dim);
-    font-size: 0.85rem;
-  }
-  .review-card .avatar{
-    width: 28px; height: 28px;
-    border-radius: 50%;
-    display:flex; align-items:center; justify-content:center;
-    background: linear-gradient(135deg, var(--cyan), var(--violet));
-    color: #170d03;
-    font-weight: 700;
-    font-size: 0.8rem;
-    flex-shrink: 0;
-  }
-
   /* steps */
   .steps{
     counter-reset: step;
@@ -379,46 +233,6 @@
   .step .btn{ margin-top: 14px; }
   .steps-compact .step{ padding: 18px 0; align-items: center; }
   .steps-compact .step h3{ margin-bottom: 0; font-size: 1rem; font-weight: 600; }
-
-  /* signup CTA panel */
-  .cta-panel{
-    background: linear-gradient(160deg, rgba(255,122,41,0.08), rgba(194,84,15,0.06));
-    border: 1px solid rgba(255,122,41,0.25);
-    border-radius: 20px;
-    padding: 48px;
-    display:grid;
-    grid-template-columns: 1.2fr 1fr;
-    gap: 40px;
-    align-items: center;
-  }
-  .cta-panel h2{ font-size: 1.7rem; margin-bottom: 14px; }
-  .cta-panel p{ color: var(--text-dim); }
-  .bonus-tag{
-    display:inline-flex; align-items:center; gap:8px;
-    padding: 6px 14px;
-    border-radius: 999px;
-    background: rgba(255,122,41,0.08);
-    border: 1px solid rgba(255,122,41,0.35);
-    color: var(--cyan);
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 0.82rem;
-    margin-bottom: 18px;
-  }
-  .cta-panel .side{
-    background: var(--bg-soft);
-    border: 1px solid var(--line);
-    border-radius: 14px;
-    padding: 24px;
-  }
-  .cta-panel .side .row{
-    display:flex; justify-content: space-between;
-    padding: 10px 0;
-    border-bottom: 1px dashed var(--line);
-    font-size: 0.92rem;
-  }
-  .cta-panel .side .row:last-of-type{ border-bottom: none; }
-  .cta-panel .side .row span:first-child{ color: var(--text-dim); }
-  .cta-panel .side .row span:last-child{ font-family:'IBM Plex Mono', monospace; color: var(--cyan); }
 
   /* contact */
   .contact-grid{
@@ -463,7 +277,7 @@
     border-radius: 50%;
     background: linear-gradient(135deg, var(--cyan), #ffb056);
     display:flex; align-items:center; justify-content:center;
-    box-shadow: 0 8px 30px -6px rgba(255,122,41,0.7);
+    box-shadow: 0 6px 20px -6px rgba(255,122,41,0.45);
     font-size: 1.5rem;
     color: #170d03;
     transition: transform .15s ease;
@@ -471,8 +285,7 @@
   .float-tg:hover{ transform: scale(1.08); }
 
   @media (max-width: 860px){
-    .story-grid, .req-grid, .contact-grid, .proof-grid, .review-grid{ grid-template-columns: 1fr; }
-    .cta-panel{ grid-template-columns: 1fr; padding: 32px 20px; }
+    .req-grid, .contact-grid{ grid-template-columns: 1fr; }
     .nav-cta .btn span.txt{ display:none; }
     section{ padding: 64px 0; }
   }
@@ -541,7 +354,7 @@
 
 <header>
   <div class="nav">
-    <a class="brand" href="index.html"><span class="dot"></span> TEAM SIXX</a>
+    <a class="brand" href="index.html">TEAM SIXX</a>
         <div class="nav-menu">
       <button type="button" class="menu-btn" id="menu-btn" aria-label="메뉴 열기" aria-expanded="false">
         <span></span><span></span><span></span>
@@ -562,31 +375,14 @@
 
 <section class="hero">
   <div class="wrap">
-    <span class="eyebrow"><span class="blink"></span> PRIVATE STUDY ROOM · INVITE ONLY</span>
+    <span class="eyebrow">PRIVATE STUDY ROOM</span>
     <h1>진짜 배우고 싶은 사람만<br>들어오는 <span class="grad">코인 선물 스터디방</span></h1>
     <p class="sub">협력 거래소 하나, 최소 시드 하나. 그 정도의 책임감 있는 사람들과만 함께합니다.</p>
     <div class="hero-actions">
-      <a class="btn btn-primary" href="https://t.me/+qUg3b7kZ24hjNWZl" target="_blank" rel="noopener">텔레그램 채널 바로가기 ↗</a>
-      <a class="btn btn-ghost" href="requirements.html">입장 조건 확인하기</a>
+      <a class="btn btn-primary" href="requirements.html">입장 조건 확인하기</a>
+      <a class="btn btn-ghost" href="https://t.me/+qUg3b7kZ24hjNWZl" target="_blank" rel="noopener">텔레그램 채널 ↗</a>
     </div>
     <div class="already-member">이미 가입하셨나요? <a href="portal.html">스터디룸 바로가기 →</a></div>
-
-    <div class="ticker">
-      <div class="ticker-track">
-        <span>BTC/USDT <b>+2.14%</b></span>
-        <span class="down">ETH/USDT <b>-0.86%</b></span>
-        <span>SOL/USDT <b>+4.02%</b></span>
-        <span>GATE.IO · 협력 거래소</span>
-        <span>MIN SEED <b>$700</b></span>
-        <span class="down">XRP/USDT <b>-1.12%</b></span>
-        <span>BTC/USDT <b>+2.14%</b></span>
-        <span class="down">ETH/USDT <b>-0.86%</b></span>
-        <span>SOL/USDT <b>+4.02%</b></span>
-        <span>GATE.IO · 협력 거래소</span>
-        <span>MIN SEED <b>$700</b></span>
-        <span class="down">XRP/USDT <b>-1.12%</b></span>
-      </div>
-    </div>
   </div>
 </section>
 
@@ -609,41 +405,6 @@
     </div>
     <div class="hero-actions" style="margin-top:24px;">
       <a class="btn btn-ghost" href="requirements.html">자세히 보기 ↗</a>
-    </div>
-  </div>
-</section>
-
-<section id="proof">
-  <div class="wrap">
-    <div class="section-head">
-      <span class="kicker">REAL RESULTS</span>
-      <h2>말이 아니라 실전 인증</h2>
-    </div>
-    <div class="proof-grid">
-      <div class="stat-card">
-        <div class="stat-top">
-          <span class="pair">BTCUSDT <em>Futures</em></span>
-          <span class="side short">Short · Cross</span>
-        </div>
-        <div class="stat-roi up">+17.66%<small>ROI</small></div>
-        <div class="stat-rows">
-          <div class="stat-row"><span>진입가</span><span>77,866.5</span></div>
-          <div class="stat-row"><span>평균 청산가</span><span>77,638.0</span></div>
-        </div>
-        <div class="stat-date">2026.09.13</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-top">
-          <span class="pair">BTCUSDT <em>Futures</em></span>
-          <span class="side short">Short · Cross</span>
-        </div>
-        <div class="stat-roi up">+51.03%<small>ROI</small></div>
-        <div class="stat-rows">
-          <div class="stat-row"><span>진입가</span><span>78,066.1</span></div>
-          <div class="stat-row"><span>평균 청산가</span><span>77,551.6</span></div>
-        </div>
-        <div class="stat-date">2026.09.13</div>
-      </div>
     </div>
   </div>
 </section>
