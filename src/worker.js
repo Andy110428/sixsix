@@ -38,6 +38,8 @@ export default {
     const method = request.method;
 
     try {
+      if (path.startsWith('/api/') && env.DB) await ensureSchema(env);
+
       if (path === '/api/check-uid' && method === 'GET') return await handleCheckUid(request, env);
       if (path === '/api/signup' && method === 'POST') return await handleSignup(request, env);
       if (path === '/api/login' && method === 'POST') return await handleLogin(request, env);
@@ -451,6 +453,66 @@ async function checkGateReferral(uid, env) {
   else if (entry.type === 5) { status = 'not_my_referral'; message = '전용 링크로 가입한 회원이 아닙니다.'; }
 
   return { uid: entry.uid, type: entry.type, status, message };
+}
+
+// ───────────────────────── 스키마 자동 초기화 ─────────────────────────
+// D1 콘솔에 schema-console.sql을 붙여넣는 걸 깜빡해도 첫 API 요청에서
+// 필요한 테이블을 자동으로 만들어준다 (이미 있으면 아무 것도 하지 않음).
+
+let schemaReady = false;
+
+async function ensureSchema(env) {
+  if (schemaReady) return;
+  await env.DB.batch([
+    env.DB.prepare(`CREATE TABLE IF NOT EXISTS users (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      uid TEXT UNIQUE NOT NULL,
+      salt TEXT NOT NULL,
+      password_hash TEXT NOT NULL,
+      created_at INTEGER NOT NULL
+    )`),
+    env.DB.prepare(`CREATE TABLE IF NOT EXISTS sessions (
+      token TEXT PRIMARY KEY,
+      uid TEXT NOT NULL,
+      created_at INTEGER NOT NULL,
+      expires_at INTEGER NOT NULL
+    )`),
+    env.DB.prepare(`CREATE TABLE IF NOT EXISTS admin_sessions (
+      token TEXT PRIMARY KEY,
+      created_at INTEGER NOT NULL,
+      expires_at INTEGER NOT NULL
+    )`),
+    env.DB.prepare(`CREATE TABLE IF NOT EXISTS posts (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      category TEXT NOT NULL,
+      title TEXT NOT NULL,
+      content TEXT NOT NULL,
+      image_data TEXT,
+      author_type TEXT NOT NULL,
+      author_id TEXT NOT NULL,
+      created_at INTEGER NOT NULL
+    )`),
+    env.DB.prepare(`CREATE TABLE IF NOT EXISTS comments (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      post_id INTEGER NOT NULL,
+      author_type TEXT NOT NULL,
+      author_id TEXT NOT NULL,
+      content TEXT NOT NULL,
+      created_at INTEGER NOT NULL
+    )`),
+    env.DB.prepare(`CREATE TABLE IF NOT EXISTS login_attempts (
+      uid TEXT PRIMARY KEY,
+      fail_count INTEGER NOT NULL DEFAULT 0,
+      locked_until INTEGER NOT NULL DEFAULT 0
+    )`),
+  ]);
+  // 예전 DB에 image_data 컬럼 없이 posts 테이블만 있는 경우 보강 (이미 있으면 무시)
+  try {
+    await env.DB.prepare('ALTER TABLE posts ADD COLUMN image_data TEXT').run();
+  } catch (e) {
+    // 컬럼이 이미 있으면 여기로 오는 게 정상
+  }
+  schemaReady = true;
 }
 
 // ───────────────────────── 세션 / 쿠키 ─────────────────────────
