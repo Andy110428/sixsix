@@ -46,12 +46,14 @@ public/admin.html       관리자 전용 (글쓰기/수정/삭제, 회원 비밀
 - UID는 `users.uid`에 `UNIQUE` 제약 — 계정당 UID 1개만 허용
 - 비밀번호는 PBKDF2-SHA256(100,000회 반복)으로 해시 저장
 - 로그인 성공 시 세션 토큰을 `sessions` 테이블에 저장하고 httpOnly 쿠키(`session`)로 발급, 7일 유지
-- 로그인 실패 5회 시 15분 잠금 (`login_attempts` 테이블)
+- 로그인 실패 횟수 제한/잠금 없음 (`login_attempts` 테이블 및 관련 로직 제거함 — 운영자 요청으로 삭제)
 
 **관리자(admin) 인증** — 회원 인증과 완전히 분리
-- `admin.html`에서만 로그인, 아이디/비번은 환경변수(`ADMIN_USERNAME`, `ADMIN_PASSWORD`)로 관리 (DB에 관리자 계정 테이블 없음, 1인 운영 가정)
+- `admin.html`에서 로그인, 아이디/비번은 환경변수(`ADMIN_USERNAME`, `ADMIN_PASSWORD`)로 관리 (DB에 관리자 계정 테이블 없음, 1인 운영 가정)
+- `portal.html`(스터디룸) 로그인 칸에서도 관리자 계정으로 로그인 가능 — 먼저 회원 로그인(`/api/login`)을 시도하고 실패하면 같은 입력값으로 `/api/admin/login`을 한 번 더 시도해서, 성공하면 `admin.html`로 리다이렉트함 (portal.js 안 로그인 핸들러 참고)
 - IP 제한은 도입했다가 제거함 — 운영자 IP가 계속 바뀌어서 적용이 번거로워 아이디/비번 확인만으로 전환 (`ADMIN_ALLOWED_IPS` 환경변수/로직 삭제됨)
 - 세션은 `admin_sessions` 테이블 + `admin_session` 쿠키, 12시간 유지
+- 회원 비밀번호 재설정(관리자 대행): admin.html에서 UID로 먼저 "조회"(`/api/admin/find-user`) → 계정 존재 확인되면 "비밀번호 초기화" 버튼 1번 클릭 → 서버가 임시 비밀번호를 자동 생성해서 화면에 보여줌(`/api/admin/reset-password`, newPassword 생략 시 자동 생성) → 운영자가 그 값을 회원에게 텔레그램으로 전달
 
 ## Gate.io API 연동
 
@@ -64,10 +66,11 @@ public/admin.html       관리자 전용 (글쓰기/수정/삭제, 회원 비밀
 ## 게시판 구조 (posts / comments 테이블)
 
 - 카테고리 4종: `notice`(공지), `lecture`(강의), `question`(질문), `profit`(수익인증)
-- `notice`/`lecture`/`profit`은 관리자만 작성 가능 (`admin.html`에서), `question`은 로그인한 회원 누구나 작성 가능 (`portal.html`에서)
+- `notice`/`lecture`는 관리자만 작성 가능 (`admin.html`에서), `question`/`profit`은 로그인한 회원과 관리자 모두 작성 가능 (`portal.html`/`admin.html` 양쪽에서)
 - 댓글(`comments`)은 회원/관리자 모두 작성 가능, 어느 게시글에나 달 수 있음
-- `profit`(수익인증)에는 이미지 첨부 가능 — 별도 스토리지(R2) 없이 base64로 인코딩해서 `posts.image_data`에 텍스트로 직접 저장 (간단하지만 대용량 이미지엔 안 맞음, 업로드시 약 1.5MB 제한 걸어둠)
+- `profit`(수익인증)에는 이미지 첨부 가능 — 별도 스토리지(R2) 없이 base64로 인코딩해서 `posts.image_data`에 텍스트로 직접 저장 (간단하지만 대용량 이미지엔 안 맞음, 업로드시 약 1.5MB 제한 걸어둠). 회원이 `portal.html`에서 올릴 때도 동일하게 적용
 - 관리자는 게시글 수정/삭제 가능, 댓글 삭제 가능
+- 게시글/댓글 조회 API는 `users` 테이블과 LEFT JOIN해서 `author_nickname`을 같이 내려줌 — 프론트에서 닉네임 있으면 닉네임, 없으면 "UID xxxx"로 표시 (`authorLabel()` 헬퍼, portal.html/admin.html 양쪽에 있음)
 
 ## 아직 안 만든 것 / 다음에 할 일
 
@@ -75,7 +78,7 @@ public/admin.html       관리자 전용 (글쓰기/수정/삭제, 회원 비밀
 2. **이미지 저장 방식 개선**: base64를 D1에 직접 넣는 방식은 임시방편. 이미지가 많아지면 Cloudflare R2(오브젝트 스토리지)로 옮기는 게 맞음
 3. **질문(Q&A)에 대한 관리자 답변 알림**: 지금은 관리자가 admin.html에서 직접 질문 목록을 열어봐야 답변 여부를 알 수 있음. 알림 기능은 없음
 4. **회원 탈퇴 기능**: 아직 없음
-5. **UID 재확인 주기적 검증**: 가입 시점에만 Gate.io 레퍼럴 확인함. 이후 시드를 빼거나 관계가 끊겨도 재검증 안 함
+5. **UID 재확인 주기적 검증**: 가입 시점에만 Gate.io 레퍼럴 확인함. 이후 시드를 빼거나 관계가 끊겨도 코드상 자동 재검증은 안 함 — `requirements.html`에는 "장기간 활동/거래 내역이 없으면 입장이 제한될 수 있다"는 정책 문구를 안내용으로 넣어뒀지만, 실제 제한 처리는 운영자가 수동으로 판단해서 진행해야 함 (자동화된 감지/제재 로직 없음)
 
 ## 환경변수 목록 (Cloudflare 대시보드 Settings > Variables and Secrets)
 

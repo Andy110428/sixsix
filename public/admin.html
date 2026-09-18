@@ -133,12 +133,13 @@
 
   <div class="panel">
     <h2>회원 비밀번호 재설정</h2>
-    <p class="panel-note">회원이 비밀번호를 잊고 문의하면, UID 확인 후 여기서 새 비밀번호를 정해서 알려주세요.</p>
-    <form id="reset-pw-form" class="auth-form">
-      <input type="text" id="reset-uid" placeholder="회원 UID" inputmode="numeric">
-      <input type="text" id="reset-new-pw" placeholder="새 비밀번호 (8자 이상)">
-      <button type="submit" class="btn btn-primary">재설정하기</button>
-    </form>
+    <p class="panel-note">회원이 비밀번호를 잊고 문의하면, UID로 조회한 뒤 버튼 한 번으로 임시 비밀번호를 발급해서 알려주세요.</p>
+    <div style="display:flex; gap:8px;">
+      <input type="text" id="reset-uid" placeholder="회원 UID" inputmode="numeric" style="flex:1;">
+      <button type="button" class="btn btn-ghost" id="reset-find-btn" style="width:auto; white-space:nowrap;">조회</button>
+    </div>
+    <div id="reset-find-result" class="result-box" hidden></div>
+    <button type="button" class="btn btn-primary" id="reset-pw-btn" hidden style="margin-top:10px;">비밀번호 초기화</button>
     <div id="reset-pw-result" class="result-box" hidden></div>
   </div>
 
@@ -232,22 +233,47 @@
     lock();
   });
 
-  var resetPwForm = document.getElementById('reset-pw-form');
+  var resetUidInput = document.getElementById('reset-uid');
+  var resetFindBtn = document.getElementById('reset-find-btn');
+  var resetFindResult = document.getElementById('reset-find-result');
+  var resetPwBtn = document.getElementById('reset-pw-btn');
   var resetPwResult = document.getElementById('reset-pw-result');
+  var foundUid = null;
 
-  resetPwForm.addEventListener('submit', async function(e){
-    e.preventDefault();
-    var uid = document.getElementById('reset-uid').value.trim();
-    var newPw = document.getElementById('reset-new-pw').value;
-    if(!uid || newPw.length < 8){ showResult(resetPwResult, 'UID와 8자 이상 비밀번호를 입력해주세요.', 'warn'); return; }
-    var btn = resetPwForm.querySelector('button'); btn.disabled = true;
+  resetFindBtn.addEventListener('click', async function(){
+    var uid = resetUidInput.value.trim();
+    resetPwBtn.hidden = true;
+    resetPwResult.hidden = true;
+    foundUid = null;
+    if(!uid){ showResult(resetFindResult, 'UID를 입력해주세요.', 'warn'); return; }
+    resetFindBtn.disabled = true;
     try{
-      var res = await fetch('/api/admin/reset-password', { method:'POST', credentials:'same-origin', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ uid: uid, newPassword: newPw }) });
+      var res = await fetch('/api/admin/find-user?uid=' + encodeURIComponent(uid), { credentials:'same-origin' });
       var data = await res.json();
-      if(data.ok){ showResult(resetPwResult, '재설정 완료. 회원에게 새 비밀번호를 알려주세요.', 'good'); resetPwForm.reset(); }
+      if(data.ok && data.found){
+        foundUid = data.uid;
+        showResult(resetFindResult, '찾음 — UID ' + data.uid + (data.nickname ? ' (' + data.nickname + ')' : ''), 'good');
+        resetPwBtn.hidden = false;
+      } else if(data.ok){
+        showResult(resetFindResult, '해당 UID로 가입된 계정이 없습니다.', 'warn');
+      } else {
+        showResult(resetFindResult, data.error || '조회에 실패했습니다.', 'warn');
+      }
+    } catch(e){ showResult(resetFindResult, '오류가 발생했습니다.', 'warn'); }
+    finally{ resetFindBtn.disabled = false; }
+  });
+
+  resetPwBtn.addEventListener('click', async function(){
+    if(!foundUid) return;
+    if(!confirm('UID ' + foundUid + '의 비밀번호를 초기화할까요? 기존 로그인 세션은 모두 만료됩니다.')) return;
+    resetPwBtn.disabled = true;
+    try{
+      var res = await fetch('/api/admin/reset-password', { method:'POST', credentials:'same-origin', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ uid: foundUid }) });
+      var data = await res.json();
+      if(data.ok){ showResult(resetPwResult, '임시 비밀번호: ' + data.newPassword + '  (회원에게 이 비밀번호를 전달해주세요)', 'good'); }
       else showResult(resetPwResult, data.error || '재설정에 실패했습니다.', 'warn');
     } catch(e){ showResult(resetPwResult, '오류가 발생했습니다.', 'warn'); }
-    finally{ btn.disabled = false; }
+    finally{ resetPwBtn.disabled = false; }
   });
 
   postForm.addEventListener('submit', async function(e){
@@ -400,7 +426,7 @@
       if(!data.ok){ box.textContent = '불러오기에 실패했습니다.'; return; }
       var html = '<div class="body">' + escapeHtml(data.post.content) + '</div>';
       data.comments.forEach(function(c){
-        html += '<div class="comment"><div><b>' + (c.author_type === 'admin' ? '관리자' : 'UID ' + c.author_id) + '</b>: ' + escapeHtml(c.content) + '</div>' +
+        html += '<div class="comment"><div><b>' + (c.author_type === 'admin' ? '관리자' : (c.author_nickname ? escapeHtml(c.author_nickname) : 'UID ' + c.author_id)) + '</b>: ' + escapeHtml(c.content) + '</div>' +
           '<button class="del-btn" data-cid="' + c.id + '">삭제</button></div>';
       });
       html += '<form class="comment-reply-form" style="display:flex; gap:8px; margin-top:10px;">' +

@@ -4,14 +4,15 @@
 //   GET  /api/check-uid?uid=...      Gate.io 레퍼럴 확인만 (계정 생성 없음)
 //   POST /api/signup                 회원가입 (Gate.io 검증 후 계정 생성)
 //   POST /api/login                  회원 로그인
-//   GET  /api/me                     로그인 상태 확인
+//   GET  /api/me                     로그인 상태 확인 (닉네임 포함)
 //   POST /api/logout                 로그아웃
 //   POST /api/account/change-password  비밀번호 변경
+//   POST /api/account/nickname       닉네임 설정
 //
 // 게시판 API:
-//   GET  /api/posts?category=notice|lecture|question
+//   GET  /api/posts?category=notice|lecture|question|profit
 //   GET  /api/posts/detail?id=...
-//   POST /api/posts                  글쓰기 (notice/lecture=관리자만, question=회원만)
+//   POST /api/posts                  글쓰기 (notice/lecture=관리자만, question/profit=회원+관리자)
 //   POST /api/posts/delete           글 삭제 (관리자만)
 //   POST /api/comments               댓글 작성 (회원 또는 관리자)
 //
@@ -19,7 +20,8 @@
 //   POST /api/admin/login            아이디/비번 확인
 //   GET  /api/admin/me
 //   POST /api/admin/logout
-//   POST /api/admin/reset-password   회원 비밀번호 강제 재설정 (본인 문의 시 수동 처리)
+//   GET  /api/admin/find-user?uid=...  회원 UID 검색 (비밀번호 재설정 전 조회용)
+//   POST /api/admin/reset-password   회원 비밀번호 재설정 (newPassword 생략 시 임시 비밀번호 자동 생성)
 //
 // 필요한 환경변수(Settings > Variables and Secrets):
 //   GATE_API_KEY, GATE_API_SECRET   Gate.io API
@@ -46,6 +48,8 @@ export default {
       if (path === '/api/me' && method === 'GET') return await handleMe(request, env);
       if (path === '/api/logout' && method === 'POST') return await handleLogout(request, env);
       if (path === '/api/account/change-password' && method === 'POST') return await handleChangePassword(request, env);
+      if (path === '/api/account/nickname' && method === 'POST') return await handleSetNickname(request, env);
+      if (path === '/api/admin/find-user' && method === 'GET') return await handleAdminFindUser(request, env);
       if (path === '/api/admin/reset-password' && method === 'POST') return await handleAdminResetPassword(request, env);
 
       if (path === '/api/posts' && method === 'GET') return await handleListPosts(request, env);
@@ -122,34 +126,22 @@ async function handleLogin(request, env) {
   const password = body.password || '';
   if (!uid || !password) return json({ ok: false, error: 'UID와 비밀번호를 입력해주세요.' }, 400);
 
-  const now = Date.now();
-  const attempt = await env.DB.prepare('SELECT * FROM login_attempts WHERE uid = ?').bind(uid).first();
-  if (attempt && attempt.locked_until > now) {
-    const minutes = Math.ceil((attempt.locked_until - now) / 60000);
-    return json({ ok: false, error: `너무 많은 시도가 있었습니다. ${minutes}분 후 다시 시도해주세요.` }, 429);
-  }
-
   const user = await env.DB.prepare('SELECT * FROM users WHERE uid = ?').bind(uid).first();
   const { hash } = user ? await hashPassword(password, user.salt) : { hash: null };
 
   if (!user || hash !== user.password_hash) {
-    const failCount = (attempt ? attempt.fail_count : 0) + 1;
-    const lockedUntil = failCount >= 5 ? now + 15 * 60 * 1000 : 0;
-    await env.DB.prepare(
-      'INSERT INTO login_attempts (uid, fail_count, locked_until) VALUES (?, ?, ?) ' +
-      'ON CONFLICT(uid) DO UPDATE SET fail_count = ?, locked_until = ?'
-    ).bind(uid, failCount, lockedUntil, failCount, lockedUntil).run();
     return json({ ok: false, error: 'UID 또는 비밀번호가 올바르지 않습니다.' }, 401);
   }
 
-  await env.DB.prepare('DELETE FROM login_attempts WHERE uid = ?').bind(uid).run();
   const token = await createSession(env, uid);
-  return json({ ok: true, uid }, 200, { 'Set-Cookie': sessionCookie(token) });
+  return json({ ok: true, uid, nickname: user.nickname || null }, 200, { 'Set-Cookie': sessionCookie(token) });
 }
 
 async function handleMe(request, env) {
   const uid = await getMemberUid(request, env);
-  return uid ? json({ ok: true, uid }) : json({ ok: false });
+  if (!uid) return json({ ok: false });
+  const user = await env.DB.prepare('SELECT nickname FROM users WHERE uid = ?').bind(uid).first();
+  return json({ ok: true, uid, nickname: (user && user.nickname) || null });
 }
 
 async function handleLogout(request, env) {
@@ -176,19 +168,50 @@ async function handleChangePassword(request, env) {
   return json({ ok: true });
 }
 
+async function handleSetNickname(request, env) {
+  const uid = await getMemberUid(request, env);
+  if (!uid) return json({ ok: false, error: '로그인이 필요합니다.' }, 401);
+
+  const body = await safeJson(request);
+  const nickname = (body.nickname || '').trim();
+  if (nickname.length < 1 || nickname.length > 20) {
+    return json({ ok: false, error: '닉네임은 1~20자로 입력해주세요.' }, 400);
+  }
+
+  await env.DB.prepare('UPDATE users SET nickname = ? WHERE uid = ?').bind(nickname, uid).run();
+  return json({ ok: true, nickname });
+}
+
+// 관리자가 회원 UID를 조회 (비밀번호 재설정 전 확인용)
+async function handleAdminFindUser(request, env) {
+  const isAdmin = await getIsAdmin(request, env);
+  if (!isAdmin) return json({ ok: false, error: '관리자만 사용할 수 있습니다.' }, 403);
+
+  const url = new URL(request.url);
+  const uid = (url.searchParams.get('uid') || '').trim();
+  if (!uid) return json({ ok: false, error: 'UID를 입력해주세요.' }, 400);
+
+  const user = await env.DB.prepare('SELECT uid, nickname, created_at FROM users WHERE uid = ?').bind(uid).first();
+  if (!user) return json({ ok: true, found: false });
+  return json({ ok: true, found: true, uid: user.uid, nickname: user.nickname || null, created_at: user.created_at });
+}
+
 // 관리자가 회원 UID의 비밀번호를 대신 재설정 (비밀번호 찾기 - 수동 처리)
+// newPassword를 안 보내면 임시 비밀번호를 자동 생성해서 응답으로 돌려준다.
 async function handleAdminResetPassword(request, env) {
   const isAdmin = await getIsAdmin(request, env);
   if (!isAdmin) return json({ ok: false, error: '관리자만 사용할 수 있습니다.' }, 403);
 
   const body = await safeJson(request);
   const uid = (body.uid || '').trim();
-  const newPassword = body.newPassword || '';
+  let newPassword = body.newPassword || '';
   if (!uid) return json({ ok: false, error: 'UID를 입력해주세요.' }, 400);
-  if (newPassword.length < 8) return json({ ok: false, error: '새 비밀번호는 8자 이상이어야 합니다.' }, 400);
+  if (newPassword && newPassword.length < 8) return json({ ok: false, error: '새 비밀번호는 8자 이상이어야 합니다.' }, 400);
 
   const user = await env.DB.prepare('SELECT id FROM users WHERE uid = ?').bind(uid).first();
   if (!user) return json({ ok: false, error: '해당 UID로 가입된 계정이 없습니다.' }, 404);
+
+  if (!newPassword) newPassword = generateTempPassword();
 
   const { salt, hash } = await hashPassword(newPassword);
   await env.DB.prepare('UPDATE users SET salt = ?, password_hash = ? WHERE uid = ?').bind(salt, hash, uid).run();
@@ -196,13 +219,21 @@ async function handleAdminResetPassword(request, env) {
   // 재설정되면 기존 로그인 세션은 모두 만료시켜 안전하게 처리
   await env.DB.prepare('DELETE FROM sessions WHERE uid = ?').bind(uid).run();
 
-  return json({ ok: true });
+  return json({ ok: true, newPassword });
+}
+
+function generateTempPassword() {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
+  const bytes = crypto.getRandomValues(new Uint8Array(10));
+  let out = '';
+  for (let i = 0; i < bytes.length; i++) out += chars[bytes[i] % chars.length];
+  return out;
 }
 
 // ───────────────────────── 게시판 ─────────────────────────
 
 const ALLOWED_CATEGORIES = ['notice', 'lecture', 'question', 'profit'];
-const ADMIN_ONLY_CATEGORIES = ['notice', 'lecture', 'profit'];
+const ADMIN_ONLY_CATEGORIES = ['notice', 'lecture'];
 
 async function handleListPosts(request, env) {
   const url = new URL(request.url);
@@ -211,7 +242,9 @@ async function handleListPosts(request, env) {
 
   const order = category === 'lecture' ? 'ASC' : 'DESC';
   const rows = await env.DB.prepare(
-    `SELECT id, title, author_type, author_id, created_at FROM posts WHERE category = ? ORDER BY id ${order} LIMIT 100`
+    `SELECT posts.id, posts.title, posts.author_type, posts.author_id, posts.created_at, users.nickname AS author_nickname
+     FROM posts LEFT JOIN users ON users.uid = posts.author_id
+     WHERE posts.category = ? ORDER BY posts.id ${order} LIMIT 100`
   ).bind(category).all();
 
   return json({ ok: true, posts: rows.results || [] });
@@ -222,11 +255,17 @@ async function handlePostDetail(request, env) {
   const id = Number(url.searchParams.get('id'));
   if (!id) return json({ ok: false, error: '잘못된 요청입니다.' }, 400);
 
-  const post = await env.DB.prepare('SELECT * FROM posts WHERE id = ?').bind(id).first();
+  const post = await env.DB.prepare(
+    `SELECT posts.*, users.nickname AS author_nickname
+     FROM posts LEFT JOIN users ON users.uid = posts.author_id
+     WHERE posts.id = ?`
+  ).bind(id).first();
   if (!post) return json({ ok: false, error: '게시글을 찾을 수 없습니다.' }, 404);
 
   const comments = await env.DB.prepare(
-    'SELECT * FROM comments WHERE post_id = ? ORDER BY id ASC LIMIT 500'
+    `SELECT comments.*, users.nickname AS author_nickname
+     FROM comments LEFT JOIN users ON users.uid = comments.author_id
+     WHERE comments.post_id = ? ORDER BY comments.id ASC LIMIT 500`
   ).bind(id).all();
 
   return json({ ok: true, post, comments: comments.results || [] });
@@ -244,10 +283,13 @@ async function handleCreatePost(request, env) {
   if (imageData && imageData.length > 2_000_000) return json({ ok: false, error: '이미지 용량이 너무 큽니다. (최대 약 1.5MB)' }, 400);
 
   let authorType, authorId;
+  const isAdmin = await getIsAdmin(request, env);
 
   if (ADMIN_ONLY_CATEGORIES.includes(category)) {
-    const isAdmin = await getIsAdmin(request, env);
     if (!isAdmin) return json({ ok: false, error: '관리자만 작성할 수 있습니다.' }, 403);
+    authorType = 'admin';
+    authorId = 'admin';
+  } else if (isAdmin) {
     authorType = 'admin';
     authorId = 'admin';
   } else {
@@ -469,6 +511,7 @@ async function ensureSchema(env) {
       uid TEXT UNIQUE NOT NULL,
       salt TEXT NOT NULL,
       password_hash TEXT NOT NULL,
+      nickname TEXT,
       created_at INTEGER NOT NULL
     )`),
     env.DB.prepare(`CREATE TABLE IF NOT EXISTS sessions (
@@ -500,15 +543,15 @@ async function ensureSchema(env) {
       content TEXT NOT NULL,
       created_at INTEGER NOT NULL
     )`),
-    env.DB.prepare(`CREATE TABLE IF NOT EXISTS login_attempts (
-      uid TEXT PRIMARY KEY,
-      fail_count INTEGER NOT NULL DEFAULT 0,
-      locked_until INTEGER NOT NULL DEFAULT 0
-    )`),
   ]);
-  // 예전 DB에 image_data 컬럼 없이 posts 테이블만 있는 경우 보강 (이미 있으면 무시)
+  // 예전 DB에 없던 컬럼들 보강 (이미 있으면 무시)
   try {
     await env.DB.prepare('ALTER TABLE posts ADD COLUMN image_data TEXT').run();
+  } catch (e) {
+    // 컬럼이 이미 있으면 여기로 오는 게 정상
+  }
+  try {
+    await env.DB.prepare('ALTER TABLE users ADD COLUMN nickname TEXT').run();
   } catch (e) {
     // 컬럼이 이미 있으면 여기로 오는 게 정상
   }

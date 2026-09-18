@@ -6,6 +6,7 @@ CREATE TABLE IF NOT EXISTS users (
   uid TEXT UNIQUE NOT NULL,          -- Gate.io UID, 계정당 1개만 (중복 가입 방지)
   salt TEXT NOT NULL,
   password_hash TEXT NOT NULL,
+  nickname TEXT,                     -- 회원이 직접 설정하는 닉네임 (선택, 없으면 UID로 표시)
   created_at INTEGER NOT NULL
 );
 
@@ -24,7 +25,7 @@ CREATE TABLE IF NOT EXISTS admin_sessions (
 );
 
 -- 게시글: 공지(notice) · 강의(lecture) · 질문(question) · 수익인증(profit)
--- 공지/강의/수익인증은 관리자만 작성, 질문은 로그인한 회원이면 누구나 작성
+-- 공지/강의는 관리자만 작성, 질문/수익인증은 로그인한 회원이면 누구나 작성
 CREATE TABLE IF NOT EXISTS posts (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   category TEXT NOT NULL,
@@ -44,12 +45,5 @@ CREATE TABLE IF NOT EXISTS comments (
   author_id TEXT NOT NULL,
   content TEXT NOT NULL,
   created_at INTEGER NOT NULL
-);
-
--- 로그인 실패 잠금 (무차별 대입 방지)
-CREATE TABLE IF NOT EXISTS login_attempts (
-  uid TEXT PRIMARY KEY,
-  fail_count INTEGER NOT NULL DEFAULT 0,
-  locked_until INTEGER NOT NULL DEFAULT 0
 );
 

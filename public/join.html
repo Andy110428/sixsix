@@ -3,214 +3,835 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>입장 절차 — TEAM SIXX</title>
+<title>입장 안내 — TEAM SIXX</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
+
   :root{
-    --bg:#0a0908; --bg-soft:#141210; --panel:#18140f; --panel-2:#1e1811;
-    --line:rgba(255,255,255,0.08); --line-soft:rgba(255,255,255,0.05);
-    --text:#f5f0e8; --text-dim:#a89d8f; --text-faint:#6b6156;
-    --cyan:#ff7a29; --violet:#c2540f; --amber:#ffb648; --danger:#ff5c7a;
-    --radius-lg:18px; --radius-md:12px; --radius-sm:8px;
+    --bg: #06080d;
+    --bg-soft: #0b0f18;
+    --panel: #0e131d;
+    --line: rgba(255,255,255,0.08);
+    --text: #eef1f7;
+    --text-dim: #93a0b4;
+    --cyan: #ff7a29;
+    --violet: #c2540f;
+    --amber: #ffb648;
+    --danger: #ff5c7a;
   }
-  *{ box-sizing:border-box; }
+
+  *{ box-sizing: border-box; }
   [hidden]{ display:none !important; }
-  html{ scroll-behavior:smooth; }
-  body{ margin:0; background:var(--bg); color:var(--text); font-family:'Inter',sans-serif; line-height:1.6; -webkit-font-smoothing:antialiased; }
-  h1,h2,h3{ font-family:'Space Grotesk',sans-serif; margin:0; letter-spacing:-0.01em; }
-  .mono{ font-family:'IBM Plex Mono',monospace; }
-  a{ color:inherit; text-decoration:none; }
-  ::selection{ background:rgba(255,122,41,0.28); color:#fff; }
-  .bg-grid{ position:fixed; inset:0; z-index:-2; background-image:linear-gradient(rgba(255,255,255,0.035) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.035) 1px,transparent 1px); background-size:64px 64px; mask-image:radial-gradient(ellipse 80% 55% at 50% 0%, black 40%, transparent 90%); }
-  .bg-glow{ position:fixed; z-index:-1; width:520px; height:520px; top:-200px; left:-140px; filter:blur(130px); opacity:0.25; border-radius:50%; background:var(--cyan); pointer-events:none; }
-  .wrap{ max-width:720px; margin:0 auto; padding:0 24px; }
+  html{ scroll-behavior: smooth; }
+  body{
+    margin:0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+  h1,h2,h3{
+    font-family: 'Space Grotesk', sans-serif;
+    margin: 0;
+    letter-spacing: -0.01em;
+  }
+  .mono{ font-family: 'IBM Plex Mono', monospace; }
+  a{ color: inherit; text-decoration: none; }
+  img{ max-width:100%; display:block; }
 
-  header{ position:sticky; top:0; z-index:50; backdrop-filter:blur(14px); background:rgba(10,9,8,0.75); border-bottom:1px solid var(--line); }
-  .nav{ display:flex; align-items:center; justify-content:space-between; padding:16px 24px; max-width:720px; margin:0 auto; }
-  .brand{ display:flex; align-items:center; gap:10px; font-weight:700; font-size:1.05rem; }
-  .brand .dot{ width:9px; height:9px; border-radius:50%; background:var(--cyan); box-shadow:0 0 10px var(--cyan),0 0 22px var(--cyan); }
+  /* background grid + glow */
+  .bg-grid{
+    position: fixed;
+    inset: 0;
+    z-index: -2;
+    background-image:
+      linear-gradient(rgba(255,255,255,0.035) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.035) 1px, transparent 1px);
+    background-size: 64px 64px;
+    mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, black 40%, transparent 90%);
+  }
+  .bg-glow{
+    position: fixed;
+    z-index: -1;
+    filter: blur(120px);
+    opacity: 0.35;
+    border-radius: 50%;
+    pointer-events: none;
+  }
+  .glow-1{ width: 560px; height: 560px; top: -180px; left: -120px; background: var(--cyan); }
+  .glow-2{ width: 640px; height: 640px; top: 20%; right: -220px; background: var(--violet); opacity: 0.28; }
 
-  .btn{ display:inline-flex; align-items:center; justify-content:center; gap:8px; padding:12px 20px; border-radius:10px; font-weight:600; font-size:0.9rem; cursor:pointer; border:1px solid var(--line); transition:transform .15s ease, box-shadow .15s ease, opacity .15s ease; }
-  .btn:hover{ transform:translateY(-1px); }
-  .btn-primary{ background:linear-gradient(135deg,var(--cyan),#ffb056); color:#170d03; border:none; box-shadow:0 0 0 1px rgba(255,122,41,0.2),0 10px 28px -10px rgba(255,122,41,0.6); width:100%; }
-  .btn-primary:disabled{ opacity:0.55; cursor:default; transform:none; box-shadow:none; }
-  .btn-ghost{ background:rgba(255,255,255,0.03); color:var(--text); }
+  .wrap{ max-width: 1080px; margin: 0 auto; padding: 0 24px; }
 
-  main{ padding:44px 0 70px; }
-  .page-head{ margin-bottom:32px; }
-  .page-head .kicker{ font-family:'IBM Plex Mono',monospace; font-size:0.76rem; color:var(--violet); letter-spacing:0.08em; display:block; margin-bottom:8px; }
-  .page-head h1{ font-size:1.8rem; margin-bottom:10px; }
-  .page-head p{ color:var(--text-dim); font-size:0.92rem; margin:0; }
+  /* nav */
+  header{
+    position: sticky; top: 0; z-index: 50;
+    backdrop-filter: blur(14px);
+    background: rgba(6,8,13,0.7);
+    border-bottom: 1px solid var(--line);
+  }
+  .nav{
+    display:flex; align-items:center; justify-content:space-between;
+    padding: 16px 24px; max-width: 1080px; margin: 0 auto;
+  }
+  .brand{
+    display:flex; align-items:center; gap:10px;
+    font-weight: 700; font-size: 1.05rem;
+  }
+  .brand .dot{
+    width:9px; height:9px; border-radius:50%;
+    background: var(--cyan);
+    box-shadow: 0 0 10px var(--cyan), 0 0 22px var(--cyan);
+  }
+  .nav-cta{
+    display:flex; gap:10px;
+  }
+  .btn{
+    display:inline-flex; align-items:center; justify-content:center; gap:8px;
+    padding: 10px 18px;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 0.92rem;
+    cursor: pointer;
+    border: 1px solid var(--line);
+    transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease;
+    white-space: nowrap;
+  }
+  .btn:hover{ transform: translateY(-1px); }
+  .btn-primary{
+    background: linear-gradient(135deg, var(--cyan), #ffb056);
+    color: #170d03;
+    border: none;
+    box-shadow: 0 0 0 1px rgba(255,122,41,0.2), 0 8px 24px -8px rgba(255,122,41,0.55);
+  }
+  .btn-primary:hover{ box-shadow: 0 0 0 1px rgba(255,122,41,0.35), 0 10px 30px -6px rgba(255,122,41,0.75); }
+  .btn-ghost{
+    background: rgba(255,255,255,0.03);
+    color: var(--text);
+  }
+  .btn-ghost:hover{ border-color: rgba(255,255,255,0.25); }
+  .btn-violet{
+    background: linear-gradient(135deg, #1c1c1c, #0d0d0d);
+    color: var(--cyan);
+    border: 1px solid rgba(255,122,41,0.4);
+    box-shadow: 0 0 0 1px rgba(255,122,41,0.12), 0 8px 24px -8px rgba(0,0,0,0.6);
+  }
+  .btn-block{ width:100%; padding: 14px 18px; font-size: 1rem; }
 
-  .step{ background:var(--panel); border:1px solid var(--line); border-radius:var(--radius-lg); padding:26px 28px; margin-bottom:16px; position:relative; transition:opacity .2s ease; }
-  .step.pending{ opacity:0.5; }
-  .step .step-head{ display:flex; align-items:center; gap:14px; margin-bottom:14px; }
-  .step .num{ font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:1.1rem; color:var(--cyan); width:34px; height:34px; border-radius:50%; border:1px solid rgba(255,122,41,0.35); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
-  .step.done .num{ background:var(--cyan); color:#170d03; border-color:var(--cyan); }
-  .step h3{ font-size:1.02rem; }
-  .step p.desc{ color:var(--text-dim); font-size:0.87rem; margin:0 0 16px; }
+  /* hero */
+  .hero{
+    padding: 96px 0 64px;
+  }
+  .eyebrow{
+    display:inline-flex; align-items:center; gap:8px;
+    padding: 6px 12px;
+    border: 1px solid rgba(255,122,41,0.3);
+    border-radius: 999px;
+    color: var(--cyan);
+    font-size: 0.82rem;
+    font-family: 'IBM Plex Mono', monospace;
+    background: rgba(255,122,41,0.06);
+    margin-bottom: 24px;
+  }
+  .eyebrow .blink{
+    width:6px; height:6px; border-radius:50%; background: var(--cyan);
+    box-shadow: 0 0 8px var(--cyan);
+    animation: blink 1.6s ease-in-out infinite;
+  }
+  @keyframes blink{ 0%,100%{ opacity:1; } 50%{ opacity:0.25; } }
 
-  .auth-form{ display:flex; flex-direction:column; gap:10px; }
-  input{ padding:12px 14px; border-radius:8px; border:1px solid var(--line); background:var(--bg-soft); color:var(--text); font-family:'IBM Plex Mono',monospace; font-size:0.92rem; width:100%; }
-  input:focus{ outline:none; border-color:rgba(255,122,41,0.5); box-shadow:0 0 0 3px rgba(255,122,41,0.12); }
-  input::placeholder{ color:var(--text-faint); }
-  .row{ display:flex; gap:8px; }
-  .row input{ flex:1; }
-  .row .btn{ width:auto; white-space:nowrap; }
+  .hero h1{
+    font-size: clamp(2.1rem, 5vw, 3.4rem);
+    font-weight: 700;
+    max-width: 760px;
+    line-height: 1.18;
+  }
+  .hero h1 .grad{
+    background: linear-gradient(120deg, var(--cyan), var(--violet));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .hero p.sub{
+    margin-top: 22px;
+    color: var(--text-dim);
+    max-width: 560px;
+    font-size: 1.05rem;
+  }
+  .hero-actions{
+    margin-top: 36px;
+    display:flex; flex-wrap: wrap; gap: 14px;
+  }
+  .hero-actions .btn{ padding: 14px 24px; font-size: 0.98rem; }
 
-  .result-box{ margin-top:14px; padding:12px 14px; border-radius:8px; font-size:0.85rem; font-family:'IBM Plex Mono',monospace; }
-  .result-box.good{ background:rgba(255,122,41,0.1); border:1px solid rgba(255,122,41,0.35); color:var(--cyan); }
-  .result-box.warn{ background:rgba(255,92,122,0.1); border:1px solid rgba(255,92,122,0.35); color:var(--danger); }
-  .result-box.pending{ background:rgba(255,255,255,0.04); border:1px solid var(--line); color:var(--text-dim); }
+  .ticker{
+    margin-top: 56px;
+    border-top: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+    padding: 14px 0;
+    overflow: hidden;
+    white-space: nowrap;
+  }
+  .ticker-track{
+    display:inline-flex; gap: 48px;
+    animation: scroll 22s linear infinite;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.85rem;
+    color: var(--text-dim);
+  }
+  .ticker-track span b{ color: var(--cyan); font-weight: 500; }
+  .ticker-track span.down b{ color: var(--danger); }
+  @keyframes scroll{ from{ transform: translateX(0);} to{ transform: translateX(-50%);} }
 
-  .gate-help{ margin-top:14px; font-size:0.82rem; color:var(--text-dim); }
-  .gate-help a{ color:var(--cyan); font-weight:600; }
+  /* section shared */
+  section{ padding: 88px 0; scroll-margin-top: 90px; }
+  .section-head{ max-width: 620px; margin-bottom: 48px; }
+  .section-head .kicker{
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.82rem;
+    color: var(--violet);
+    margin-bottom: 12px;
+    display:block;
+  }
+  .section-head h2{
+    font-size: clamp(1.6rem, 3.4vw, 2.2rem);
+    font-weight: 700;
+  }
+  .section-head p{ color: var(--text-dim); margin-top: 14px; font-size: 1rem; }
 
-  footer{ border-top:1px solid var(--line); padding:32px 0; }
-  .footer-row{ display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px; }
-  .footer-row .disclaimer{ color:var(--text-faint); font-size:0.8rem; }
+  /* story */
+  .story-grid{
+    display:grid; grid-template-columns: 1fr 1fr; gap: 40px;
+    align-items: start;
+  }
+  .story-card{
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 28px;
+  }
+  .story-card h3{ font-size: 1.1rem; margin-bottom: 12px; }
+  .story-card p{ color: var(--text-dim); font-size: 0.96rem; }
+  .story-card.old{ opacity: 0.75; }
+  .story-card.old h3{ color: var(--text-dim); text-decoration: line-through; text-decoration-color: var(--danger); text-decoration-thickness: 1.5px; }
+  .story-card.new{ border-color: rgba(255,122,41,0.35); box-shadow: 0 0 0 1px rgba(255,122,41,0.08) inset; }
+  .story-card.new h3{ color: var(--cyan); }
+
+  /* requirements */
+  .req-grid{
+    display:grid; grid-template-columns: 1fr 1fr; gap: 24px;
+  }
+  .req-card{
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    padding: 32px;
+    position: relative;
+    overflow: hidden;
+  }
+  .req-card::before{
+    content:'';
+    position:absolute; top:-40%; right:-30%;
+    width: 220px; height: 220px;
+    background: radial-gradient(circle, rgba(255,122,41,0.14), transparent 70%);
+  }
+  .req-card .num{
+    font-family: 'IBM Plex Mono', monospace;
+    color: var(--cyan);
+    font-size: 0.85rem;
+    margin-bottom: 16px;
+    display:block;
+  }
+  .req-card h3{ font-size: 1.25rem; margin-bottom: 10px; }
+  .req-card p{ color: var(--text-dim); font-size: 0.95rem; }
+  .req-card .value{
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 2rem;
+    font-weight: 700;
+    margin: 14px 0 6px;
+    color: var(--text);
+  }
+  .req-card .value small{ font-size: 1rem; color: var(--text-dim); font-weight: 500; }
+
+  /* proof */
+  .proof-grid{
+    display:grid; grid-template-columns: 1fr 1fr; gap: 24px;
+  }
+  .proof-card{
+    position: relative;
+    border-radius: 16px;
+    overflow: hidden;
+    border: 1px solid var(--line);
+    background: var(--panel);
+  }
+  .proof-card img{ width: 100%; display:block; }
+  .proof-roi{
+    position: absolute;
+    left: 16px; bottom: 16px;
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 700;
+    font-size: 1.5rem;
+    padding: 8px 16px;
+    border-radius: 10px;
+    background: rgba(6,8,13,0.72);
+    backdrop-filter: blur(6px);
+    border: 1px solid rgba(255,122,41,0.35);
+  }
+  .proof-roi.up{ color: var(--cyan); }
+  .proof-roi span{
+    display:block;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.68rem;
+    font-weight: 400;
+    color: var(--text-dim);
+    letter-spacing: 0.04em;
+  }
+
+  /* reviews */
+  .review-grid{
+    display:grid; grid-template-columns: repeat(3, 1fr); gap: 20px;
+  }
+  .review-card{
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 26px;
+    display:flex; flex-direction: column; justify-content: space-between;
+  }
+  .review-card .quote{
+    font-size: 0.95rem;
+    color: var(--text);
+    margin-bottom: 20px;
+  }
+  .review-card .reviewer{
+    display:flex; align-items:center; gap: 10px;
+    color: var(--text-dim);
+    font-size: 0.85rem;
+  }
+  .review-card .avatar{
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    display:flex; align-items:center; justify-content:center;
+    background: linear-gradient(135deg, var(--cyan), var(--violet));
+    color: #170d03;
+    font-weight: 700;
+    font-size: 0.8rem;
+    flex-shrink: 0;
+  }
+
+  /* steps */
+  .steps{
+    counter-reset: step;
+    display:flex; flex-direction: column;
+  }
+  .step{
+    display:grid; grid-template-columns: 56px 1fr; gap: 20px;
+    padding: 28px 0;
+    border-top: 1px solid var(--line);
+  }
+  .step:last-child{ border-bottom: 1px solid var(--line); }
+  .step .idx{
+    font-family: 'IBM Plex Mono', monospace;
+    color: var(--violet);
+    font-size: 1.1rem;
+    padding-top: 2px;
+  }
+  .step h3{ font-size: 1.08rem; margin-bottom: 8px; }
+  .step p{ color: var(--text-dim); font-size: 0.95rem; }
+  .step .btn{ margin-top: 14px; }
+  .steps-compact .step{ padding: 18px 0; align-items: center; }
+  .steps-compact .step h3{ margin-bottom: 0; font-size: 1rem; font-weight: 600; }
+
+  /* signup CTA panel */
+  .cta-panel{
+    background: linear-gradient(160deg, rgba(255,122,41,0.08), rgba(194,84,15,0.06));
+    border: 1px solid rgba(255,122,41,0.25);
+    border-radius: 20px;
+    padding: 48px;
+    display:grid;
+    grid-template-columns: 1.2fr 1fr;
+    gap: 40px;
+    align-items: center;
+  }
+  .cta-panel h2{ font-size: 1.7rem; margin-bottom: 14px; }
+  .cta-panel p{ color: var(--text-dim); }
+  .bonus-tag{
+    display:inline-flex; align-items:center; gap:8px;
+    padding: 6px 14px;
+    border-radius: 999px;
+    background: rgba(255,122,41,0.08);
+    border: 1px solid rgba(255,122,41,0.35);
+    color: var(--cyan);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.82rem;
+    margin-bottom: 18px;
+  }
+  .cta-panel .side{
+    background: var(--bg-soft);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 24px;
+  }
+  .cta-panel .side .row{
+    display:flex; justify-content: space-between;
+    padding: 10px 0;
+    border-bottom: 1px dashed var(--line);
+    font-size: 0.92rem;
+  }
+  .cta-panel .side .row:last-of-type{ border-bottom: none; }
+  .cta-panel .side .row span:first-child{ color: var(--text-dim); }
+  .cta-panel .side .row span:last-child{ font-family:'IBM Plex Mono', monospace; color: var(--cyan); }
+
+  /* contact */
+  .contact-grid{
+    display:grid; grid-template-columns: 1fr 1fr; gap: 24px;
+  }
+  .contact-card{
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    padding: 32px;
+  }
+  .contact-card .icon{
+    width: 44px; height: 44px;
+    border-radius: 10px;
+    display:flex; align-items:center; justify-content:center;
+    margin-bottom: 18px;
+    font-size: 1.3rem;
+  }
+  .contact-card.channel .icon{ background: rgba(255,122,41,0.12); color: var(--cyan); }
+  .contact-card.support .icon{ background: rgba(194,84,15,0.14); color: var(--violet); }
+  .contact-card h3{ font-size: 1.15rem; margin-bottom: 10px; }
+  .contact-card p{ color: var(--text-dim); font-size: 0.95rem; margin-bottom: 20px; }
+
+  /* footer */
+  footer{
+    border-top: 1px solid var(--line);
+    padding: 40px 0;
+  }
+  .footer-row{
+    display:flex; justify-content: space-between; align-items:center;
+    flex-wrap: wrap; gap: 16px;
+  }
+  .footer-row .fbrand{ font-weight: 700; }
+  .footer-row .disclaimer{ color: var(--text-dim); font-size: 0.82rem; max-width: 520px; }
+
+  /* floating telegram button */
+  .float-tg{
+    position: fixed;
+    right: 22px; bottom: 22px;
+    z-index: 60;
+    width: 58px; height: 58px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--cyan), #ffb056);
+    display:flex; align-items:center; justify-content:center;
+    box-shadow: 0 8px 30px -6px rgba(255,122,41,0.7);
+    font-size: 1.5rem;
+    color: #170d03;
+    transition: transform .15s ease;
+  }
+  .float-tg:hover{ transform: scale(1.08); }
+
+  @media (max-width: 860px){
+    .story-grid, .req-grid, .contact-grid, .proof-grid, .review-grid{ grid-template-columns: 1fr; }
+    .cta-panel{ grid-template-columns: 1fr; padding: 32px 20px; }
+    .nav-cta .btn span.txt{ display:none; }
+    section{ padding: 64px 0; }
+  }
+
+  /* header menu (hamburger + dropdown) */
+  .nav-menu{ position: relative; }
+  .menu-btn{
+    width: 42px; height: 42px;
+    border-radius: 8px;
+    border: 1px solid var(--line);
+    background: rgba(255,255,255,0.03);
+    display:flex; flex-direction: column; align-items:center; justify-content:center;
+    gap: 5px;
+    cursor: pointer;
+  }
+  .menu-btn:hover{ border-color: rgba(255,255,255,0.25); }
+  .menu-btn span{
+    display:block; width: 18px; height: 2px;
+    background: var(--text);
+    border-radius: 2px;
+    transition: transform .15s ease, opacity .15s ease;
+  }
+  .menu-btn[aria-expanded="true"] span:nth-child(1){ transform: translateY(7px) rotate(45deg); }
+  .menu-btn[aria-expanded="true"] span:nth-child(2){ opacity: 0; }
+  .menu-btn[aria-expanded="true"] span:nth-child(3){ transform: translateY(-7px) rotate(-45deg); }
+  .menu-dropdown{
+    position: absolute; top: calc(100% + 10px); right: 0;
+    min-width: 220px;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 8px;
+    box-shadow: 0 16px 40px -12px rgba(0,0,0,0.6);
+    opacity: 0; visibility: hidden; transform: translateY(-6px);
+    transition: opacity .15s ease, transform .15s ease, visibility .15s;
+    z-index: 70;
+  }
+  .menu-dropdown.open{ opacity: 1; visibility: visible; transform: translateY(0); }
+  .menu-dropdown a{
+    display:block;
+    padding: 10px 12px;
+    border-radius: 8px;
+    font-size: 0.92rem;
+    color: var(--text);
+  }
+  .menu-dropdown a:hover{ background: rgba(255,255,255,0.05); }
+  .menu-dropdown .menu-divider{
+    height: 1px; background: var(--line); margin: 6px 4px;
+  }
+  .menu-dropdown .menu-cta{
+    color: var(--cyan);
+    font-weight: 600;
+  }
+  .menu-dropdown .menu-member{
+    color: var(--text);
+    font-weight: 600;
+    background: rgba(255,122,41,0.08);
+  }
+</style>
+<style>
+  .breadcrumb{
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.82rem;
+    color: var(--text-dim);
+    margin-bottom: 22px;
+  }
+  .breadcrumb a{ color: var(--cyan); }
+  .join-hero{ padding: 64px 0 40px; }
+  .join-hero h1{ font-size: clamp(1.9rem, 4.4vw, 2.6rem); max-width: 640px; }
+  .join-hero p.sub{ color: var(--text-dim); max-width: 560px; margin-top: 18px; }
+
+  .full-step{
+    display:grid; grid-template-columns: 72px 1fr; gap: 24px;
+    padding: 36px 0;
+    border-top: 1px solid var(--line);
+  }
+  .full-step:last-child{ border-bottom: 1px solid var(--line); }
+  .full-step .idx{
+    width: 48px; height: 48px;
+    border-radius: 12px;
+    display:flex; align-items:center; justify-content:center;
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 700;
+    font-size: 1.2rem;
+    background: rgba(255,122,41,0.08);
+    border: 1px solid rgba(255,122,41,0.3);
+    color: var(--cyan);
+  }
+  .full-step h3{ font-size: 1.2rem; margin-bottom: 10px; }
+  .full-step p{ color: var(--text-dim); }
+  .full-step .checklist{ list-style: none; padding:0; margin: 16px 0 0; }
+  .full-step .checklist li{
+    display:flex; gap: 10px; align-items:flex-start;
+    color: var(--text-dim);
+    font-size: 0.92rem;
+    margin-bottom: 8px;
+  }
+  .full-step .checklist li::before{
+    content: '—';
+    color: var(--violet);
+    flex-shrink: 0;
+  }
+  .full-step .btn{ margin-top: 18px; }
+
+  .future-panel{
+    margin-top: 56px;
+    border: 1px dashed rgba(194,84,15,0.4);
+    border-radius: 16px;
+    padding: 32px;
+    background: rgba(194,84,15,0.05);
+    display:flex; justify-content: space-between; align-items:center; gap: 24px;
+    flex-wrap: wrap;
+  }
+  .future-panel h3{ font-size: 1.1rem; margin-bottom: 8px; }
+  .future-panel p{ color: var(--text-dim); font-size: 0.92rem; max-width: 520px; }
+  .future-tag{
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.78rem;
+    color: var(--violet);
+    border: 1px solid rgba(194,84,15,0.4);
+    padding: 5px 12px;
+    border-radius: 999px;
+    white-space: nowrap;
+  }
+
+  /* UID checker */
+  .uid-check-row{ display:flex; gap: 12px; flex-wrap: wrap; }
+  .uid-input{
+    flex: 1 1 220px;
+    padding: 12px 16px;
+    border-radius: 8px;
+    border: 1px solid var(--line);
+    background: var(--bg-soft);
+    color: var(--text);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.95rem;
+  }
+  .uid-input:focus{ outline: none; border-color: rgba(255,122,41,0.5); }
+  .uid-result{
+    margin-top: 16px;
+    padding: 12px 16px;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-family: 'IBM Plex Mono', monospace;
+  }
+  .uid-result.good{ background: rgba(255,122,41,0.1); border: 1px solid rgba(255,122,41,0.35); color: var(--cyan); }
+  .uid-result.warn{ background: rgba(255,182,72,0.1); border: 1px solid rgba(255,182,72,0.35); color: var(--amber); }
+  .uid-result.pending{ background: rgba(255,255,255,0.04); border: 1px solid var(--line); color: var(--text-dim); }
+
+  .step-actions{ display:flex; gap: 12px; flex-wrap: wrap; margin-top: 18px; }
+  .step-actions .btn{ margin-top: 0; }
+
+  /* modal */
+  .modal-backdrop{
+    display: none;
+    position: fixed; inset: 0; z-index: 100;
+    background: rgba(3,4,8,0.72);
+    backdrop-filter: blur(4px);
+    align-items: center; justify-content: center;
+    padding: 20px;
+  }
+  .modal-backdrop.is-open{ display: flex; }
+  .modal{
+    position: relative;
+    width: 100%; max-width: 440px;
+    background: var(--panel);
+    border: 1px solid rgba(255,122,41,0.25);
+    border-radius: 16px;
+    padding: 32px;
+    box-shadow: 0 20px 60px -12px rgba(0,0,0,0.6);
+  }
+  .modal h3{ font-size: 1.15rem; margin-bottom: 10px; padding-right: 24px; }
+  .modal p{ color: var(--text-dim); font-size: 0.9rem; margin: 0 0 20px; }
+  .modal-close{
+    position: absolute; top: 18px; right: 18px;
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    border: 1px solid var(--line);
+    background: rgba(255,255,255,0.04);
+    color: var(--text-dim);
+    cursor: pointer;
+    display:flex; align-items:center; justify-content:center;
+    font-size: 0.85rem;
+  }
+  .modal-close:hover{ color: var(--text); border-color: rgba(255,255,255,0.3); }
+  .modal .uid-check-row{ flex-wrap: wrap; }
+  .modal .uid-input{ flex: 1 1 140px; }
 </style>
 </head>
 <body>
 
 <div class="bg-grid"></div>
-<div class="bg-glow"></div>
+<div class="bg-glow glow-1"></div>
+<div class="bg-glow glow-2"></div>
 
 <header>
   <div class="nav">
     <a class="brand" href="index.html"><span class="dot"></span> TEAM SIXX</a>
-    <a class="btn btn-ghost" href="portal.html">로그인</a>
+        <div class="nav-menu">
+      <button type="button" class="menu-btn" id="menu-btn" aria-label="메뉴 열기" aria-expanded="false">
+        <span></span><span></span><span></span>
+      </button>
+      <div class="menu-dropdown" id="menu-dropdown">
+        <a href="index.html">홈</a>
+        <a href="requirements.html">입장 조건</a>
+        <a href="join.html">입장 방법 안내</a>
+        <div class="menu-divider"></div>
+        <a href="portal.html" class="menu-member">🔒 스터디룸 바로가기</a>
+        <div class="menu-divider"></div>
+        <a href="https://t.me/+qUg3b7kZ24hjNWZl" target="_blank" rel="noopener" class="menu-cta">텔레그램 채널 ↗</a>
+        <a href="https://t.me/team_sixx" target="_blank" rel="noopener">고객센터 문의 ↗</a>
+      </div>
+    </div>
   </div>
 </header>
 
-<main class="wrap">
-  <div class="page-head">
-    <span class="kicker">JOIN</span>
-    <h1>입장 절차</h1>
-    <p>아래 3단계를 순서대로 진행하면 스터디룸 계정을 만들 수 있어요. 텔레그램 채널 초대는 예치 확인 후 운영자가 개별로 진행합니다.</p>
+<section class="join-hero">
+  <div class="wrap">
+    <div class="breadcrumb"><a href="index.html">HOME</a> / 입장 안내</div>
+    <h1>스터디방 입장, 이 순서대로 진행하세요</h1>
+    <p class="sub">조건은 두 가지뿐입니다 — 협력 거래소 Gate.io 사용, 최소 시드 $700 이상. 아래 3단계만 따라오시면 됩니다.</p>
   </div>
+</section>
 
-  <!-- 1단계: Gate.io 가입 -->
-  <div class="step" id="step-1">
-    <div class="step-head">
-      <div class="num">1</div>
-      <h3>Gate.io 전용 링크로 신규 가입</h3>
+<section style="padding-top:0;">
+  <div class="wrap">
+    <div class="full-step">
+      <div class="idx mono">01</div>
+      <div>
+        <h3>전용 링크로 Gate.io 가입</h3>
+        <p>반드시 전용 링크로 새로 가입해주세요. 기존 계정·타 거래소는 인정되지 않습니다. 가입 중 막히는 부분이 있으면 바로 문의해주세요.</p>
+        <div class="step-actions">
+          <a class="btn btn-primary" href="https://www.gate.com/signup?ref_type=103&ref=TEAMSIXX" target="_blank" rel="noopener">Gate.io 전용 링크로 가입하기 ↗</a>
+          <a class="btn btn-ghost" href="https://t.me/team_sixx" target="_blank" rel="noopener">가입 중 문의하기 ↗</a>
+        </div>
+      </div>
     </div>
-    <p class="desc">아래 버튼으로 이동해 저희 전용 레퍼럴 링크로 <b>새 계정</b>을 만들어주세요. 기존에 사용하던 계정은 인정되지 않습니다.</p>
-    <a class="btn btn-primary" id="referral-link" href="#" target="_blank" rel="noopener" style="max-width:260px;">Gate.io 가입하러 가기 →</a>
-  </div>
 
-  <!-- 2단계: 시드 예치 -->
-  <div class="step" id="step-2">
-    <div class="step-head">
-      <div class="num">2</div>
-      <h3>최소 시드 $700 이상 예치</h3>
+    <div class="full-step">
+      <div class="idx mono">02</div>
+      <div>
+        <h3>최소 시드 $700 이상 예치</h3>
+        <p>선물 지갑에 최소 $700 이상 입금 후, UID가 보이는 잔액 화면을 캡처해주세요.</p>
+      </div>
     </div>
-    <p class="desc">가입한 계정에 최소 $700 이상을 입금해주세요. 입금 스크린샷은 아래 UID 인증까지 마친 뒤 텔레그램으로 제출하시면 됩니다.</p>
-  </div>
 
-  <!-- 3단계: UID 인증 -->
-  <div class="step" id="step-3">
-    <div class="step-head">
-      <div class="num">3</div>
-      <h3>UID 인증</h3>
+    <div class="full-step">
+      <div class="idx mono">03</div>
+      <div>
+        <h3>UID + 예치 스크린샷 전송</h3>
+        <p>텔레그램 @team_sixx 에게 UID와 예치 스크린샷을 보내주세요.</p>
+        <div class="step-actions">
+          <a class="btn btn-violet" href="https://t.me/team_sixx" target="_blank" rel="noopener">@team_sixx 에게 전송하기 ↗</a>
+          <button type="button" class="btn btn-ghost" id="open-uid-modal">내 UID 먼저 확인해보기</button>
+        </div>
+      </div>
     </div>
-    <p class="desc">가입에 사용한 Gate.io UID를 입력하면 전용 링크로 가입했는지 바로 확인해드려요.</p>
-    <div class="row">
-      <input type="text" id="check-uid" placeholder="Gate.io UID" inputmode="numeric" autocomplete="off">
-      <button type="button" class="btn btn-primary" id="check-btn">확인하기</button>
-    </div>
-    <div id="check-result" class="result-box" hidden></div>
-  </div>
 
-  <!-- 4단계: 계정 생성 (UID 인증 통과 후 노출) -->
-  <div class="step pending" id="step-4" hidden>
-    <div class="step-head">
-      <div class="num">4</div>
-      <h3>비밀번호 설정</h3>
+    <div class="full-step">
+      <div class="idx mono">04</div>
+      <div>
+        <h3>입장 완료 후</h3>
+        <p>예치 확인은 수동으로 진행되며, 확인되면 텔레그램 비공개 채널로 개별 초대해드립니다. 확인까지 시간이 걸릴 수 있어요.</p>
+        <ul class="checklist">
+          <li>텔레그램 비공개 채널 — 실시간 코인 브리핑</li>
+          <li>스터디룸 웹사이트 — 공지사항 · 강의 자료 · 질문 · 수익인증 게시판</li>
+        </ul>
+        <p style="margin-top:10px;">스터디룸 사이트는 계정 로그인 후 바로 이용할 수 있고, 텔레그램 채널은 예치 확인 후 별도로 초대드려요.</p>
+        <div class="step-actions">
+          <a class="btn btn-primary" href="portal.html">스터디룸 바로가기 ↗</a>
+        </div>
+      </div>
     </div>
-    <p class="desc">스터디룸 웹사이트에서 사용할 비밀번호를 설정해주세요.</p>
-    <form id="signup-form" class="auth-form">
-      <input type="password" id="signup-pw" placeholder="비밀번호 (8자 이상)" autocomplete="new-password">
-      <input type="password" id="signup-pw2" placeholder="비밀번호 확인" autocomplete="new-password">
-      <button type="submit" class="btn btn-primary">계정 만들기</button>
-    </form>
-    <div id="signup-result" class="result-box" hidden></div>
-    <div class="gate-help">계정 생성 후에는 입금 스크린샷을 <a href="https://t.me/team_sixx" target="_blank" rel="noopener">@team_sixx</a>로 보내주세요. 확인되는 대로 텔레그램 비공개 채널에 초대해드립니다.</div>
   </div>
-</main>
+</section>
+
+<!-- UID 확인 모달 -->
+<div class="modal-backdrop" id="uid-modal-backdrop">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="uid-modal-title">
+    <button type="button" class="modal-close" id="uid-modal-close" aria-label="닫기">✕</button>
+    <h3 id="uid-modal-title">UID 가입 확인</h3>
+    <p>UID를 입력하면 전용 링크 가입 여부를 바로 확인해드립니다.</p>
+    <div class="uid-check-row">
+      <input type="text" id="uid-input" class="uid-input" placeholder="Gate.io UID 입력" inputmode="numeric" pattern="[0-9]*">
+      <button type="button" id="uid-check-btn" class="btn btn-primary">확인하기</button>
+    </div>
+    <div id="uid-result" class="uid-result" hidden></div>
+  </div>
+</div>
+
+<script>
+  (function(){
+    var backdrop = document.getElementById('uid-modal-backdrop');
+    var openBtn = document.getElementById('open-uid-modal');
+    var closeBtn = document.getElementById('uid-modal-close');
+    var input = document.getElementById('uid-input');
+    var btn = document.getElementById('uid-check-btn');
+    var resultBox = document.getElementById('uid-result');
+    if(!btn || !openBtn) return;
+
+    function openModal(){
+      backdrop.classList.add('is-open');
+      resultBox.hidden = true;
+      input.value = '';
+      setTimeout(function(){ input.focus(); }, 50);
+    }
+    function closeModal(){
+      backdrop.classList.remove('is-open');
+    }
+
+    openBtn.addEventListener('click', openModal);
+    closeBtn.addEventListener('click', closeModal);
+    backdrop.addEventListener('click', function(e){
+      if(e.target === backdrop) closeModal();
+    });
+    document.addEventListener('keydown', function(e){
+      if(e.key === 'Escape' && backdrop.classList.contains('is-open')) closeModal();
+    });
+
+    function setResult(text, kind){
+      resultBox.hidden = false;
+      resultBox.textContent = text;
+      resultBox.className = 'uid-result ' + kind;
+    }
+
+    async function check(){
+      var uid = (input.value || '').trim();
+      if(!/^[0-9]{3,15}$/.test(uid)){
+        setResult('UID는 숫자만 입력해주세요.', 'warn');
+        return;
+      }
+      btn.disabled = true;
+      btn.textContent = '확인 중...';
+      setResult('조회 중입니다...', 'pending');
+      try{
+        var res = await fetch('/api/check-uid?uid=' + encodeURIComponent(uid));
+        var data = await res.json();
+        if(!data.ok){
+          var detailText = data.detail ? (typeof data.detail === 'string' ? data.detail : JSON.stringify(data.detail)) : '';
+          setResult((data.error || '조회에 실패했습니다.') + (detailText ? ' — ' + detailText : ''), 'warn');
+        } else if(data.status === 'direct_referral'){
+          setResult('✅ ' + data.message, 'good');
+        } else {
+          setResult('⚠️ ' + data.message, 'warn');
+        }
+      } catch(e){
+        setResult('조회 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.', 'warn');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = '확인하기';
+      }
+    }
+
+    btn.addEventListener('click', check);
+    input.addEventListener('keydown', function(e){ if(e.key === 'Enter') check(); });
+  })();
+</script>
 
 <footer>
   <div class="wrap footer-row">
-    <a href="index.html" style="font-weight:700;">TEAM SIXX</a>
-    <div class="disclaimer">본 콘텐츠는 투자 권유가 아니며, 선물거래는 원금 손실 위험이 있습니다.</div>
+    <a class="fbrand" href="index.html">TEAM SIXX</a>
+    <div class="disclaimer">본 콘텐츠는 투자 권유가 아니며, 선물거래는 원금 손실 위험이 있습니다. 모든 투자 판단과 책임은 본인에게 있습니다.</div>
   </div>
 </footer>
 
+<a class="float-tg" href="https://t.me/team_sixx" target="_blank" rel="noopener" aria-label="텔레그램 문의">✈</a>
+
+
 <script>
-(function(){
-  // TODO: 실제 Gate.io 전용 레퍼럴 링크로 교체해주세요.
-  var REFERRAL_LINK = 'https://www.gate.io/signup?ref_type=referral';
-  document.getElementById('referral-link').href = REFERRAL_LINK;
+  (function(){
+    var btn = document.getElementById('menu-btn');
+    var dropdown = document.getElementById('menu-dropdown');
+    if(!btn || !dropdown) return;
 
-  var checkBtn = document.getElementById('check-btn');
-  var checkUidInput = document.getElementById('check-uid');
-  var checkResult = document.getElementById('check-result');
-  var step4 = document.getElementById('step-4');
-  var verifiedUid = null;
-
-  function showResult(el, text, kind){ el.hidden = false; el.textContent = text; el.className = 'result-box ' + kind; }
-
-  checkBtn.addEventListener('click', async function(){
-    var uid = checkUidInput.value.trim();
-    if(!/^[0-9]{3,15}$/.test(uid)){ showResult(checkResult, 'UID는 숫자만 입력해주세요.', 'warn'); return; }
-    checkBtn.disabled = true;
-    showResult(checkResult, '확인 중입니다...', 'pending');
-    try{
-      var res = await fetch('/api/check-uid?uid=' + encodeURIComponent(uid));
-      var data = await res.json();
-      if(data.ok && data.status === 'direct_referral'){
-        showResult(checkResult, data.message || '전용 링크로 가입한 회원입니다.', 'good');
-        verifiedUid = uid;
-        step4.hidden = false;
-        step4.classList.remove('pending');
-        step4.classList.add('done');
-        step4.scrollIntoView({ behavior:'smooth', block:'center' });
-      } else {
-        showResult(checkResult, (data.message || data.error || '전용 링크로 가입한 UID가 아닙니다.') + ' 문의가 필요하면 @team_sixx로 연락해주세요.', 'warn');
-        step4.hidden = true;
-        verifiedUid = null;
+    function closeMenu(){
+      dropdown.classList.remove('open');
+      btn.setAttribute('aria-expanded', 'false');
+    }
+    function toggleMenu(e){
+      e.stopPropagation();
+      var isOpen = dropdown.classList.toggle('open');
+      btn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+    }
+    btn.addEventListener('click', toggleMenu);
+    document.addEventListener('click', function(e){
+      if(dropdown.classList.contains('open') && !dropdown.contains(e.target) && e.target !== btn){
+        closeMenu();
       }
-    } catch(e){ showResult(checkResult, '오류가 발생했습니다. 잠시 후 다시 시도해주세요.', 'warn'); }
-    finally{ checkBtn.disabled = false; }
-  });
-
-  var signupForm = document.getElementById('signup-form');
-  var signupResult = document.getElementById('signup-result');
-
-  signupForm.addEventListener('submit', async function(e){
-    e.preventDefault();
-    if(!verifiedUid){ showResult(signupResult, '먼저 UID 인증을 완료해주세요.', 'warn'); return; }
-    var pw = document.getElementById('signup-pw').value;
-    var pw2 = document.getElementById('signup-pw2').value;
-    if(pw.length < 8){ showResult(signupResult, '비밀번호는 8자 이상이어야 합니다.', 'warn'); return; }
-    if(pw !== pw2){ showResult(signupResult, '비밀번호가 서로 다릅니다.', 'warn'); return; }
-    var btn = signupForm.querySelector('button'); btn.disabled = true;
-    showResult(signupResult, '계정을 만드는 중입니다...', 'pending');
-    try{
-      var res = await fetch('/api/signup', { method:'POST', credentials:'same-origin', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ uid: verifiedUid, password: pw }) });
-      var data = await res.json();
-      if(data.ok){
-        showResult(signupResult, '계정이 생성되었습니다! 스터디룸으로 이동합니다...', 'good');
-        setTimeout(function(){ window.location.href = 'portal.html'; }, 1200);
-      } else {
-        showResult(signupResult, data.error || '계정 생성에 실패했습니다.', 'warn');
-      }
-    } catch(e){ showResult(signupResult, '오류가 발생했습니다.', 'warn'); }
-    finally{ btn.disabled = false; }
-  });
-})();
+    });
+    document.addEventListener('keydown', function(e){
+      if(e.key === 'Escape') closeMenu();
+    });
+    dropdown.querySelectorAll('a').forEach(function(a){
+      a.addEventListener('click', closeMenu);
+    });
+  })();
 </script>
-
 </body>
 </html>
