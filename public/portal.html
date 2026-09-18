@@ -158,6 +158,7 @@
       <form id="new-post-form" class="new-post-form" hidden>
         <input type="text" id="new-post-title" placeholder="제목">
         <textarea id="new-post-content" placeholder="내용을 입력하세요"></textarea>
+        <input type="file" id="new-post-image" accept="image/*">
         <button type="submit" class="btn btn-primary">등록하기</button>
       </form>
 
@@ -189,12 +190,21 @@
   </div>
 </div>
 
-<!-- 내 정보(비밀번호 변경) 모달 -->
+<!-- 내 정보(닉네임/비밀번호 변경) 모달 -->
 <div class="modal-backdrop" id="profile-modal">
   <div class="modal" style="max-width:400px;">
     <button type="button" class="modal-close" id="profile-modal-close">✕</button>
-    <h2>비밀번호 변경</h2>
-    <form id="password-form" class="auth-form" style="margin-top:16px;">
+    <h2>내 정보</h2>
+
+    <h3 style="font-size:0.95rem; margin-top:20px; margin-bottom:10px; color:var(--text-dim);">닉네임</h3>
+    <form id="nickname-form" class="auth-form">
+      <input type="text" id="nickname-input" placeholder="닉네임 (1~20자)" maxlength="20">
+      <button type="submit" class="btn btn-primary">닉네임 저장</button>
+    </form>
+    <div id="nickname-result" class="result-box" hidden></div>
+
+    <h3 style="font-size:0.95rem; margin-top:24px; margin-bottom:10px; color:var(--text-dim);">비밀번호 변경</h3>
+    <form id="password-form" class="auth-form">
       <input type="password" id="current-pw" placeholder="현재 비밀번호" autocomplete="current-password">
       <input type="password" id="new-pw" placeholder="새 비밀번호 (8자 이상)" autocomplete="new-password">
       <input type="password" id="new-pw2" placeholder="새 비밀번호 확인" autocomplete="new-password">
@@ -222,7 +232,7 @@
     notice:   { kicker:'NOTICE',   title:'공지사항', note:'실시간 코인 브리핑은 텔레그램에서 진행됩니다.', canWrite:false },
     lecture:  { kicker:'LECTURES', title:'강의',     note:'', canWrite:false },
     question: { kicker:'Q&A',      title:'질문',     note:'궁금한 점을 자유롭게 남겨주세요.', canWrite:true },
-    profit:   { kicker:'PROFIT',   title:'수익인증', note:'', canWrite:false }
+    profit:   { kicker:'PROFIT',   title:'수익인증', note:'수익 인증샷과 함께 자유롭게 공유해주세요.', canWrite:true }
   };
 
   function showResult(el, text, kind){ el.hidden = false; el.textContent = text; el.className = 'result-box ' + kind; }
@@ -242,11 +252,14 @@
     });
   });
 
+  var currentUid = null;
+  var currentNickname = null;
+
   async function checkSession(){
     try{
       var res = await fetch('/api/me', { credentials: 'same-origin' });
       var data = await res.json();
-      if (data.ok) unlock(); else lock();
+      if (data.ok) { currentUid = data.uid; currentNickname = data.nickname; unlock(); } else lock();
     } catch(e){ lock(); }
   }
   checkSession();
@@ -261,7 +274,14 @@
     try{
       var res = await fetch('/api/login', { method:'POST', credentials:'same-origin', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ uid: uid, password: pw }) });
       var data = await res.json();
-      if (data.ok) unlock(); else showResult(authResult, data.error || '로그인에 실패했습니다.', 'warn');
+      if (data.ok){ currentUid = data.uid; currentNickname = data.nickname; unlock(); return; }
+
+      // 회원 로그인 실패 시, 관리자 아이디/비번일 수도 있으니 한 번 더 시도
+      var adminRes = await fetch('/api/admin/login', { method:'POST', credentials:'same-origin', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ username: uid, password: pw }) });
+      var adminData = await adminRes.json();
+      if (adminData.ok){ window.location.href = 'admin.html'; return; }
+
+      showResult(authResult, data.error || '로그인에 실패했습니다.', 'warn');
     } catch(e){ showResult(authResult, '오류가 발생했습니다.', 'warn'); }
     finally{ btn.disabled = false; }
   });
@@ -326,13 +346,15 @@
         card.className = 'post-card';
         var isNew = (Date.now() - p.created_at) < (3 * 24 * 60 * 60 * 1000);
         card.innerHTML =
-          '<div><div class="meta">' + fmtDate(p.created_at) + (p.author_type === 'admin' ? ' · 관리자' : '') + '</div>' +
+          '<div><div class="meta">' + fmtDate(p.created_at) + ' · ' + authorLabel(p) + '</div>' +
           '<h3>' + (isNew ? '<span style="color:var(--cyan); font-size:0.7rem; font-family:\'IBM Plex Mono\',monospace; margin-right:6px;">NEW</span>' : '') + escapeHtml(p.title) + '</h3></div><span class="arrow">→</span>';
         card.addEventListener('click', function(){ openPost(p.id); });
         listEl.appendChild(card);
       });
     } catch(e){ emptyEl.hidden = false; }
   }
+
+  var newPostImage = document.getElementById('new-post-image');
 
   newPostForm.addEventListener('submit', async function(e){
     e.preventDefault();
@@ -341,11 +363,23 @@
     if(!title || !content) return;
     var btn = newPostForm.querySelector('button'); btn.disabled = true;
     try{
-      await fetch('/api/posts', { method:'POST', credentials:'same-origin', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ category: currentCategory, title: title, content: content }) });
-      newPostTitle.value = ''; newPostContent.value = '';
+      var imageData = null;
+      var file = newPostImage.files[0];
+      if (file) imageData = await readFileAsDataUrl(file);
+      await fetch('/api/posts', { method:'POST', credentials:'same-origin', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ category: currentCategory, title: title, content: content, image_data: imageData }) });
+      newPostTitle.value = ''; newPostContent.value = ''; newPostImage.value = '';
       loadPosts();
     } finally { btn.disabled = false; }
   });
+
+  function readFileAsDataUrl(file){
+    return new Promise(function(resolve, reject){
+      var reader = new FileReader();
+      reader.onload = function(){ resolve(reader.result); };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
 
   // ── 게시글 상세 / 댓글 ──
   var postModal = document.getElementById('post-modal');
@@ -364,7 +398,7 @@
       var data = await res.json();
       if(!data.ok) return;
       pmTitle.textContent = data.post.title;
-      pmMeta.textContent = fmtDate(data.post.created_at) + (data.post.author_type === 'admin' ? ' · 관리자' : ' · 회원');
+      pmMeta.textContent = fmtDate(data.post.created_at) + ' · ' + authorLabel(data.post);
       pmBody.textContent = data.post.content;
       var existingImg = document.getElementById('pm-image');
       if (existingImg) existingImg.remove();
@@ -385,7 +419,7 @@
       var item = document.createElement('div');
       item.className = 'comment-item';
       item.innerHTML = '<div class="who' + (c.author_type === 'admin' ? ' admin' : '') + '">' +
-        (c.author_type === 'admin' ? '관리자' : 'UID ' + c.author_id) + ' · ' + fmtDate(c.created_at) + '</div>' +
+        authorLabel(c) + ' · ' + fmtDate(c.created_at) + '</div>' +
         '<p>' + escapeHtml(c.content) + '</p>';
       pmComments.appendChild(item);
     });
@@ -405,18 +439,37 @@
     } finally { btn.disabled = false; }
   });
 
-  // ── 내 정보(비밀번호 변경) ──
+  // ── 내 정보(닉네임 / 비밀번호 변경) ──
   var profileModal = document.getElementById('profile-modal');
   var passwordForm = document.getElementById('password-form');
   var profileResult = document.getElementById('profile-result');
+  var nicknameForm = document.getElementById('nickname-form');
+  var nicknameInput = document.getElementById('nickname-input');
+  var nicknameResult = document.getElementById('nickname-result');
 
   profileBtn.addEventListener('click', function(){
     clearResult(profileResult);
+    clearResult(nicknameResult);
     passwordForm.reset();
+    nicknameInput.value = currentNickname || '';
     profileModal.classList.add('open');
   });
   document.getElementById('profile-modal-close').addEventListener('click', function(){ profileModal.classList.remove('open'); });
   profileModal.addEventListener('click', function(e){ if(e.target === profileModal) profileModal.classList.remove('open'); });
+
+  nicknameForm.addEventListener('submit', async function(e){
+    e.preventDefault();
+    var nickname = nicknameInput.value.trim();
+    if(!nickname){ showResult(nicknameResult, '닉네임을 입력해주세요.', 'warn'); return; }
+    var btn = nicknameForm.querySelector('button'); btn.disabled = true;
+    try{
+      var res = await fetch('/api/account/nickname', { method:'POST', credentials:'same-origin', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ nickname: nickname }) });
+      var data = await res.json();
+      if(data.ok){ currentNickname = data.nickname; showResult(nicknameResult, '닉네임이 저장되었습니다.', 'good'); }
+      else showResult(nicknameResult, data.error || '저장에 실패했습니다.', 'warn');
+    } catch(e){ showResult(nicknameResult, '오류가 발생했습니다.', 'warn'); }
+    finally{ btn.disabled = false; }
+  });
 
   passwordForm.addEventListener('submit', async function(e){
     e.preventDefault();
@@ -437,6 +490,11 @@
   });
 
   // ── 유틸 ──
+  function authorLabel(item){
+    if(item.author_type === 'admin') return '관리자';
+    if(item.author_nickname) return escapeHtml(item.author_nickname);
+    return 'UID ' + item.author_id;
+  }
   function fmtDate(ts){
     var d = new Date(ts);
     return d.getFullYear() + '.' + String(d.getMonth()+1).padStart(2,'0') + '.' + String(d.getDate()).padStart(2,'0');

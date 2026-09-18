@@ -3,6 +3,7 @@ CREATE TABLE IF NOT EXISTS users (
   uid TEXT UNIQUE NOT NULL,
   salt TEXT NOT NULL,
   password_hash TEXT NOT NULL,
+  nickname TEXT,
   created_at INTEGER NOT NULL
 );
 
