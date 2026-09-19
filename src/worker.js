@@ -1366,6 +1366,27 @@ async function ensureSchema(env) {
     // users 테이블이 원래 없었으면 여기로 옴 — 무시
   }
 
+  // sessions 테이블이 예전 스터디룸 스키마(uid 컬럼)로 남아있으면 — CREATE TABLE IF NOT EXISTS는
+  // 이미 있는 테이블을 건드리지 않으므로 email 컬럼이 없는 채로 남아 로그인/회원가입이 전부 실패함.
+  // 세션은 어차피 재로그인하면 새로 생기는 휘발성 데이터라 그냥 통째로 재생성해도 안전함.
+  try {
+    const legacySession = await env.DB.prepare('SELECT uid FROM sessions LIMIT 1').first().catch(() => undefined);
+    if (legacySession !== undefined) {
+      await env.DB.batch([
+        env.DB.prepare('DROP TABLE IF EXISTS sessions'),
+        env.DB.prepare('DROP TABLE IF EXISTS general_sessions'),
+      ]);
+      await env.DB.prepare(`CREATE TABLE sessions (
+        token TEXT PRIMARY KEY,
+        email TEXT NOT NULL,
+        created_at INTEGER NOT NULL,
+        expires_at INTEGER NOT NULL
+      )`).run();
+    }
+  } catch (e) {
+    // 예전 sessions 테이블이 없거나 이미 새 스키마면 여기로 옴 — 무시
+  }
+
   // referral_codes/referral_signups/referral_withdrawals가 예전 owner_uid 스키마로 남아있으면
   // (스터디룸 UID 소유 방식 → 이메일 소유 방식으로 두 번째 이전) 통째로 재생성 — 실적 초기화됨.
   try {
