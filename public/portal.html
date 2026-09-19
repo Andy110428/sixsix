@@ -28,7 +28,10 @@
   .brand .dot{ width:9px; height:9px; border-radius:50%; background:var(--cyan); box-shadow:0 0 10px var(--cyan),0 0 22px var(--cyan); }
   .brand .tag{ font-family:'JetBrains Mono',monospace; font-size:0.7rem; color:var(--text-dim); border:1px solid var(--line); padding:2px 8px; border-radius:999px; margin-left:6px; }
   .tabs{ display:flex; gap:4px; align-items:center; flex-wrap: wrap; }
-  .tab-link{ padding:8px 14px; border-radius:8px; font-size:0.9rem; font-weight:600; color:var(--text-dim); border:none; background:none; cursor:pointer; white-space:nowrap; }
+  .tab-link{ padding:8px 14px; border-radius:8px; font-size:0.9rem; font-weight:600; color:var(--text-dim); border:none; background:none; cursor:pointer; white-space:nowrap; position:relative; }
+  .qa-badge{ display:inline-flex; align-items:center; justify-content:center; min-width:16px; height:16px; padding:0 4px; margin-left:5px; border-radius:999px; background:var(--danger); color:#fff; font-family:'JetBrains Mono',monospace; font-size:0.66rem; font-weight:700; vertical-align:2px; }
+  .qa-status{ font-family:'JetBrains Mono',monospace; font-size:0.7rem; padding:2px 8px; border-radius:999px; border:1px solid var(--line); color:var(--text-dim); margin-left:8px; white-space:nowrap; }
+  .qa-status.answered{ color:var(--good); border-color:rgba(74,222,128,0.35); }
   .tab-link:hover{ color:var(--text); background:rgba(255,255,255,0.04); }
   .tab-link.active{ color:var(--cyan); background:rgba(212,162,78,0.08); }
   .icon-btn{ padding:7px 12px; border-radius:8px; font-size:0.82rem; color:var(--text-dim); border:1px solid var(--line); background:none; cursor:pointer; white-space:nowrap; }
@@ -160,7 +163,7 @@
       <button type="button" class="tab-link active" data-cat="notice">공지사항</button>
       <button type="button" class="tab-link" data-cat="briefing">코인 브리핑</button>
       <button type="button" class="tab-link" data-cat="lecture">강의</button>
-      <button type="button" class="tab-link" data-cat="question">질문</button>
+      <button type="button" class="tab-link" data-cat="question">질문<span id="qa-badge" class="qa-badge" hidden>0</span></button>
       <button type="button" class="tab-link" data-cat="profit">수익인증</button>
       <button type="button" class="tab-link" id="calendar-tab">경제 캘린더</button>
       <button type="button" class="tab-link" id="liq-tab">청산맵</button>
@@ -400,6 +403,32 @@
     adminLink.hidden = viewMode !== 'admin';
     loadPosts();
     loadRankWidget();
+    if (viewMode === 'member') refreshQaBadge();
+  }
+
+  // ── 질문 답변 알림 배지 (localStorage로 마지막에 확인한 개수만 기억, 서버엔 저장 안 함) ──
+  var qaBadge = document.getElementById('qa-badge');
+  function refreshQaBadge(){
+    fetch('/api/account/my-questions', { credentials:'same-origin' })
+      .then(function(res){ return res.json(); })
+      .then(function(data){
+        if(!data.ok) return;
+        var seen = Number(localStorage.getItem('qa_seen_count') || '0');
+        var diff = data.answered_count - seen;
+        if(diff > 0){ qaBadge.textContent = diff; qaBadge.hidden = false; }
+        else { qaBadge.hidden = true; }
+      })
+      .catch(function(){});
+  }
+  function markQaSeen(){
+    fetch('/api/account/my-questions', { credentials:'same-origin' })
+      .then(function(res){ return res.json(); })
+      .then(function(data){
+        if(!data.ok) return;
+        localStorage.setItem('qa_seen_count', String(data.answered_count));
+        qaBadge.hidden = true;
+      })
+      .catch(function(){});
   }
   function showUidGate(){
     authGate.hidden = true; uidGate.hidden = false; content.hidden = true; tabs.hidden = true; rankWidgetWrap.hidden = true;
@@ -535,6 +564,7 @@
       showSection(boardSection);
       currentCategory = tab.dataset.cat;
       loadPosts();
+      if (currentCategory === 'question' && viewMode === 'member') markQaSeen();
     });
   });
 
@@ -633,10 +663,11 @@
         }
         var isNew = (Date.now() - p.created_at) < (3 * 24 * 60 * 60 * 1000);
         var thumb = p.thumb_data ? '<img src="' + p.thumb_data + '" class="post-thumb" alt="">' : '';
+        var qaStatus = currentCategory === 'question' ? ('<span class="qa-status' + (p.has_admin_reply ? ' answered' : '') + '">' + (p.has_admin_reply ? '✅ 답변완료' : '⏳ 답변대기') + '</span>') : '';
         card.innerHTML =
           thumb +
           '<div style="flex:1; min-width:0;"><div class="meta">' + fmtDate(p.created_at) + ' · ' + authorLabel(p) + '</div>' +
-          '<h3>' + (isNew ? '<span style="color:var(--cyan); font-size:0.7rem; font-family:\'JetBrains Mono\',monospace; margin-right:6px;">NEW</span>' : '') + escapeHtml(p.title) + '</h3></div><span class="arrow">→</span>';
+          '<h3>' + (isNew ? '<span style="color:var(--cyan); font-size:0.7rem; font-family:\'JetBrains Mono\',monospace; margin-right:6px;">NEW</span>' : '') + escapeHtml(p.title) + qaStatus + '</h3></div><span class="arrow">→</span>';
         card.addEventListener('click', function(){ openPost(p.id); });
         listEl.appendChild(card);
       });

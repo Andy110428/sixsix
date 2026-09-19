@@ -15,6 +15,7 @@
 //   POST /api/logout
 //   POST /api/account/change-password
 //   POST /api/account/nickname
+//   GET  /api/account/my-questions       내가 쓴 질문 중 관리자 답변 달린 개수 (질문 탭 알림 배지용)
 //   POST /api/account/register-uid       Gate UID 등록 (전용 링크 직속 가입자 확인 → 스터디룸 접근 허용)
 //   POST /api/account/connect-gate-api   Gate.io Read-Only API 키 연동 (랭킹용, 소유 확인은 /account/detail로)
 //   POST /api/account/disconnect-gate-api
@@ -79,6 +80,7 @@ export default {
       if (path === '/api/logout' && method === 'POST') return await handleLogout(request, env);
       if (path === '/api/account/change-password' && method === 'POST') return await handleChangePassword(request, env);
       if (path === '/api/account/nickname' && method === 'POST') return await handleSetNickname(request, env);
+      if (path === '/api/account/my-questions' && method === 'GET') return await handleMyQuestionsStatus(request, env);
       if (path === '/api/account/register-uid' && method === 'POST') return await handleRegisterUid(request, env);
       if (path === '/api/account/connect-gate-api' && method === 'POST') return await handleConnectGateApi(request, env);
       if (path === '/api/account/disconnect-gate-api' && method === 'POST') return await handleDisconnectGateApi(request, env);
@@ -245,6 +247,21 @@ async function handleSetNickname(request, env) {
   return json({ ok: true, nickname });
 }
 
+// 내가 쓴 질문 중 관리자 답변이 달린 개수 — portal.html "질문" 탭 알림 배지용
+// (읽음 처리는 서버에 저장하지 않고 프론트에서 localStorage로 마지막으로 본 개수를 기억해 비교함)
+async function handleMyQuestionsStatus(request, env) {
+  const uid = await getMemberUid(request, env);
+  if (!uid) return json({ ok: false, error: '로그인이 필요합니다.' }, 401);
+
+  const row = await env.DB.prepare(
+    `SELECT COUNT(*) AS c FROM posts
+     WHERE posts.category = 'question' AND posts.author_type = 'member' AND posts.author_id = ?
+       AND (SELECT COUNT(*) FROM comments WHERE comments.post_id = posts.id AND comments.author_type = 'admin') > 0`
+  ).bind(uid).first();
+
+  return json({ ok: true, answered_count: row ? row.c : 0 });
+}
+
 // "내 정보"에서 Gate UID를 등록 — 전용 링크 직속 가입자인지 즉시 확인하고, 통과하면
 // 그 자리에서 스터디룸 접근 권한이 열림. UID는 계정당 1개, 그리고 한 UID는 한 계정만 쓸 수 있음(UNIQUE).
 async function handleRegisterUid(request, env) {
@@ -391,7 +408,8 @@ async function handleListPosts(request, env) {
 
   const order = category === 'lecture' ? 'ASC' : 'DESC';
   const rows = await env.DB.prepare(
-    `SELECT posts.id, posts.title, posts.author_type, posts.author_id, posts.created_at, posts.thumb_data, posts.min_grade, members.nickname AS author_nickname
+    `SELECT posts.id, posts.title, posts.author_type, posts.author_id, posts.created_at, posts.thumb_data, posts.min_grade, members.nickname AS author_nickname,
+      (SELECT COUNT(*) FROM comments WHERE comments.post_id = posts.id AND comments.author_type = 'admin') > 0 AS has_admin_reply
      FROM posts LEFT JOIN members ON members.uid = posts.author_id
      WHERE posts.category = ? ORDER BY posts.id ${order} LIMIT 100`
   ).bind(category).all();
