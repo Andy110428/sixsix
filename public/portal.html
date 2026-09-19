@@ -78,6 +78,12 @@
   .calendar-frame-wrap{ border-radius:16px; overflow:hidden; border:1px solid var(--line); background:var(--panel); }
   .calendar-frame{ width:100%; height:600px; border:none; display:block; }
   .calendar-note{ color:var(--text-dim); font-size:0.78rem; margin-top:12px; }
+
+  .stat-box{ background:var(--bg-soft); border:1px solid var(--line); border-radius:10px; padding:12px; text-align:center; }
+  .stat-box .num{ font-family:'Sora',sans-serif; font-size:1.1rem; font-weight:700; color:var(--cyan); }
+  .stat-box .label{ font-size:0.7rem; color:var(--text-dim); margin-top:2px; }
+  .promo-card{ display:block; background:rgba(255,255,255,0.035); backdrop-filter:blur(16px); border:1px solid var(--line); border-radius:16px; padding:24px; transition:border-color .2s ease; }
+  .promo-card:hover{ border-color:rgba(212,162,78,0.35); }
   .empty-note{ text-align:center; padding:36px 20px; color:var(--text-dim); font-size:0.88rem; border:1px dashed var(--line); border-radius:12px; }
 
   .new-post-form{ background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:20px; margin-bottom:20px; display:flex; flex-direction:column; gap:10px; }
@@ -118,6 +124,8 @@
       <button type="button" class="tab-link" data-cat="question">질문</button>
       <button type="button" class="tab-link" data-cat="profit">수익인증</button>
       <button type="button" class="tab-link" id="calendar-tab">경제 캘린더</button>
+      <button type="button" class="tab-link" id="ranking-tab">거래량 랭킹</button>
+      <a class="icon-btn" id="referral-link" href="referral.html" hidden>추천인 코드</a>
       <a class="icon-btn" id="admin-link" href="admin.html" hidden>관리자 페이지로</a>
       <button type="button" class="icon-btn" id="profile-btn">내 정보</button>
       <button type="button" class="icon-btn" id="logout-btn">로그아웃</button>
@@ -143,6 +151,7 @@
       <input type="text" id="signup-uid" placeholder="Gate.io UID" inputmode="numeric" autocomplete="username">
       <input type="password" id="signup-pw" placeholder="비밀번호 (8자 이상)" autocomplete="new-password">
       <input type="password" id="signup-pw2" placeholder="비밀번호 확인" autocomplete="new-password">
+      <input type="text" id="signup-referral" placeholder="추천인 코드 (선택)">
       <button type="submit" class="btn btn-primary">회원가입</button>
     </form>
     <div id="auth-result" class="result-box" hidden></div>
@@ -190,6 +199,30 @@
       <p class="calendar-note">외부 위젯(investing.com)을 불러옵니다. 안 보이면 광고 차단 확장 프로그램을 확인해주세요.</p>
     </div>
   </section>
+
+  <section id="ranking-section" hidden>
+    <div class="wrap">
+      <div class="section-head">
+        <div>
+          <span class="kicker">RANKING</span>
+          <h2>거래량 랭킹</h2>
+          <p class="section-note" id="my-rank-note"></p>
+        </div>
+      </div>
+      <div id="ranking-list" class="post-list"></div>
+      <div id="ranking-empty" class="empty-note" hidden>아직 거래량이 등록된 회원이 없습니다.</div>
+    </div>
+  </section>
+</div>
+
+<div class="wrap" style="padding:0 24px 24px;">
+  <a href="referral.html" class="promo-card">
+    <div>
+      <span class="num mono" style="color:var(--cyan); font-size:0.78rem;">REFERRAL PROGRAM</span>
+      <h3 style="margin-top:6px;">추천인 코드로 친구를 초대하고 USDT를 받아보세요</h3>
+      <p style="color:var(--text-dim); font-size:0.86rem; margin-top:6px;">거래량 $100,000 이상이면 나만의 추천인 코드를 발급할 수 있어요 →</p>
+    </div>
+  </a>
 </div>
 
 <footer>
@@ -219,6 +252,8 @@
   <div class="modal" style="max-width:400px;">
     <button type="button" class="modal-close" id="profile-modal-close">✕</button>
     <h2>내 정보</h2>
+
+    <div id="my-stats" class="stats-grid" style="display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-top:16px;"></div>
 
     <h3 style="font-size:0.95rem; margin-top:20px; margin-bottom:10px; color:var(--text-dim);">닉네임</h3>
     <form id="nickname-form" class="auth-form">
@@ -251,6 +286,7 @@
   var logoutBtn = document.getElementById('logout-btn');
   var profileBtn = document.getElementById('profile-btn');
   var adminLink = document.getElementById('admin-link');
+  var referralLink = document.getElementById('referral-link');
   var viewMode = 'member';
 
   var currentCategory = 'notice';
@@ -270,6 +306,13 @@
     authGate.hidden = true; content.hidden = false; tabs.hidden = false;
     profileBtn.hidden = viewMode === 'admin';
     adminLink.hidden = viewMode !== 'admin';
+    referralLink.hidden = true;
+    if (viewMode === 'member') {
+      fetch('/api/referral/me', { credentials:'same-origin' })
+        .then(function(res){ return res.json(); })
+        .then(function(data){ referralLink.hidden = !(data.ok && data.code); })
+        .catch(function(){});
+    }
     loadPosts();
   }
   function lock(){ authGate.hidden = false; content.hidden = true; tabs.hidden = true; }
@@ -331,13 +374,14 @@
     var uid = document.getElementById('signup-uid').value.trim();
     var pw = document.getElementById('signup-pw').value;
     var pw2 = document.getElementById('signup-pw2').value;
+    var referralCode = document.getElementById('signup-referral').value.trim();
     if(!/^[0-9]{3,15}$/.test(uid)){ showResult(authResult, 'UID는 숫자만 입력해주세요.', 'warn'); return; }
     if(pw.length < 8){ showResult(authResult, '비밀번호는 8자 이상이어야 합니다.', 'warn'); return; }
     if(pw !== pw2){ showResult(authResult, '비밀번호가 서로 다릅니다.', 'warn'); return; }
     var btn = signupForm.querySelector('button'); btn.disabled = true;
     showResult(authResult, 'UID 확인 중입니다...', 'pending');
     try{
-      var res = await fetch('/api/signup', { method:'POST', credentials:'same-origin', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ uid: uid, password: pw }) });
+      var res = await fetch('/api/signup', { method:'POST', credentials:'same-origin', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ uid: uid, password: pw, referral_code: referralCode }) });
       var data = await res.json();
       if (data.ok) unlock(); else showResult(authResult, data.error || '회원가입에 실패했습니다.', 'warn');
     } catch(e){ showResult(authResult, '오류가 발생했습니다.', 'warn'); }
@@ -354,15 +398,21 @@
   var boardSection = document.getElementById('board');
   var calendarSection = document.getElementById('calendar-section');
   var calendarTab = document.getElementById('calendar-tab');
+  var rankingSection = document.getElementById('ranking-section');
+  var rankingTab = document.getElementById('ranking-tab');
+  var allSections = [boardSection, calendarSection, rankingSection];
   var allTabLinks = document.querySelectorAll('.tab-link');
   var tabLinks = document.querySelectorAll('.tab-link[data-cat]');
+
+  function showSection(section){
+    allSections.forEach(function(s){ s.hidden = (s !== section); });
+  }
 
   tabLinks.forEach(function(tab){
     tab.addEventListener('click', function(){
       allTabLinks.forEach(function(t){ t.classList.remove('active'); });
       tab.classList.add('active');
-      calendarSection.hidden = true;
-      boardSection.hidden = false;
+      showSection(boardSection);
       currentCategory = tab.dataset.cat;
       loadPosts();
     });
@@ -371,9 +421,37 @@
   calendarTab.addEventListener('click', function(){
     allTabLinks.forEach(function(t){ t.classList.remove('active'); });
     calendarTab.classList.add('active');
-    boardSection.hidden = true;
-    calendarSection.hidden = false;
+    showSection(calendarSection);
   });
+
+  rankingTab.addEventListener('click', function(){
+    allTabLinks.forEach(function(t){ t.classList.remove('active'); });
+    rankingTab.classList.add('active');
+    showSection(rankingSection);
+    loadRankings();
+  });
+
+  async function loadRankings(){
+    var listEl = document.getElementById('ranking-list');
+    var emptyEl = document.getElementById('ranking-empty');
+    listEl.innerHTML = '';
+    emptyEl.hidden = true;
+    try{
+      var res = await fetch('/api/rankings', { credentials:'same-origin' });
+      var data = await res.json();
+      var list = (data.ok && data.rankings) ? data.rankings : [];
+      if(list.length === 0){ emptyEl.hidden = false; return; }
+      list.forEach(function(r){
+        var card = document.createElement('div');
+        card.className = 'post-card';
+        card.style.cursor = 'default';
+        card.innerHTML =
+          '<div><div class="meta">' + r.rank + '위</div><h3>' + (r.is_me ? '<span style="color:var(--cyan);">나</span> · ' : '') + escapeHtml(r.label) + '</h3></div>' +
+          '<span class="arrow mono">$' + Number(r.trading_volume).toLocaleString() + '</span>';
+        listEl.appendChild(card);
+      });
+    } catch(e){ emptyEl.hidden = false; }
+  }
 
   var newPostForm = document.getElementById('new-post-form');
   var newPostTitle = document.getElementById('new-post-title');
@@ -396,9 +474,19 @@
       var data = await res.json();
       var posts = (data.ok && data.posts) ? data.posts : [];
       if(posts.length === 0){ emptyEl.hidden = false; return; }
+      var gradeLabels = { bronze:'브론즈', silver:'실버', gold:'골드', platinum:'플래티넘' };
       posts.forEach(function(p){
         var card = document.createElement('div');
         card.className = 'post-card';
+        if(p.locked){
+          card.style.opacity = '0.6';
+          card.innerHTML =
+            '<div style="flex:1; min-width:0;"><div class="meta">' + fmtDate(p.created_at) + ' · 🔒 ' + (gradeLabels[p.min_grade] || p.min_grade) + ' 등급 이상</div>' +
+            '<h3>' + escapeHtml(p.title) + '</h3></div><span class="arrow">🔒</span>';
+          card.addEventListener('click', function(){ alert((gradeLabels[p.min_grade] || p.min_grade) + ' 등급 이상만 볼 수 있는 강의입니다. 댓글/활동을 늘리면 등급이 올라가요.'); });
+          listEl.appendChild(card);
+          return;
+        }
         var isNew = (Date.now() - p.created_at) < (3 * 24 * 60 * 60 * 1000);
         var thumb = p.thumb_data ? '<img src="' + p.thumb_data + '" class="post-thumb" alt="">' : '';
         card.innerHTML =
@@ -550,7 +638,22 @@
     passwordForm.reset();
     nicknameInput.value = currentNickname || '';
     profileModal.classList.add('open');
+    loadMyStats();
   });
+
+  async function loadMyStats(){
+    var el = document.getElementById('my-stats');
+    el.innerHTML = '';
+    try{
+      var res = await fetch('/api/me', { credentials:'same-origin' });
+      var data = await res.json();
+      if(!data.ok) return;
+      el.innerHTML =
+        '<div class="stat-box"><div class="num">' + (data.grade_label || '-') + '</div><div class="label">등급</div></div>' +
+        '<div class="stat-box"><div class="num">$' + Number(data.trading_volume || 0).toLocaleString() + '</div><div class="label">거래량</div></div>' +
+        '<div class="stat-box"><div class="num">' + data.rank + '위</div><div class="label">거래량 순위</div></div>';
+    } catch(e){}
+  }
   document.getElementById('profile-modal-close').addEventListener('click', function(){ profileModal.classList.remove('open'); });
   profileModal.addEventListener('click', function(e){ if(e.target === profileModal) profileModal.classList.remove('open'); });
 

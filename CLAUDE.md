@@ -24,13 +24,14 @@
 ```
 wrangler.jsonc          Workers 설정 (assets + D1 바인딩)
 schema.sql / schema-console.sql   D1 스키마 (console.sql은 주석 없는 버전, 콘솔 붙여넣기용)
-migration-add-image.sql D1 마이그레이션 (posts.image_data 컬럼 추가)
+migration-*.sql          D1 마이그레이션 파일들 (이미 배포된 DB용, ensureSchema()가 자동으로도 처리함)
 src/worker.js           서버 코드 전체 (라우팅 + API)
 public/index.html       메인 랜딩페이지
 public/requirements.html  입장 조건 상세
 public/join.html        입장 절차 3단계 + UID 사전 확인 모달
-public/portal.html      스터디룸 (회원 로그인/회원가입, 공지·강의·질문·수익인증 게시판)
-public/admin.html       관리자 전용 (글쓰기/수정/삭제, 회원 비밀번호 재설정, 통계)
+public/portal.html      스터디룸 (회원 로그인/회원가입, 공지·브리핑·강의·질문·수익인증 게시판, 랭킹, 경제 캘린더)
+public/referral.html    추천인 프로그램 전용 페이지 (비회원도 소개/조건 열람 가능, 로그인 시 발급+대시보드)
+public/admin.html       관리자 전용 (글쓰기/수정/삭제, 회원 비밀번호 재설정, 거래량 설정, 랭킹 초기화, 출금 신청 심사, 통계)
 ```
 
 ## 디자인 톤
@@ -91,30 +92,29 @@ public/admin.html       관리자 전용 (글쓰기/수정/삭제, 회원 비밀
 - **가입자 입금 여부/거래량을 UID별로 자동 조회하는 건 공식적으로 확인 안 됨.** `GET /wallet/deposits`는 "내 계좌"용이라 타인(추천인 링크로 가입한 회원)의 입금 내역엔 못 씀. `GET /api/v4/rebate/partner/data/aggregated`라는 실존하는 엔드포인트가 있고 파트너 단위 거래량/리베이트/고객수를 주는 것 같은데, Gate.io가 응답 스키마를 공개 문서화 안 해놔서 **회원별로 쪼개서 나오는지 전체 합산만 나오는지 코드로 확인 전까지는 모름**. 실제 API 키로 테스트할 방법이 없어서(계정 접근 권한 없음) 확정 불가 — 나중에 실제 응답 JSON을 받아서 필드를 보고 붙이는 걸로 이어갈 것.
 - 이 조사 결과 때문에 **입금 여부로 가입 자동 차단은 구현 안 함** (기존처럼 스크린샷 수동 검토 유지), **UID별 거래량 랭킹/추천인 자격($100k 거래량) 판별도 API 자동화 대신 관리자가 직접 입력하는 방식으로 시작**하기로 함 (Gate.io 파트너 대시보드에서 확인한 숫자를 admin.html에서 수동 입력 — "API 동기화" 버튼도 시도는 하되 베타로 표시).
 
-## 다음에 만들 것 (2단계, 사용자가 2026-09-19에 한꺼번에 요청함)
+## 2단계 구현 완료 (2026-09-19)
 
-아직 구현 안 됨. 순서대로 진행 예정:
-1. **회원 등급 시스템**: 댓글/활동량 기준으로 자동 승급. 등급별로 특정 강의(`lecture` 카테고리 글) 수강 제한 가능하게.
-2. **거래량 랭킹 탭**: UID별 거래량(관리자 수동 입력 + API 동기화 시도) 기준 랭킹. 관리자가 "초기화" 누르면 0부터 다시 계산.
-3. **내 정보 탭에 거래량/랭킹 표시** 추가.
-4. **추천인 코드 시스템** (핵심 요구사항, 자세히 적어둠):
-   - 스터디룸 회원이 자기 추천인 코드 발급 가능 — 단, **거래량 10만 달러(≈$100,000) 이상인 회원만** 발급 가능 (어뷰징 방지, 가입만 하고 활동 안 하는 사람 거르기)
-   - 그 코드로 가입하는 사람마다 **2만원(KRW) 지급, 반드시 USDT(TRC20)로만**
-   - 출금 신청 조건: 본인 추천인 코드로 가입한 사람이 **최소 5명 이상**이어야 신청 가능
-   - 출금 신청 폼 입력 항목: 텔레그램 아이디, USDT(TRC20) 지갑 주소, 출금 금액
-   - 출금 최소 금액: **100,000원**
-   - 출금 신청이 들어오면 관리자(운영자) 텔레그램으로 내용 정리해서 전송 (알림) — 자동 송금은 안 함, **운영자가 직접 심사 후 수동으로 지급** (프랍 트레이딩 심사 방식처럼). 나중에 지갑 연동해서 버튼으로 자동 승인/송금하는 것도 고려 중이지만 지금 단계에서는 제외
-   - 추천인 코드 발급을 안 한 회원에게는 "추천인 코드 관리" 메뉴/탭 자체가 안 보여야 함
-   - **추천인 코드 관련 기능은 스터디룸 회원이 아니어도 볼 수 있는 별도 전용 페이지로 분리**: 메인 페이지(index.html)와 스터디룸(portal.html) 양쪽에서 추천인 시스템을 소개하는 배너/섹션 필요. 전용 페이지에서는: 추천인 시스템 소개, 조건 안내, (로그인 후) 코드 발급 + 대시보드(내 추천인 코드, 가입자 수, 출금 신청 현황) 확인까지 한 화면에서 가능해야 함
-   - 회원가입 화면(join.html의 계정 생성 단계, 또는 향후 별도 가입 폼)에 "추천인 코드(선택)" 입력란 추가 필요 — 이건 위 추천인 코드 시스템과 별개로 존재하는 게 아니라 서로 연결되어야 함 (추천인 코드로 가입하면 그 코드 발급자에게 2만원 적립)
+사용자가 2026-09-19에 한꺼번에 요청한 등급/거래량/추천인 시스템, 전부 구현 완료:
+
+1. **회원 등급 시스템**: `GRADES` 상수(worker.js) — 브론즈(0)/실버(10)/골드(30)/플래티넘(60), 기준은 "댓글 수 + question/profit 게시글 수" 합산(`getMemberActivity()`). 등급은 저장 안 하고 매번 계산함 (동기화 어긋날 일 없음). 강의(`lecture`) 글마다 `posts.min_grade` 설정 가능 — admin.html 글쓰기 폼에서 카테고리를 강의로 바꾸면 등급 선택 셀렉트가 나타남. `handleListPosts`/`handlePostDetail`이 조회자 등급을 확인해서 등급 미달이면 목록에서는 잠금 표시(`locked:true`)만, 상세는 403으로 막음.
+2. **거래량 랭킹**: `users.trading_volume` (관리자가 admin.html "회원 관리"에서 UID 조회 후 직접 입력). `GET /api/rankings`로 상위 50명 표시 (닉네임 없으면 "UID ****뒤4자리"로 마스킹). admin.html에 "랭킹 초기화" 버튼(전체 0으로), "Gate.io 원본 데이터 확인(베타)" 버튼도 있음 — `/api/admin/gate-rebate-raw`가 Gate.io `/rebate/partner/data/aggregated` 원본 응답을 그대로 보여줌 (스키마 확정되면 자동 매핑 로직으로 업그레이드 예정, 지금은 육안 확인용).
+3. **내 정보에 거래량/랭킹/등급 표시**: portal.html "내 정보" 모달 상단에 통계 3칸 (등급/거래량/순위), `/api/me` 응답 확장으로 구현.
+4. **추천인 코드 시스템**: 요구사항 그대로 구현 (거래량 $100k 이상만 발급, 가입 1건당 2만원 KRW 적립, USDT-TRC20 전용, 최소 5명 추천해야 출금 가능, 최소 출금 10만원, 출금 신청 시 텔레그램 알림(설정했으면), 자동 송금 없음 — admin.html에서 관리자가 상태를 pending→approved/rejected/paid로 수동 변경). DB: `referral_codes`(회원당 1개), `referral_signups`(가입 1건당 1행, referred_uid UNIQUE로 중복 적립 방지), `referral_withdrawals`. 전용 페이지 `public/referral.html` 새로 만듦 — 로그인 안 해도 소개/조건은 보이고, 로그인하면 발급/대시보드/출금신청까지 한 화면에서. index.html에 배너 섹션, portal.html 하단에 프로모 카드(항상 노출) + "추천인 코드" 메뉴는 코드를 이미 발급한 회원에게만 노출(`unlock()`에서 `/api/referral/me` 조회해서 토글). 회원가입 폼(portal.html signup-form)에 "추천인 코드(선택)" 입력란 있고 `/api/signup`이 `referral_code` 받아서 처리.
+5. **텔레그램 알림 인프라**: `notifyAdminTelegram()` — `TELEGRAM_BOT_TOKEN`/`TELEGRAM_ADMIN_CHAT_ID` 환경변수 없으면 그냥 조용히 스킵(출금 신청 저장 자체는 항상 됨). 봇 생성은 @BotFather에서, chat_id는 봇과 대화 시작 후 `https://api.telegram.org/bot<TOKEN>/getUpdates`로 확인 — 사용자가 직접 설정해야 함.
+
+### 다음에 볼 것
+- Gate.io `/rebate/partner/data/aggregated` 원본 응답을 실제로 확인해서, UID별로 쪼개져 나오면 "API 동기화" 버튼에 자동 매핑 로직 추가하기 (지금은 원본만 보여줌)
+- 강의 수정(UpdatePost) 시 `min_grade` 변경은 아직 UI 없음 — 필요하면 admin.html 수정 폼에 추가
 
 ## 환경변수 목록 (Cloudflare 대시보드 Settings > Variables and Secrets)
 
 ```
-GATE_API_KEY          Gate.io API 키
-GATE_API_SECRET        Gate.io API 시크릿
-ADMIN_USERNAME         관리자 로그인 아이디
-ADMIN_PASSWORD         관리자 로그인 비밀번호
+GATE_API_KEY            Gate.io API 키
+GATE_API_SECRET         Gate.io API 시크릿
+ADMIN_USERNAME          관리자 로그인 아이디
+ADMIN_PASSWORD          관리자 로그인 비밀번호
+TELEGRAM_BOT_TOKEN      (선택) 출금 신청 알림용 텔레그램 봇 토큰 — 없으면 알림만 생략됨
+TELEGRAM_ADMIN_CHAT_ID  (선택) 알림 받을 chat_id — 위와 세트로 필요
 ```
 
 ## 대화 중 나온 운영 정책 메모
