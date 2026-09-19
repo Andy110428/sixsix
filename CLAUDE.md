@@ -7,8 +7,9 @@
 
 코인 선물 트레이딩 비공개 스터디방 운영을 위한 웹사이트.
 - 협력 거래소(Gate.io) 전용 링크로 가입 + 최소 시드 $700 이상 예치한 사람만 스터디방 입장 가능
-- 입장 확인은 Gate.io API로 자동화(레퍼럴 관계 확인), 예치 금액은 스크린샷으로 수동 확인
+- 입장 확인은 Gate.io API로 자동화(레퍼럴 관계 확인), 예치 금액은 스크린샷으로 수동 확인 (텔레그램에서 운영자가 개별 확인 후 비공개 채널 초대)
 - 텔레그램 비공개 채널(실시간 브리핑)과 웹사이트(공지/강의/질문/수익인증)를 병행 운영
+- ⚠️ **계정이 완전히 분리된 두 종류로 존재**(2026-09-19 4단계): 스터디룸 계정(Gate UID 인증 필요)과 일반/추천인 계정(이메일, Gate UID 무관). 자세한 내용은 아래 "인증 구조" 참고
 
 ## 배포 환경
 
@@ -29,9 +30,9 @@ src/worker.js           서버 코드 전체 (라우팅 + API)
 public/index.html       메인 랜딩페이지
 public/requirements.html  입장 조건 상세
 public/join.html        입장 절차 3단계 + UID 사전 확인 모달
-public/portal.html      스터디룸 (회원 로그인/회원가입, 공지·브리핑·강의·질문·수익인증 게시판, 랭킹, 경제 캘린더)
-public/referral.html    추천인 프로그램 전용 페이지 (비회원도 소개/조건 열람 가능, 로그인 시 발급+대시보드)
-public/admin.html       관리자 전용 (글쓰기/수정/삭제, 회원 비밀번호 재설정, 거래량 설정, 랭킹 초기화, 출금 신청 심사, 통계)
+public/portal.html      스터디룸 (UID 로그인/회원가입, 공지·브리핑·강의·질문·수익인증 게시판, 경제 캘린더 — Gate UID 인증 계정 전용)
+public/referral.html    일반/추천인 계정 전용 페이지 (이메일 로그인/회원가입, 코드 발급+대시보드, Gate Read-Only API 연동, 랭킹 참여, 공개 랭킹/실시간 출금 피드 — 비회원도 열람 가능)
+public/admin.html       관리자 전용 (게시판 글쓰기/수정/삭제, 스터디룸 회원 비밀번호 재설정, 일반 계정 거래량 설정, 추천인 발급자 현황, 출금 신청 심사, 통계)
 ```
 
 ## 디자인 톤
@@ -44,22 +45,29 @@ public/admin.html       관리자 전용 (글쓰기/수정/삭제, 회원 비밀
 - index.html은 스크롤 시 섹션이 `.reveal` 클래스 + IntersectionObserver로 페이드인되고, 히어로는 로드 시 순차적으로 fadeInUp 애니메이션 적용됨
 - 페이지 이동은 실제 별도 파일(index.html, join.html 등)로 구성 — 초반에 해시(#) 기반 SPA로 시도했다가 미리보기 환경 제약으로 실패해서 다시 별도 파일 구조로 되돌림
 
-## 인증 구조 (중요)
+## 인증 구조 (중요 — 계정이 3종류, 그중 2개는 완전히 분리됨)
 
-**회원(member) 인증**
+**⚠️ 스터디룸 계정과 일반(추천인) 계정은 하나로 합치지 않고 완전히 분리한다** (2026-09-19 4단계 확정 — 3단계에서 시도했던 "계정 하나 + 승인 플래그" 방식은 되돌림). 같은 사람이 스터디룸에 들어가려면 스터디룸 계정을 "하나 더" 만들어야 한다.
+
+**1) 스터디룸 계정 (`users` 테이블, UID+비밀번호, `session` 쿠키)**
 - 회원가입: UID + 비밀번호 입력 → 서버가 Gate.io API로 "전용 링크 직속 가입자(type=3)"인지 확인 → 통과해야 계정 생성
+- 가입 확인이 곧 입장 조건 — 별도 관리자 승인 절차 없음 (예치 확인은 지금처럼 텔레그램에서 운영자가 개별 처리)
 - UID는 `users.uid`에 `UNIQUE` 제약 — 계정당 UID 1개만 허용
-- 비밀번호는 PBKDF2-SHA256(100,000회 반복)으로 해시 저장
-- 로그인 성공 시 세션 토큰을 `sessions` 테이블에 저장하고 httpOnly 쿠키(`session`)로 발급, 7일 유지
-- 로그인 실패 횟수 제한/잠금 없음 (`login_attempts` 테이블 및 관련 로직 제거함 — 운영자 요청으로 삭제)
-- ⚠️ **계정(회원가입) ≠ 스터디룸 입장** (2026-09-19 3단계에서 분리됨). 자세한 내용은 아래 "계정 vs 스터디룸 입장 승인" 참고
+- 비밀번호는 PBKDF2-SHA256(100,000회 반복)으로 해시 저장, 세션은 `sessions` 테이블 + `session` 쿠키(httpOnly, 7일)
+- 로그인 실패 횟수 제한/잠금 없음
+- 게시판(공지/브리핑/강의/질문/수익인증) 전용 — 추천인 코드/랭킹과는 완전히 무관
 
-**관리자(admin) 인증** — 회원 인증과 완전히 분리
+**2) 일반(추천인) 계정 (`general_members` 테이블, 이메일+비밀번호, `general_session` 쿠키)**
+- 회원가입: 이메일 + 비밀번호만으로 가입, Gate UID나 스터디룸 가입 여부와 전혀 무관 — 아무나 가입 가능
+- 추천인 코드 발급/사용, 랭킹 참여(선택), Gate.io Read-Only API 연동 전용 — 스터디룸 게시판과는 전혀 연결 안 됨
+- `general_members.gate_uid`는 API 연동 시에만 채워지고 `UNIQUE` 제약 (한 UID로 여러 일반 계정에 중복 연동 불가)
+
+**3) 관리자(admin) 인증** — 위 두 회원 인증과 완전히 분리
 - `admin.html`에서 로그인, 아이디/비번은 환경변수(`ADMIN_USERNAME`, `ADMIN_PASSWORD`)로 관리 (DB에 관리자 계정 테이블 없음, 1인 운영 가정)
-- `portal.html`(스터디룸) 로그인 칸에서도 관리자 계정으로 로그인 가능 — 먼저 회원 로그인(`/api/login`)을 시도하고 실패하면 같은 입력값으로 `/api/admin/login`을 한 번 더 시도해서, 성공하면 `admin.html`로 리다이렉트함 (portal.js 안 로그인 핸들러 참고)
-- IP 제한은 도입했다가 제거함 — 운영자 IP가 계속 바뀌어서 적용이 번거로워 아이디/비번 확인만으로 전환 (`ADMIN_ALLOWED_IPS` 환경변수/로직 삭제됨)
+- `portal.html`(스터디룸) 로그인 칸에서도 관리자 계정으로 로그인 가능 — 먼저 스터디룸 로그인(`/api/login`)을 시도하고 실패하면 같은 입력값으로 `/api/admin/login`을 한 번 더 시도해서, 성공하면 `admin.html`로 리다이렉트함
+- IP 제한은 도입했다가 제거함 — 운영자 IP가 계속 바뀌어서 적용이 번거로워 아이디/비번 확인만으로 전환
 - 세션은 `admin_sessions` 테이블 + `admin_session` 쿠키, 12시간 유지
-- 회원 비밀번호 재설정(관리자 대행): admin.html에서 UID로 먼저 "조회"(`/api/admin/find-user`) → 계정 존재 확인되면 "비밀번호 초기화" 버튼 1번 클릭 → 서버가 임시 비밀번호를 자동 생성해서 화면에 보여줌(`/api/admin/reset-password`, newPassword 생략 시 자동 생성) → 운영자가 그 값을 회원에게 텔레그램으로 전달
+- 스터디룸 회원 비밀번호 재설정(관리자 대행): admin.html에서 UID로 먼저 "조회"(`/api/admin/find-user`) → 계정 존재 확인되면 "비밀번호 초기화" 버튼 1번 클릭 → 서버가 임시 비밀번호를 자동 생성해서 화면에 보여줌(`/api/admin/reset-password`, newPassword 생략 시 자동 생성) → 운영자가 그 값을 회원에게 텔레그램으로 전달
 
 ## Gate.io API 연동
 
@@ -98,8 +106,8 @@ public/admin.html       관리자 전용 (글쓰기/수정/삭제, 회원 비밀
 사용자가 2026-09-19에 한꺼번에 요청한 등급/거래량/추천인 시스템, 전부 구현 완료:
 
 1. **회원 등급 시스템**: `GRADES` 상수(worker.js) — 브론즈(0)/실버(10)/골드(30)/플래티넘(60), 기준은 "댓글 수 + question/profit 게시글 수" 합산(`getMemberActivity()`). 등급은 저장 안 하고 매번 계산함 (동기화 어긋날 일 없음). 강의(`lecture`) 글마다 `posts.min_grade` 설정 가능 — admin.html 글쓰기 폼에서 카테고리를 강의로 바꾸면 등급 선택 셀렉트가 나타남. `handleListPosts`/`handlePostDetail`이 조회자 등급을 확인해서 등급 미달이면 목록에서는 잠금 표시(`locked:true`)만, 상세는 403으로 막음.
-2. **거래량 랭킹**: `users.trading_volume` (관리자가 admin.html "회원 관리"에서 UID 조회 후 직접 입력). `GET /api/rankings`로 상위 50명 표시 (닉네임 없으면 "UID ****뒤4자리"로 마스킹). admin.html에 "랭킹 초기화" 버튼(전체 0으로), "Gate.io 원본 데이터 확인(베타)" 버튼도 있음 — `/api/admin/gate-rebate-raw`가 Gate.io `/rebate/partner/data/aggregated` 원본 응답을 그대로 보여줌 (스키마 확정되면 자동 매핑 로직으로 업그레이드 예정, 지금은 육안 확인용).
-3. **내 정보에 거래량/랭킹/등급 표시**: portal.html "내 정보" 모달 상단에 통계 3칸 (등급/거래량/순위), `/api/me` 응답 확장으로 구현.
+2. **거래량 랭킹** (⚠️ 4단계에서 스터디룸이 아니라 일반/추천인 계정 쪽 기능으로 완전히 옮겨감 — `users.trading_volume`는 삭제되고 `general_members.trading_volume` + opt-in 방식으로 재설계됨, 아래 4단계 섹션 참고)
+3. **내 정보에 거래량/랭킹/등급 표시** (⚠️ 4단계에서 portal.html "내 정보"는 등급/활동량만 남고 거래량/순위는 빠짐 — 거래량/랭킹은 이제 일반 계정 전용 기능이라 스터디룸 세션으로는 알 수 없음)
 4. **추천인 코드 시스템 (2026-09-19 3단계에서 자격 조건 수정됨 — 아래 3단계 섹션 참고)**: 가입 1건당 2만원 KRW 적립, USDT-TRC20 전용, 최소 5명 추천해야 출금 가능, 최소 출금 10만원, 출금 신청 시 텔레그램 알림(설정했으면), 자동 송금 없음 — admin.html에서 관리자가 상태를 pending→approved/rejected/paid로 수동 변경. DB: `referral_codes`(회원당 1개), `referral_signups`(가입 1건당 1행, referred_uid UNIQUE로 중복 적립 방지, `qualified` 컬럼으로 확정 여부 표시), `referral_withdrawals`. 전용 페이지 `public/referral.html` 새로 만듦 — 로그인 안 해도 소개/조건은 보이고, 로그인하면 발급/대시보드/출금신청까지 한 화면에서. index.html에 배너 섹션, portal.html 하단에 프로모 카드(항상 노출) + "추천인 코드" 메뉴는 코드를 이미 발급한 회원에게만 노출(`unlock()`에서 `/api/referral/me` 조회해서 토글). 회원가입 폼(portal.html signup-form)에 "추천인 코드(선택)" 입력란 있고 `/api/signup`이 `referral_code` 받아서 처리.
 5. **텔레그램 알림 인프라**: `notifyAdminTelegram()` — `TELEGRAM_BOT_TOKEN`/`TELEGRAM_ADMIN_CHAT_ID` 환경변수 없으면 그냥 조용히 스킵(출금 신청 저장 자체는 항상 됨). 봇 생성은 @BotFather에서, chat_id는 봇과 대화 시작 후 `https://api.telegram.org/bot<TOKEN>/getUpdates`로 확인 — 사용자가 직접 설정해야 함.
 
@@ -120,6 +128,47 @@ public/admin.html       관리자 전용 (글쓰기/수정/삭제, 회원 비밀
 - Gate.io API로는 회원별 거래량을 못 뽑는 게 확정됐으므로, 거래량은 계속 admin.html에서 관리자가 수동 입력하는 방식 유지 (자동화 시도는 보류)
 - 강의 수정(UpdatePost) 시 `min_grade` 변경은 아직 UI 없음 — 필요하면 admin.html 수정 폼에 추가
 - 사용자가 언급한 "Gate 파트너 대시보드 UI에는 회원별 자산 구간(0<5000, 5000<10000 식)이 부등호로 표시된다"는 점은 API로 재현 방법을 못 찾음 — 확정된 사실 아니고 참고만
+
+⚠️ **이 3단계의 "계정 하나 + `study_room_approved` 승인 플래그" 설계는 아래 4단계에서 완전히 되돌려지고, 스터디룸 계정과 추천인 계정을 아예 다른 테이블/로그인 체계로 분리하는 쪽으로 바뀜.** 이 섹션은 그 과정을 남겨두는 기록용이고, 현재 동작하는 설계는 "4단계" 섹션 기준.
+
+## 4단계: 스터디룸 계정과 일반(추천인) 계정 완전 분리 + Gate Read-Only API 연동 (2026-09-19)
+
+3단계에서 만든 "계정 하나 + `study_room_approved` 승인 플래그" 방식을 사용자가 명시적으로 반려함 — "두 개로 분리하는거야. 합치지 말고." 그리고 세 가지를 추가 요청:
+1. 추천인 코드 발급자들 정보/초대현황을 한 번에 관리하는 관리자 창
+2. 거래량 확인을 회원이 직접 발급하는 **Read-Only 권한 Gate.io API 키**로 받아오기 (파트너 API는 3단계에서 합산만 나온다고 확정됐으므로, 대안으로 회원 개인 키를 쓰는 방식)
+3. 랭킹 시스템을 회원이 참여 여부를 직접 고를 수 있게, 참여하려면 API 연동 화면으로 안내
+
+**계정 분리** (질문 3개로 사용자에게 직접 확인받은 설계):
+- 스터디룸 계정: 기존 `users` 테이블 그대로, Gate 레퍼럴 인증만 통과하면 바로 활성화(3단계에서 추가했던 관리자 승인 절차는 삭제 — 원래 설계로 복귀). `users.study_room_approved`/`users.trading_volume` 컬럼은 `ensureSchema()`에서 `ALTER TABLE ... DROP COLUMN`으로 제거 시도(D1이 지원 안 하면 조용히 무시, 앱 동작엔 영향 없음).
+- 일반(추천인) 계정: `general_members` 테이블 신설 — 이메일+비밀번호, Gate UID/스터디룸 가입 여부와 완전 무관. 세션은 `general_sessions` 테이블 + `general_session` 쿠키(7일).
+- **추천인 관련 테이블(`referral_codes`/`referral_signups`/`referral_withdrawals`)은 소유자가 "스터디룸 UID"에서 "일반 계정 이메일"로 완전히 바뀜** (`owner_uid`→`owner_email`, `referred_uid`→`referred_email`). 기존 실적은 이전 대상이 아니라서 **초기화됨** (사용자가 "새로 가입 요구"로 명시적으로 확인) — `ensureSchema()`가 예전 스키마(`owner_uid` 컬럼 존재 여부로 감지)를 발견하면 3개 테이블을 통째로 DROP 후 새 스키마로 재생성.
+- 회원가입 폼에서 "추천인 코드(선택)" 입력란은 portal.html(스터디룸)에서 완전히 빠지고 referral.html(일반 계정 회원가입)로 옮겨감.
+
+**Gate.io Read-Only API 연동** (`handleGeneralConnectGateApi`, referral.html):
+- 회원이 자기 Gate.io 계정에서 **Read-Only 권한만 있는** API 키/시크릿을 발급받아 입력 (UID는 직접 입력 안 받음)
+- 서버가 `GET /account/detail`을 그 키로 직접 호출해서 응답의 `user_id`를 UID로 서버가 자동 확인 → `general_members.gate_uid`에 저장 (UNIQUE라서 한 UID가 여러 일반 계정에 중복 연동 안 됨)
+- ⚠️ UI에 "Read-Only 권한만 쓰세요, 출금/거래 권한 요구 안 함" 문구를 명확히 노출함 (사용자가 요청한 안전 안내)
+- **정확한 "거래량" 계산 로직은 아직 미확정** — Gate.io 개인 계좌 API로 누적 거래량을 어떤 엔드포인트로 뽑아야 하는지 실제 키로 테스트 못 해봐서 확정 불가 (3단계 때 파트너 API 조사와 같은 이유). 지금은 연동=소유 확인 용도까지만 구현하고, `GET /api/general/gate-account-raw`(베타 진단용, admin의 gate-rebate-raw와 같은 패턴)로 `/account/detail` 원본 응답을 볼 수 있게만 해둠. 거래량은 여전히 admin.html에서 관리자가 수동 입력(`/api/admin/general/set-volume`)하는 게 기준.
+
+**랭킹 시스템** (opt-in, 일반 계정 전용):
+- `general_members.ranking_opt_in` — 회원이 referral.html에서 체크박스로 직접 켜고 끔
+- 참여를 켜려면 먼저 Gate API 연동이 되어 있어야 함(`handleGeneralRankingOptIn`이 체크) — 연동 안 했으면 에러 메시지로 API 연동부터 안내
+- `GET /api/general/rankings` — 참여 동의한 사람만, 거래량 내림차순 상위 50명, 닉네임 없으면 이메일 마스킹(`maskEmail()`, 예: `ab***@gmail.com`)
+
+**추천인 코드 발급자 관리 (관리자)**:
+- `GET /api/admin/referral/issuers` — 코드를 발급한 모든 일반 계정의 코드/확정 가입자 수/대기중 수/총 적립액/총 지급완료액을 한 화면에 리스트로 보여줌 (admin.html "추천인 코드 발급자 현황" 패널)
+- admin.html의 "일반 회원(추천인) 관리" 패널에서 이메일 또는 연동된 Gate UID로 검색해서 거래량을 수동 입력하면, `checkAndQualifyReferral()`이 자동으로 해당 회원이 추천받은 건들의 `qualified`를 올려줌 — 로직 자체는 3단계와 동일, 소유자만 이메일 기준으로 바뀜
+
+**실시간 출금 피드 (공개, referral.html)**:
+- `GET /api/referral/recent-withdrawals` — `status = 'paid'`인 출금만, 최근 20건, 로그인 불필요
+- 닉네임/이메일과 금액을 마스킹해서 트랜잭션 피드처럼 보여줌 (`maskNickname()`: 첫/끝 글자만 남기고 `*` 처리, `maskAmount()`: 첫 자리만 남기고 나머지 `*` 처리)
+- `referral_withdrawals.paid_at` 컬럼 신설(관리자가 상태를 `paid`로 바꾸는 순간 서버가 자동 기록) — 정렬 기준으로 사용
+- 프론트에서 20초 간격 폴링으로 "실시간"처럼 보이게 함 (웹소켓 아님, 단순 polling)
+
+### 다음에 볼 것
+- Gate.io Read-Only 개인 키로 "누적 거래량"을 정확히 뽑아내는 엔드포인트/계산 방식 확정 — 실제 키로 테스트 후 `/api/general/gate-account-raw` 응답 스키마 보고 붙이기
+- 그게 되면 거래량 자동 동기화(주기적 배치 또는 로그인 시 갱신)로 업그레이드하고, 지금의 관리자 수동 입력은 폴백으로 남기기
+- 스터디룸 계정과 일반 계정이 같은 사람이어도 서버가 서로 연결할 방법이 없음(의도된 설계) — 나중에 "내 스터디룸 UID와 연결" 같은 선택적 연동이 필요해지면 별도 요청으로 진행
 
 ## 환경변수 목록 (Cloudflare 대시보드 Settings > Variables and Secrets)
 

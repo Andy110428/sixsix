@@ -1,60 +1,84 @@
 // Cloudflare Worker (with static assets + D1)
 //
-// 회원 API:
+// ⚠️ 계정이 두 종류로 완전히 분리되어 있음 (하나로 합치지 않음):
+//   1) 스터디룸 계정 (users 테이블, UID+비밀번호 로그인, session 쿠키)
+//      Gate.io 전용 링크로 가입한 UID만 생성 가능 — 회원가입 시 Gate.io 레퍼럴 확인만
+//      통과하면 바로 이용 가능 (별도 관리자 승인 절차 없음, 원래 설계 그대로).
+//      게시판(공지/브리핑/강의/질문/수익인증) 전용 계정.
+//   2) 일반 계정 (general_members 테이블, 이메일+비밀번호 로그인, general_session 쿠키)
+//      Gate UID/가입 여부와 전혀 무관하게 누구나 가입 가능. 추천인 코드 발급/사용,
+//      랭킹 참여(선택), Gate.io Read-Only API 연동 전용 계정 — 스터디룸 게시판과는
+//      전혀 연결되지 않음. 스터디룸에 들어가려면 위 1)번 계정을 별도로 만들어야 함.
+//
+// 스터디룸 회원 API (users 테이블, session 쿠키):
 //   GET  /api/check-uid?uid=...      Gate.io 레퍼럴 확인만 (계정 생성 없음)
-//   POST /api/signup                 계정 생성 (Gate.io 검증만 필요 — 스터디룸 입장은 별도 승인 필요)
-//   POST /api/login                  회원 로그인
-//   GET  /api/me                     로그인 상태 확인 (닉네임/스터디룸 승인여부 포함)
+//   POST /api/signup                 스터디룸 계정 생성 (Gate.io 전용 링크 직속 가입자만 가능)
+//   POST /api/login                  로그인
+//   GET  /api/me                     로그인 상태 확인 (닉네임/등급/활동량)
 //   POST /api/logout                 로그아웃
 //   POST /api/account/change-password  비밀번호 변경
 //   POST /api/account/nickname       닉네임 설정
 //
-// ⚠️ 계정(회원가입) ≠ 스터디룸 입장. 계정은 UID 레퍼럴 확인만 되면 누구나 만들 수 있고
-//    (추천인 코드 발급/사용 목적), 스터디룸 콘텐츠(공지/브리핑/강의/질문/수익인증/랭킹)는
-//    users.study_room_approved = 1인 계정만 접근 가능. 이 플래그는 관리자가 예치 스크린샷
-//    확인 후 admin.html에서 수동으로 켜줌 (POST /api/admin/approve-member).
-//
-// 게시판 API (스터디룸 승인된 회원 또는 관리자만):
+// 게시판 API (글쓰기/댓글은 스터디룸 로그인 또는 관리자, 목록/상세는 공개):
 //   GET  /api/posts?category=notice|briefing|lecture|question|profit
 //   GET  /api/posts/detail?id=...
-//   POST /api/posts                  글쓰기 (notice/lecture/briefing=관리자만, question/profit=승인회원+관리자)
+//   POST /api/posts                  글쓰기 (notice/lecture/briefing=관리자만, question/profit=회원+관리자)
+//   POST /api/posts/update           글 수정 (관리자만)
 //   POST /api/posts/delete           글 삭제 (관리자만)
-//   POST /api/comments               댓글 작성 (승인회원 또는 관리자)
+//   POST /api/comments               댓글 작성 (회원 또는 관리자)
+//   POST /api/comments/delete        댓글 삭제 (관리자만)
 //
-// 등급/거래량 API:
-//   GET  /api/rankings                거래량 랭킹 목록 (스터디룸 승인된 회원 또는 관리자만)
+// 일반 계정 API (general_members 테이블, general_session 쿠키) — 추천인/랭킹/API 연동 전용:
+//   POST /api/general/signup             이메일+비밀번호로 가입 (Gate UID 불필요)
+//   POST /api/general/login
+//   GET  /api/general/me                 로그인 상태 + 닉네임/연동 UID/거래량/랭킹 참여 여부
+//   POST /api/general/logout
+//   POST /api/general/change-password
+//   POST /api/general/nickname
+//   POST /api/general/connect-gate-api   Gate.io Read-Only API 키 연동 (키/시크릿만 받고,
+//                                        /account/detail 응답의 user_id로 UID를 서버가 직접 확인)
+//   POST /api/general/disconnect-gate-api
+//   GET  /api/general/gate-account-raw   연동된 키로 계좌 정보 원본 조회 (베타, 진단용)
+//   POST /api/general/ranking-opt-in     랭킹 시스템 참여/탈퇴 (참여하려면 API 연동 필요)
+//   GET  /api/general/rankings           공개 랭킹 (참여 동의한 사람만, 닉네임/이메일 마스킹)
 //
-// 추천인 API — 스터디룸 승인 여부와 무관하게, 계정만 있으면 누구나 사용 가능:
-//   POST /api/referral/issue-code     내 추천인 코드 발급 (제한 없음, 계정만 있으면 발급 가능)
-//   GET  /api/referral/me             내 추천인 현황 (코드/확정 적립/대기중 적립/출금내역)
-//   POST /api/referral/withdraw       출금 신청 (텔레그램ID + USDT-TRC20 주소 + 금액)
-//   ※ 추천 보상은 "추천받은 사람이 거래량 $100,000 달성"해야 확정됨 (가입만 하고 활동 안 하는
-//     어뷰징 방지). 관리자가 admin.html에서 그 사람 거래량을 $100,000 이상으로 입력하는 순간
-//     자동으로 확정 처리됨 (checkAndQualifyReferral()).
+// 추천인 API (일반 계정 전용, 스터디룸과 무관):
+//   POST /api/referral/issue-code        내 추천인 코드 발급 (제한 없음, 계정만 있으면 발급 가능)
+//   GET  /api/referral/me                내 추천인 현황 (코드/확정 적립/대기중/출금내역)
+//   POST /api/referral/withdraw          출금 신청 (텔레그램ID + USDT-TRC20 주소 + 금액)
+//   GET  /api/referral/recent-withdrawals  최근 지급 완료 출금 내역 (공개, 닉네임/금액 마스킹, 실시간 피드용)
+//   ※ 추천 보상은 "추천받은 사람의 거래량이 $100,000 달성"해야 확정됨 (가입만 하고 활동 안
+//     하는 어뷰징 방지). 지금은 관리자가 admin.html에서 거래량을 직접 입력하면 자동으로
+//     확정 처리됨 (checkAndQualifyReferral()). Gate Read-Only API 연동은 계정 소유 확인용이고,
+//     거래량 자동 동기화는 아직 베타 — 확정 판단은 여전히 관리자 수동 입력 기준.
 //
 // 관리자 API:
-//   POST /api/admin/login            아이디/비번 확인
+//   POST /api/admin/login
 //   GET  /api/admin/me
 //   POST /api/admin/logout
-//   GET  /api/admin/find-user?uid=...  회원 UID 검색 (비밀번호 재설정/거래량 설정/승인 전 조회용)
-//   POST /api/admin/reset-password   회원 비밀번호 재설정 (newPassword 생략 시 임시 비밀번호 자동 생성)
-//   POST /api/admin/approve-member   스터디룸 입장 승인/취소 (예치 스크린샷 확인 후)
-//   POST /api/admin/set-volume       회원 거래량 수동 입력 (추천인 확정 여부도 자동 체크됨)
-//   POST /api/admin/reset-volumes    전체 거래량 0으로 초기화 (랭킹 리셋)
-//   GET  /api/admin/gate-rebate-raw  Gate.io 파트너 리베이트 API 원본 응답 확인 (베타, 스키마 미확정)
-//   GET  /api/admin/referral/withdrawals   출금 신청 목록
+//   GET  /api/admin/stats
+//   GET  /api/admin/find-user?uid=...        스터디룸 회원 UID 검색 (비밀번호 재설정 전 조회용)
+//   POST /api/admin/reset-password           스터디룸 회원 비밀번호 재설정
+//   GET  /api/admin/general/find?query=...   일반 계정 검색 (이메일 또는 연동 UID)
+//   POST /api/admin/general/set-volume       일반 계정 거래량 수동 입력 (추천인 확정 자동 체크)
+//   POST /api/admin/general/reset-volumes    전체 거래량 0 초기화 (랭킹 리셋)
+//   GET  /api/admin/referral/issuers         추천인 코드 발급자 전체 현황 (실적 한눈에 관리)
+//   GET  /api/admin/gate-rebate-raw          Gate.io 파트너 리베이트 API 원본 응답 확인 (베타)
+//   GET  /api/admin/referral/withdrawals     출금 신청 목록
 //   POST /api/admin/referral/withdrawals/update  출금 신청 상태 변경
 //
 // 필요한 환경변수(Settings > Variables and Secrets):
-//   GATE_API_KEY, GATE_API_SECRET   Gate.io API
+//   GATE_API_KEY, GATE_API_SECRET   Gate.io 파트너 API (레퍼럴 확인용 — 회원 개인 키 아님)
 //   ADMIN_USERNAME, ADMIN_PASSWORD  관리자 로그인
-//   TELEGRAM_BOT_TOKEN, TELEGRAM_ADMIN_CHAT_ID  (선택) 출금 신청 시 텔레그램 알림 — 없으면 알림만 생략, 신청 자체는 정상 저장됨
+//   TELEGRAM_BOT_TOKEN, TELEGRAM_ADMIN_CHAT_ID  (선택) 출금 신청 시 텔레그램 알림
 // 필요한 바인딩: D1 데이터베이스 → env.DB
 
 const SESSION_COOKIE = 'session';
 const ADMIN_COOKIE = 'admin_session';
+const GENERAL_SESSION_COOKIE = 'general_session';
 const SESSION_DAYS = 7;
 const ADMIN_SESSION_HOURS = 12;
+const GENERAL_SESSION_DAYS = 7;
 
 export default {
   async fetch(request, env, ctx) {
@@ -74,7 +98,6 @@ export default {
       if (path === '/api/account/nickname' && method === 'POST') return await handleSetNickname(request, env);
       if (path === '/api/admin/find-user' && method === 'GET') return await handleAdminFindUser(request, env);
       if (path === '/api/admin/reset-password' && method === 'POST') return await handleAdminResetPassword(request, env);
-      if (path === '/api/admin/approve-member' && method === 'POST') return await handleAdminApproveMember(request, env);
 
       if (path === '/api/posts' && method === 'GET') return await handleListPosts(request, env);
       if (path === '/api/posts/detail' && method === 'GET') return await handlePostDetail(request, env);
@@ -89,13 +112,28 @@ export default {
       if (path === '/api/admin/logout' && method === 'POST') return await handleAdminLogout(request, env);
       if (path === '/api/admin/stats' && method === 'GET') return await handleAdminStats(request, env);
 
-      if (path === '/api/rankings' && method === 'GET') return await handleRankings(request, env);
+      // 일반 계정 (추천인/랭킹/API 연동 전용)
+      if (path === '/api/general/signup' && method === 'POST') return await handleGeneralSignup(request, env);
+      if (path === '/api/general/login' && method === 'POST') return await handleGeneralLogin(request, env);
+      if (path === '/api/general/me' && method === 'GET') return await handleGeneralMe(request, env);
+      if (path === '/api/general/logout' && method === 'POST') return await handleGeneralLogout(request, env);
+      if (path === '/api/general/change-password' && method === 'POST') return await handleGeneralChangePassword(request, env);
+      if (path === '/api/general/nickname' && method === 'POST') return await handleGeneralSetNickname(request, env);
+      if (path === '/api/general/connect-gate-api' && method === 'POST') return await handleGeneralConnectGateApi(request, env);
+      if (path === '/api/general/disconnect-gate-api' && method === 'POST') return await handleGeneralDisconnectGateApi(request, env);
+      if (path === '/api/general/gate-account-raw' && method === 'GET') return await handleGeneralGateAccountRaw(request, env);
+      if (path === '/api/general/ranking-opt-in' && method === 'POST') return await handleGeneralRankingOptIn(request, env);
+      if (path === '/api/general/rankings' && method === 'GET') return await handleGeneralRankings(request, env);
+
       if (path === '/api/referral/issue-code' && method === 'POST') return await handleReferralIssueCode(request, env);
       if (path === '/api/referral/me' && method === 'GET') return await handleReferralMe(request, env);
       if (path === '/api/referral/withdraw' && method === 'POST') return await handleReferralWithdraw(request, env);
+      if (path === '/api/referral/recent-withdrawals' && method === 'GET') return await handleReferralRecentWithdrawals(request, env);
 
-      if (path === '/api/admin/set-volume' && method === 'POST') return await handleAdminSetVolume(request, env);
-      if (path === '/api/admin/reset-volumes' && method === 'POST') return await handleAdminResetVolumes(request, env);
+      if (path === '/api/admin/general/find' && method === 'GET') return await handleAdminFindGeneralMember(request, env);
+      if (path === '/api/admin/general/set-volume' && method === 'POST') return await handleAdminSetGeneralVolume(request, env);
+      if (path === '/api/admin/general/reset-volumes' && method === 'POST') return await handleAdminResetGeneralVolumes(request, env);
+      if (path === '/api/admin/referral/issuers' && method === 'GET') return await handleAdminReferralIssuers(request, env);
       if (path === '/api/admin/gate-rebate-raw' && method === 'GET') return await handleAdminGateRebateRaw(request, env);
       if (path === '/api/admin/referral/withdrawals' && method === 'GET') return await handleAdminListWithdrawals(request, env);
       if (path === '/api/admin/referral/withdrawals/update' && method === 'POST') return await handleAdminUpdateWithdrawal(request, env);
@@ -107,7 +145,7 @@ export default {
   },
 };
 
-// ───────────────────────── 회원 인증 ─────────────────────────
+// ───────────────────────── 스터디룸 회원 인증 ─────────────────────────
 
 async function handleCheckUid(request, env) {
   const url = new URL(request.url);
@@ -150,24 +188,8 @@ async function handleSignup(request, env) {
     'INSERT INTO users (uid, salt, password_hash, created_at) VALUES (?, ?, ?, ?)'
   ).bind(uid, salt, hash, Date.now()).run();
 
-  // 추천인 코드로 가입한 경우 기록해둠 — 보상은 이 사람(추천받은 사람)의 거래량이
-  // $100,000를 넘는 순간 확정됨 (qualified=0으로 시작, checkAndQualifyReferral()이 나중에 올림)
-  const referralCode = (body.referral_code || '').trim().toUpperCase();
-  if (referralCode) {
-    try {
-      const owner = await env.DB.prepare('SELECT owner_uid FROM referral_codes WHERE code = ?').bind(referralCode).first();
-      if (owner && owner.owner_uid !== uid) {
-        await env.DB.prepare(
-          'INSERT INTO referral_signups (code, owner_uid, referred_uid, reward_krw, qualified, created_at) VALUES (?, ?, ?, ?, 0, ?)'
-        ).bind(referralCode, owner.owner_uid, uid, REFERRAL_REWARD_KRW, Date.now()).run();
-      }
-    } catch (e) {
-      // referred_uid UNIQUE 위반 등 — 가입 자체는 막지 않고 적립만 건너뜀
-    }
-  }
-
   const token = await createSession(env, uid);
-  return json({ ok: true, uid, study_room_approved: false }, 200, { 'Set-Cookie': sessionCookie(token) });
+  return json({ ok: true, uid }, 200, { 'Set-Cookie': sessionCookie(token) });
 }
 
 async function handleLogin(request, env) {
@@ -185,28 +207,22 @@ async function handleLogin(request, env) {
   }
 
   const token = await createSession(env, uid);
-  return json({ ok: true, uid, nickname: user.nickname || null, study_room_approved: !!user.study_room_approved }, 200, { 'Set-Cookie': sessionCookie(token) });
+  return json({ ok: true, uid, nickname: user.nickname || null }, 200, { 'Set-Cookie': sessionCookie(token) });
 }
 
 async function handleMe(request, env) {
   const uid = await getMemberUid(request, env);
   if (!uid) return json({ ok: false });
-  const user = await env.DB.prepare('SELECT nickname, trading_volume, study_room_approved FROM users WHERE uid = ?').bind(uid).first();
-  const volume = (user && user.trading_volume) || 0;
-  const approved = !!(user && user.study_room_approved);
+  const user = await env.DB.prepare('SELECT nickname FROM users WHERE uid = ?').bind(uid).first();
   const activity = await getMemberActivity(env, uid);
   const grade = gradeForActivity(activity);
-  const rankRow = await env.DB.prepare('SELECT COUNT(*) AS c FROM users WHERE trading_volume > ?').bind(volume).first();
   return json({
     ok: true,
     uid,
     nickname: (user && user.nickname) || null,
-    trading_volume: volume,
-    rank: (rankRow ? rankRow.c : 0) + 1,
     grade: grade.key,
     grade_label: grade.label,
     activity,
-    study_room_approved: approved,
   });
 }
 
@@ -260,26 +276,9 @@ async function handleAdminFindUser(request, env) {
   const uid = (url.searchParams.get('uid') || '').trim();
   if (!uid) return json({ ok: false, error: 'UID를 입력해주세요.' }, 400);
 
-  const user = await env.DB.prepare('SELECT uid, nickname, trading_volume, study_room_approved, created_at FROM users WHERE uid = ?').bind(uid).first();
+  const user = await env.DB.prepare('SELECT uid, nickname, created_at FROM users WHERE uid = ?').bind(uid).first();
   if (!user) return json({ ok: true, found: false });
-  return json({ ok: true, found: true, uid: user.uid, nickname: user.nickname || null, trading_volume: user.trading_volume || 0, study_room_approved: !!user.study_room_approved, created_at: user.created_at });
-}
-
-// 관리자가 회원의 스터디룸 입장 승인 여부를 토글 (예치 스크린샷 수동 검토 후 처리)
-async function handleAdminApproveMember(request, env) {
-  const isAdmin = await getIsAdmin(request, env);
-  if (!isAdmin) return json({ ok: false, error: '관리자만 사용할 수 있습니다.' }, 403);
-
-  const body = await safeJson(request);
-  const uid = (body.uid || '').trim();
-  const approved = !!body.approved;
-  if (!uid) return json({ ok: false, error: 'UID를 입력해주세요.' }, 400);
-
-  const user = await env.DB.prepare('SELECT id FROM users WHERE uid = ?').bind(uid).first();
-  if (!user) return json({ ok: false, error: '해당 UID로 가입된 계정이 없습니다.' }, 404);
-
-  await env.DB.prepare('UPDATE users SET study_room_approved = ? WHERE uid = ?').bind(approved ? 1 : 0, uid).run();
-  return json({ ok: true, uid, study_room_approved: approved });
+  return json({ ok: true, found: true, uid: user.uid, nickname: user.nickname || null, created_at: user.created_at });
 }
 
 // 관리자가 회원 UID의 비밀번호를 대신 재설정 (비밀번호 찾기 - 수동 처리)
@@ -351,44 +350,17 @@ async function getMemberGrade(env, uid) {
   return gradeForActivity(activity).key;
 }
 
-// ───────────────────────── 추천인 코드 ─────────────────────────
-const REFERRAL_REWARD_KRW = 20000;
-const REFERRAL_MIN_REFERRALS_TO_WITHDRAW = 5;
-const REFERRAL_MIN_WITHDRAW_KRW = 100000;
-// 코드 발급 자체는 제한 없음. 이 값은 "추천받은 사람"의 거래량이 이 이상이어야
-// 그 추천 건이 확정(적립)되는 기준 — 발급자 자격 조건이 아님.
-const REFERRAL_QUALIFY_VOLUME_USD = 100000;
-
-function generateReferralCode() {
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-  const bytes = crypto.getRandomValues(new Uint8Array(8));
-  let out = '';
-  for (let i = 0; i < bytes.length; i++) out += chars[bytes[i] % chars.length];
-  return out;
-}
-
 // 강의(lecture) 열람 등급 확인 — 관리자는 항상 통과, 회원은 활동량 기반 등급, 비로그인은 항상 최하위 취급
 async function getViewerGradeRank(request, env) {
   const isAdmin = await getIsAdmin(request, env);
   if (isAdmin) return 999;
-  const uid = await getApprovedMemberUid(request, env);
+  const uid = await getMemberUid(request, env);
   if (!uid) return -1;
   const grade = await getMemberGrade(env, uid);
   return gradeRank(grade);
 }
 
-// 스터디룸 콘텐츠(게시판/랭킹)는 승인된 회원 또는 관리자만 — 계정만 있고 승인 전이면 막힘
-async function canAccessStudyRoom(request, env) {
-  const isAdmin = await getIsAdmin(request, env);
-  if (isAdmin) return true;
-  const uid = await getApprovedMemberUid(request, env);
-  return !!uid;
-}
-
 async function handleListPosts(request, env) {
-  if (!(await canAccessStudyRoom(request, env))) {
-    return json({ ok: false, error: '스터디룸 입장이 승인된 계정만 볼 수 있습니다.' }, 403);
-  }
   const url = new URL(request.url);
   const category = url.searchParams.get('category') || '';
   if (!ALLOWED_CATEGORIES.includes(category)) return json({ ok: false, error: '잘못된 카테고리입니다.' }, 400);
@@ -415,9 +387,6 @@ async function handleListPosts(request, env) {
 }
 
 async function handlePostDetail(request, env) {
-  if (!(await canAccessStudyRoom(request, env))) {
-    return json({ ok: false, error: '스터디룸 입장이 승인된 계정만 볼 수 있습니다.' }, 403);
-  }
   const url = new URL(request.url);
   const id = Number(url.searchParams.get('id'));
   if (!id) return json({ ok: false, error: '잘못된 요청입니다.' }, 400);
@@ -471,8 +440,8 @@ async function handleCreatePost(request, env) {
     authorType = 'admin';
     authorId = 'admin';
   } else {
-    const uid = await getApprovedMemberUid(request, env);
-    if (!uid) return json({ ok: false, error: '스터디룸 입장이 승인된 계정만 작성할 수 있습니다.' }, 403);
+    const uid = await getMemberUid(request, env);
+    if (!uid) return json({ ok: false, error: '로그인이 필요합니다.' }, 401);
     authorType = 'member';
     authorId = uid;
   }
@@ -526,8 +495,8 @@ async function handleCreateComment(request, env) {
     authorType = 'admin';
     authorId = 'admin';
   } else {
-    const uid = await getApprovedMemberUid(request, env);
-    if (!uid) return json({ ok: false, error: '스터디룸 입장이 승인된 계정만 작성할 수 있습니다.' }, 403);
+    const uid = await getMemberUid(request, env);
+    if (!uid) return json({ ok: false, error: '로그인이 필요합니다.' }, 401);
     authorType = 'member';
     authorId = uid;
   }
@@ -556,6 +525,7 @@ async function handleAdminStats(request, env) {
   if (!isAdmin) return json({ ok: false, error: '관리자만 볼 수 있습니다.' }, 403);
 
   const totalUsers = await env.DB.prepare('SELECT COUNT(*) AS c FROM users').first();
+  const totalGeneral = await env.DB.prepare('SELECT COUNT(*) AS c FROM general_members').first();
   const totalNotices = await env.DB.prepare("SELECT COUNT(*) AS c FROM posts WHERE category = 'notice'").first();
   const totalLectures = await env.DB.prepare("SELECT COUNT(*) AS c FROM posts WHERE category = 'lecture'").first();
   const totalQuestions = await env.DB.prepare("SELECT COUNT(*) AS c FROM posts WHERE category = 'question'").first();
@@ -565,6 +535,7 @@ async function handleAdminStats(request, env) {
   return json({
     ok: true,
     members: totalUsers.c,
+    general_members: totalGeneral.c,
     notices: totalNotices.c,
     lectures: totalLectures.c,
     questions: totalQuestions.c,
@@ -573,38 +544,277 @@ async function handleAdminStats(request, env) {
   });
 }
 
-// ───────────────────────── 거래량 랭킹 ─────────────────────────
+// ───────────────────────── 일반 계정 (추천인/랭킹 전용, 이메일 로그인) ─────────────────────────
 
-async function handleRankings(request, env) {
-  const uid = await getApprovedMemberUid(request, env);
-  const isAdmin = await getIsAdmin(request, env);
-  if (!uid && !isAdmin) return json({ ok: false, error: '스터디룸 입장이 승인된 계정만 볼 수 있습니다.' }, 403);
+function isValidEmail(email) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
 
+async function handleGeneralSignup(request, env) {
+  if (!env.DB) return json({ ok: false, error: 'DB가 연결되지 않았습니다.' }, 500);
+  const body = await safeJson(request);
+  const email = (body.email || '').trim().toLowerCase();
+  const password = body.password || '';
+  if (!isValidEmail(email)) return json({ ok: false, error: '올바른 이메일 주소를 입력해주세요.' }, 400);
+  if (password.length < 8) return json({ ok: false, error: '비밀번호는 8자 이상이어야 합니다.' }, 400);
+
+  const existing = await env.DB.prepare('SELECT id FROM general_members WHERE email = ?').bind(email).first();
+  if (existing) return json({ ok: false, error: '이미 가입된 이메일입니다. 로그인해주세요.' }, 409);
+
+  const { salt, hash } = await hashPassword(password);
+  await env.DB.prepare(
+    'INSERT INTO general_members (email, salt, password_hash, created_at) VALUES (?, ?, ?, ?)'
+  ).bind(email, salt, hash, Date.now()).run();
+
+  // 추천인 코드로 가입한 경우 기록해둠 — 보상은 이 사람(추천받은 사람)의 거래량이
+  // $100,000를 넘는 순간 확정됨 (qualified=0으로 시작, checkAndQualifyReferral()이 나중에 올림)
+  const referralCode = (body.referral_code || '').trim().toUpperCase();
+  if (referralCode) {
+    try {
+      const owner = await env.DB.prepare('SELECT owner_email FROM referral_codes WHERE code = ?').bind(referralCode).first();
+      if (owner && owner.owner_email !== email) {
+        await env.DB.prepare(
+          'INSERT INTO referral_signups (code, owner_email, referred_email, reward_krw, qualified, created_at) VALUES (?, ?, ?, ?, 0, ?)'
+        ).bind(referralCode, owner.owner_email, email, REFERRAL_REWARD_KRW, Date.now()).run();
+      }
+    } catch (e) {
+      // referred_email UNIQUE 위반 등 — 가입 자체는 막지 않고 적립만 건너뜀
+    }
+  }
+
+  const token = await createGeneralSession(env, email);
+  return json({ ok: true, email }, 200, { 'Set-Cookie': generalSessionCookie(token) });
+}
+
+async function handleGeneralLogin(request, env) {
+  if (!env.DB) return json({ ok: false, error: 'DB가 연결되지 않았습니다.' }, 500);
+  const body = await safeJson(request);
+  const email = (body.email || '').trim().toLowerCase();
+  const password = body.password || '';
+  if (!email || !password) return json({ ok: false, error: '이메일과 비밀번호를 입력해주세요.' }, 400);
+
+  const member = await env.DB.prepare('SELECT * FROM general_members WHERE email = ?').bind(email).first();
+  const { hash } = member ? await hashPassword(password, member.salt) : { hash: null };
+
+  if (!member || hash !== member.password_hash) {
+    return json({ ok: false, error: '이메일 또는 비밀번호가 올바르지 않습니다.' }, 401);
+  }
+
+  const token = await createGeneralSession(env, email);
+  return json({ ok: true, email, nickname: member.nickname || null }, 200, { 'Set-Cookie': generalSessionCookie(token) });
+}
+
+async function handleGeneralMe(request, env) {
+  const email = await getGeneralEmail(request, env);
+  if (!email) return json({ ok: false });
+  const member = await env.DB.prepare(
+    'SELECT nickname, gate_uid, trading_volume, ranking_opt_in FROM general_members WHERE email = ?'
+  ).bind(email).first();
+  return json({
+    ok: true,
+    email,
+    nickname: (member && member.nickname) || null,
+    gate_uid: (member && member.gate_uid) || null,
+    has_gate_api: !!(member && member.gate_uid),
+    trading_volume: (member && member.trading_volume) || 0,
+    ranking_opt_in: !!(member && member.ranking_opt_in),
+  });
+}
+
+async function handleGeneralLogout(request, env) {
+  const token = getCookie(request, GENERAL_SESSION_COOKIE);
+  if (token && env.DB) await env.DB.prepare('DELETE FROM general_sessions WHERE token = ?').bind(token).run();
+  return json({ ok: true }, 200, { 'Set-Cookie': clearCookie(GENERAL_SESSION_COOKIE) });
+}
+
+async function handleGeneralChangePassword(request, env) {
+  const email = await getGeneralEmail(request, env);
+  if (!email) return json({ ok: false, error: '로그인이 필요합니다.' }, 401);
+
+  const body = await safeJson(request);
+  const current = body.currentPassword || '';
+  const next = body.newPassword || '';
+  if (next.length < 8) return json({ ok: false, error: '새 비밀번호는 8자 이상이어야 합니다.' }, 400);
+
+  const member = await env.DB.prepare('SELECT * FROM general_members WHERE email = ?').bind(email).first();
+  const { hash: currentHash } = await hashPassword(current, member.salt);
+  if (currentHash !== member.password_hash) return json({ ok: false, error: '현재 비밀번호가 올바르지 않습니다.' }, 401);
+
+  const { salt, hash } = await hashPassword(next);
+  await env.DB.prepare('UPDATE general_members SET salt = ?, password_hash = ? WHERE email = ?').bind(salt, hash, email).run();
+  return json({ ok: true });
+}
+
+async function handleGeneralSetNickname(request, env) {
+  const email = await getGeneralEmail(request, env);
+  if (!email) return json({ ok: false, error: '로그인이 필요합니다.' }, 401);
+
+  const body = await safeJson(request);
+  const nickname = (body.nickname || '').trim();
+  if (nickname.length < 1 || nickname.length > 20) {
+    return json({ ok: false, error: '닉네임은 1~20자로 입력해주세요.' }, 400);
+  }
+
+  const dup = await env.DB.prepare('SELECT email FROM general_members WHERE nickname = ? AND email != ?').bind(nickname, email).first();
+  if (dup) return json({ ok: false, error: '이미 사용 중인 닉네임입니다.' }, 409);
+
+  await env.DB.prepare('UPDATE general_members SET nickname = ? WHERE email = ?').bind(nickname, email).run();
+  return json({ ok: true, nickname });
+}
+
+// Gate.io Read-Only API 키 연동 — 회원 본인 소유 확인 + (베타) 계좌 조회용.
+// 절대 출금/거래 권한을 요구하지 않음 — Read-Only 권한만 있는 키를 쓰도록 프론트에서 안내함.
+// /account/detail 응답의 user_id로 실제 소유한 UID를 서버가 직접 확인함 (UID를 직접 입력받지 않음).
+async function handleGeneralConnectGateApi(request, env) {
+  const email = await getGeneralEmail(request, env);
+  if (!email) return json({ ok: false, error: '로그인이 필요합니다.' }, 401);
+
+  const body = await safeJson(request);
+  const apiKey = (body.api_key || '').trim();
+  const apiSecret = (body.api_secret || '').trim();
+  if (!apiKey || !apiSecret) return json({ ok: false, error: 'API 키와 시크릿을 모두 입력해주세요.' }, 400);
+
+  let detail;
+  try {
+    detail = await gateAccountDetail(apiKey, apiSecret);
+  } catch (err) {
+    return json({ ok: false, error: err.message || 'Gate.io API 연결에 실패했습니다. 키를 다시 확인해주세요.', detail: err.detail }, err.status || 400);
+  }
+
+  const gateUid = detail && (detail.user_id != null ? String(detail.user_id) : (detail.uid != null ? String(detail.uid) : null));
+  if (!gateUid) {
+    return json({ ok: false, error: 'API는 연결됐지만 UID를 확인하지 못했습니다. 베타 진단(계좌 정보 원본 조회)으로 응답을 확인해주세요.' }, 502);
+  }
+
+  try {
+    await env.DB.prepare(
+      'UPDATE general_members SET gate_uid = ?, gate_api_key = ?, gate_api_secret = ? WHERE email = ?'
+    ).bind(gateUid, apiKey, apiSecret, email).run();
+  } catch (e) {
+    return json({ ok: false, error: '이미 다른 계정에 연동된 UID입니다.' }, 409);
+  }
+
+  return json({ ok: true, gate_uid: gateUid });
+}
+
+async function handleGeneralDisconnectGateApi(request, env) {
+  const email = await getGeneralEmail(request, env);
+  if (!email) return json({ ok: false, error: '로그인이 필요합니다.' }, 401);
+
+  await env.DB.prepare(
+    'UPDATE general_members SET gate_uid = NULL, gate_api_key = NULL, gate_api_secret = NULL, ranking_opt_in = 0 WHERE email = ?'
+  ).bind(email).run();
+  return json({ ok: true });
+}
+
+// 연동된 API 키로 계좌 정보를 원본 그대로 보여주는 베타 진단용 — 거래량 자동 계산 로직은 아직 미확정
+async function handleGeneralGateAccountRaw(request, env) {
+  const email = await getGeneralEmail(request, env);
+  if (!email) return json({ ok: false, error: '로그인이 필요합니다.' }, 401);
+
+  const member = await env.DB.prepare('SELECT gate_api_key, gate_api_secret FROM general_members WHERE email = ?').bind(email).first();
+  if (!member || !member.gate_api_key) return json({ ok: false, error: 'Gate.io API가 연동되어 있지 않습니다.' }, 400);
+
+  try {
+    const detail = await gateAccountDetail(member.gate_api_key, member.gate_api_secret);
+    return json({ ok: true, data: detail });
+  } catch (err) {
+    return json({ ok: false, error: err.message || 'Gate.io 호출 중 오류', detail: err.detail }, err.status || 500);
+  }
+}
+
+async function gateAccountDetail(apiKey, apiSecret) {
+  const host = 'https://api.gateio.ws';
+  const prefix = '/api/v4';
+  const path = '/account/detail';
+  const method = 'GET';
+  const query = '';
+  const timestamp = Math.floor(Date.now() / 1000).toString();
+  const bodyHash = await sha512Hex('');
+  const signStr = `${method}\n${prefix}${path}\n${query}\n${bodyHash}\n${timestamp}`;
+  const sign = await hmacSha512Hex(apiSecret, signStr);
+
+  const res = await fetch(`${host}${prefix}${path}`, {
+    method,
+    headers: { Accept: 'application/json', 'Content-Type': 'application/json', KEY: apiKey, SIGN: sign, Timestamp: timestamp },
+  });
+  const data = await res.json();
+  if (!res.ok) {
+    const err = new Error((data && data.message) || 'Gate.io API 오류');
+    err.status = res.status;
+    err.detail = data;
+    throw err;
+  }
+  return data;
+}
+
+// ───────────────────────── 랭킹 (선택 참여, 일반 계정 전용) ─────────────────────────
+
+async function handleGeneralRankingOptIn(request, env) {
+  const email = await getGeneralEmail(request, env);
+  if (!email) return json({ ok: false, error: '로그인이 필요합니다.' }, 401);
+
+  const body = await safeJson(request);
+  const optIn = !!body.opt_in;
+
+  if (optIn) {
+    const member = await env.DB.prepare('SELECT gate_uid FROM general_members WHERE email = ?').bind(email).first();
+    if (!member || !member.gate_uid) {
+      return json({ ok: false, error: '랭킹 시스템에 참여하려면 먼저 Gate.io Read-Only API를 연동해주세요.' }, 400);
+    }
+  }
+
+  await env.DB.prepare('UPDATE general_members SET ranking_opt_in = ? WHERE email = ?').bind(optIn ? 1 : 0, email).run();
+  return json({ ok: true, ranking_opt_in: optIn });
+}
+
+async function handleGeneralRankings(request, env) {
+  const email = await getGeneralEmail(request, env);
   const rows = await env.DB.prepare(
-    'SELECT uid, nickname, trading_volume FROM users WHERE trading_volume > 0 ORDER BY trading_volume DESC LIMIT 50'
+    'SELECT email, nickname, trading_volume FROM general_members WHERE ranking_opt_in = 1 AND trading_volume > 0 ORDER BY trading_volume DESC LIMIT 50'
   ).all();
   const rankings = (rows.results || []).map((r, i) => ({
     rank: i + 1,
-    label: r.nickname || ('UID ****' + String(r.uid).slice(-4)),
+    label: r.nickname || maskEmail(r.email),
     trading_volume: r.trading_volume,
-    is_me: r.uid === uid,
+    is_me: r.email === email,
   }));
   return json({ ok: true, rankings });
 }
 
-// ───────────────────────── 추천인 코드 ─────────────────────────
+function maskEmail(email) {
+  const at = email.indexOf('@');
+  if (at <= 1) return '****' + email.slice(at);
+  return email.slice(0, 2) + '***' + email.slice(at);
+}
+
+// ───────────────────────── 추천인 코드 (일반 계정 전용) ─────────────────────────
+const REFERRAL_REWARD_KRW = 20000;
+const REFERRAL_MIN_REFERRALS_TO_WITHDRAW = 5;
+const REFERRAL_MIN_WITHDRAW_KRW = 100000;
+// 코드 발급 자체는 제한 없음. 이 값은 "추천받은 사람"의 거래량이 이 이상이어야
+// 그 추천 건이 확정(적립)되는 기준 — 발급자 자격 조건이 아님.
+const REFERRAL_QUALIFY_VOLUME_USD = 100000;
+
+function generateReferralCode() {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  const bytes = crypto.getRandomValues(new Uint8Array(8));
+  let out = '';
+  for (let i = 0; i < bytes.length; i++) out += chars[bytes[i] % chars.length];
+  return out;
+}
 
 async function handleReferralIssueCode(request, env) {
-  const uid = await getMemberUid(request, env);
-  if (!uid) return json({ ok: false, error: '로그인이 필요합니다.' }, 401);
+  const email = await getGeneralEmail(request, env);
+  if (!email) return json({ ok: false, error: '로그인이 필요합니다.' }, 401);
 
-  const existing = await env.DB.prepare('SELECT code FROM referral_codes WHERE owner_uid = ?').bind(uid).first();
+  const existing = await env.DB.prepare('SELECT code FROM referral_codes WHERE owner_email = ?').bind(email).first();
   if (existing) return json({ ok: true, code: existing.code });
 
   for (let i = 0; i < 5; i++) {
     const code = generateReferralCode();
     try {
-      await env.DB.prepare('INSERT INTO referral_codes (code, owner_uid, created_at) VALUES (?, ?, ?)').bind(code, uid, Date.now()).run();
+      await env.DB.prepare('INSERT INTO referral_codes (code, owner_email, created_at) VALUES (?, ?, ?)').bind(code, email, Date.now()).run();
       return json({ ok: true, code });
     } catch (e) {
       // 코드 중복이면 재시도
@@ -614,33 +824,33 @@ async function handleReferralIssueCode(request, env) {
 }
 
 async function handleReferralMe(request, env) {
-  const uid = await getMemberUid(request, env);
-  if (!uid) return json({ ok: false, error: '로그인이 필요합니다.' }, 401);
+  const email = await getGeneralEmail(request, env);
+  if (!email) return json({ ok: false, error: '로그인이 필요합니다.' }, 401);
 
-  const codeRow = await env.DB.prepare('SELECT code FROM referral_codes WHERE owner_uid = ?').bind(uid).first();
+  const codeRow = await env.DB.prepare('SELECT code FROM referral_codes WHERE owner_email = ?').bind(email).first();
   const code = codeRow ? codeRow.code : null;
 
   let referredCount = 0, pendingCount = 0, totalEarned = 0, withdrawals = [], availableKrw = 0;
   if (code) {
     const countRow = await env.DB.prepare(
-      'SELECT COUNT(*) AS c, COALESCE(SUM(reward_krw),0) AS total FROM referral_signups WHERE owner_uid = ? AND qualified = 1'
-    ).bind(uid).first();
+      'SELECT COUNT(*) AS c, COALESCE(SUM(reward_krw),0) AS total FROM referral_signups WHERE owner_email = ? AND qualified = 1'
+    ).bind(email).first();
     referredCount = countRow ? countRow.c : 0;
     totalEarned = countRow ? countRow.total : 0;
 
     const pendingRow = await env.DB.prepare(
-      'SELECT COUNT(*) AS c FROM referral_signups WHERE owner_uid = ? AND qualified = 0'
-    ).bind(uid).first();
+      'SELECT COUNT(*) AS c FROM referral_signups WHERE owner_email = ? AND qualified = 0'
+    ).bind(email).first();
     pendingCount = pendingRow ? pendingRow.c : 0;
 
     const wRows = await env.DB.prepare(
-      'SELECT id, telegram_id, wallet_address, amount_krw, status, created_at FROM referral_withdrawals WHERE owner_uid = ? ORDER BY id DESC'
-    ).bind(uid).all();
+      'SELECT id, telegram_id, wallet_address, amount_krw, status, created_at FROM referral_withdrawals WHERE owner_email = ? ORDER BY id DESC'
+    ).bind(email).all();
     withdrawals = wRows.results || [];
 
     const reservedRow = await env.DB.prepare(
-      "SELECT COALESCE(SUM(amount_krw),0) AS reserved FROM referral_withdrawals WHERE owner_uid = ? AND status IN ('pending','approved','paid')"
-    ).bind(uid).first();
+      "SELECT COALESCE(SUM(amount_krw),0) AS reserved FROM referral_withdrawals WHERE owner_email = ? AND status IN ('pending','approved','paid')"
+    ).bind(email).first();
     availableKrw = totalEarned - (reservedRow ? reservedRow.reserved : 0);
   }
 
@@ -659,10 +869,10 @@ async function handleReferralMe(request, env) {
 }
 
 async function handleReferralWithdraw(request, env) {
-  const uid = await getMemberUid(request, env);
-  if (!uid) return json({ ok: false, error: '로그인이 필요합니다.' }, 401);
+  const email = await getGeneralEmail(request, env);
+  if (!email) return json({ ok: false, error: '로그인이 필요합니다.' }, 401);
 
-  const codeRow = await env.DB.prepare('SELECT code FROM referral_codes WHERE owner_uid = ?').bind(uid).first();
+  const codeRow = await env.DB.prepare('SELECT code FROM referral_codes WHERE owner_email = ?').bind(email).first();
   if (!codeRow) return json({ ok: false, error: '추천인 코드를 먼저 발급해주세요.' }, 403);
 
   const body = await safeJson(request);
@@ -677,30 +887,60 @@ async function handleReferralWithdraw(request, env) {
   }
 
   const countRow = await env.DB.prepare(
-    'SELECT COUNT(*) AS c, COALESCE(SUM(reward_krw),0) AS total FROM referral_signups WHERE owner_uid = ? AND qualified = 1'
-  ).bind(uid).first();
+    'SELECT COUNT(*) AS c, COALESCE(SUM(reward_krw),0) AS total FROM referral_signups WHERE owner_email = ? AND qualified = 1'
+  ).bind(email).first();
   const referredCount = countRow ? countRow.c : 0;
   if (referredCount < REFERRAL_MIN_REFERRALS_TO_WITHDRAW) {
     return json({ ok: false, error: `추천인 코드로 가입한 회원이 최소 ${REFERRAL_MIN_REFERRALS_TO_WITHDRAW}명 이상이어야 출금 신청이 가능합니다. (현재 ${referredCount}명)` }, 403);
   }
 
   const reservedRow = await env.DB.prepare(
-    "SELECT COALESCE(SUM(amount_krw),0) AS reserved FROM referral_withdrawals WHERE owner_uid = ? AND status IN ('pending','approved','paid')"
-  ).bind(uid).first();
+    "SELECT COALESCE(SUM(amount_krw),0) AS reserved FROM referral_withdrawals WHERE owner_email = ? AND status IN ('pending','approved','paid')"
+  ).bind(email).first();
   const available = (countRow ? countRow.total : 0) - (reservedRow ? reservedRow.reserved : 0);
   if (amount > available) {
     return json({ ok: false, error: `출금 가능 금액(${available.toLocaleString()}원)을 초과했습니다.` }, 400);
   }
 
   const result = await env.DB.prepare(
-    'INSERT INTO referral_withdrawals (owner_uid, telegram_id, wallet_address, amount_krw, status, created_at) VALUES (?, ?, ?, ?, ?, ?)'
-  ).bind(uid, telegramId, walletAddress, amount, 'pending', Date.now()).run();
+    'INSERT INTO referral_withdrawals (owner_email, telegram_id, wallet_address, amount_krw, status, created_at) VALUES (?, ?, ?, ?, ?, ?)'
+  ).bind(email, telegramId, walletAddress, amount, 'pending', Date.now()).run();
 
   await notifyAdminTelegram(env,
-    `📩 추천인 출금 신청\nUID: ${uid}\n텔레그램: ${telegramId}\n지갑(USDT-TRC20): ${walletAddress}\n금액: ${amount.toLocaleString()}원\n추천 가입자: ${referredCount}명\n\nadmin.html에서 확인 후 처리해주세요.`
+    `📩 추천인 출금 신청\n이메일: ${email}\n텔레그램: ${telegramId}\n지갑(USDT-TRC20): ${walletAddress}\n금액: ${amount.toLocaleString()}원\n추천 가입자: ${referredCount}명\n\nadmin.html에서 확인 후 처리해주세요.`
   );
 
   return json({ ok: true, id: result.meta.last_row_id });
+}
+
+// 공개: 지급 완료된 출금 내역을 트랜잭션 피드처럼 보여줌 (닉네임/금액 마스킹, 실시간 신뢰용)
+async function handleReferralRecentWithdrawals(request, env) {
+  const rows = await env.DB.prepare(
+    `SELECT referral_withdrawals.amount_krw, referral_withdrawals.paid_at, referral_withdrawals.created_at,
+            general_members.nickname, general_members.email
+     FROM referral_withdrawals LEFT JOIN general_members ON general_members.email = referral_withdrawals.owner_email
+     WHERE referral_withdrawals.status = 'paid'
+     ORDER BY COALESCE(referral_withdrawals.paid_at, referral_withdrawals.created_at) DESC LIMIT 20`
+  ).all();
+  const feed = (rows.results || []).map((r) => ({
+    label: maskNickname(r.nickname || maskEmail(r.email || '익명')),
+    amount_label: maskAmount(r.amount_krw),
+    at: r.paid_at || r.created_at,
+  }));
+  return json({ ok: true, feed });
+}
+
+function maskNickname(name) {
+  if (!name) return '익명';
+  if (name.length <= 1) return name + '*';
+  if (name.length === 2) return name[0] + '*';
+  return name[0] + '*'.repeat(name.length - 2) + name[name.length - 1];
+}
+
+function maskAmount(amount) {
+  const str = String(amount);
+  if (str.length <= 2) return str.replace(/./g, '*') + '원';
+  return str[0] + '*'.repeat(str.length - 1) + '원';
 }
 
 async function notifyAdminTelegram(env, text) {
@@ -716,39 +956,92 @@ async function notifyAdminTelegram(env, text) {
   }
 }
 
-// ───────────────────────── 관리자: 거래량 / 출금 관리 ─────────────────────────
+// ───────────────────────── 관리자: 일반 계정 거래량 / 추천인 관리 ─────────────────────────
 
-async function handleAdminSetVolume(request, env) {
+// 이메일 또는 연동된 Gate UID로 일반 계정 검색
+async function handleAdminFindGeneralMember(request, env) {
+  const isAdmin = await getIsAdmin(request, env);
+  if (!isAdmin) return json({ ok: false, error: '관리자만 사용할 수 있습니다.' }, 403);
+
+  const url = new URL(request.url);
+  const query = (url.searchParams.get('query') || '').trim();
+  if (!query) return json({ ok: false, error: '이메일 또는 UID를 입력해주세요.' }, 400);
+
+  const member = await env.DB.prepare(
+    'SELECT email, nickname, gate_uid, trading_volume, ranking_opt_in, created_at FROM general_members WHERE email = ? OR gate_uid = ?'
+  ).bind(query.toLowerCase(), query).first();
+  if (!member) return json({ ok: true, found: false });
+
+  const codeRow = await env.DB.prepare('SELECT code FROM referral_codes WHERE owner_email = ?').bind(member.email).first();
+
+  return json({
+    ok: true,
+    found: true,
+    email: member.email,
+    nickname: member.nickname || null,
+    gate_uid: member.gate_uid || null,
+    trading_volume: member.trading_volume || 0,
+    ranking_opt_in: !!member.ranking_opt_in,
+    referral_code: codeRow ? codeRow.code : null,
+    created_at: member.created_at,
+  });
+}
+
+async function handleAdminSetGeneralVolume(request, env) {
   const isAdmin = await getIsAdmin(request, env);
   if (!isAdmin) return json({ ok: false, error: '관리자만 사용할 수 있습니다.' }, 403);
 
   const body = await safeJson(request);
-  const uid = (body.uid || '').trim();
+  const email = (body.email || '').trim().toLowerCase();
   const volume = Number(body.volume);
-  if (!uid) return json({ ok: false, error: 'UID를 입력해주세요.' }, 400);
+  if (!email) return json({ ok: false, error: '이메일을 입력해주세요.' }, 400);
   if (!Number.isFinite(volume) || volume < 0) return json({ ok: false, error: '거래량 값이 올바르지 않습니다.' }, 400);
 
-  const user = await env.DB.prepare('SELECT id FROM users WHERE uid = ?').bind(uid).first();
-  if (!user) return json({ ok: false, error: '해당 UID로 가입된 계정이 없습니다.' }, 404);
+  const member = await env.DB.prepare('SELECT id FROM general_members WHERE email = ?').bind(email).first();
+  if (!member) return json({ ok: false, error: '해당 이메일로 가입된 계정이 없습니다.' }, 404);
 
-  await env.DB.prepare('UPDATE users SET trading_volume = ? WHERE uid = ?').bind(volume, uid).run();
-  await checkAndQualifyReferral(env, uid, volume);
+  await env.DB.prepare('UPDATE general_members SET trading_volume = ? WHERE email = ?').bind(volume, email).run();
+  await checkAndQualifyReferral(env, email, volume);
   return json({ ok: true });
 }
 
-// 추천받은 사람(uid)의 거래량이 기준을 넘으면 그 추천 건을 확정(qualified) 처리 — 한 번 확정되면 되돌리지 않음
-async function checkAndQualifyReferral(env, uid, volume) {
+// 추천받은 사람(email)의 거래량이 기준을 넘으면 그 추천 건을 확정(qualified) 처리 — 한 번 확정되면 되돌리지 않음
+async function checkAndQualifyReferral(env, email, volume) {
   if (volume < REFERRAL_QUALIFY_VOLUME_USD) return;
   await env.DB.prepare(
-    "UPDATE referral_signups SET qualified = 1 WHERE referred_uid = ? AND qualified = 0"
-  ).bind(uid).run();
+    "UPDATE referral_signups SET qualified = 1 WHERE referred_email = ? AND qualified = 0"
+  ).bind(email).run();
 }
 
-async function handleAdminResetVolumes(request, env) {
+async function handleAdminResetGeneralVolumes(request, env) {
   const isAdmin = await getIsAdmin(request, env);
   if (!isAdmin) return json({ ok: false, error: '관리자만 사용할 수 있습니다.' }, 403);
-  await env.DB.prepare('UPDATE users SET trading_volume = 0').run();
+  await env.DB.prepare('UPDATE general_members SET trading_volume = 0').run();
   return json({ ok: true });
+}
+
+// 추천인 코드를 발급한 사람들 전체 현황 — 관리자가 한 화면에서 실적 관리
+async function handleAdminReferralIssuers(request, env) {
+  const isAdmin = await getIsAdmin(request, env);
+  if (!isAdmin) return json({ ok: false, error: '관리자만 사용할 수 있습니다.' }, 403);
+
+  const rows = await env.DB.prepare(
+    `SELECT
+      referral_codes.code,
+      referral_codes.owner_email,
+      referral_codes.created_at AS issued_at,
+      general_members.nickname,
+      general_members.gate_uid,
+      (SELECT COUNT(*) FROM referral_signups WHERE referral_signups.owner_email = referral_codes.owner_email AND referral_signups.qualified = 1) AS referred_count,
+      (SELECT COUNT(*) FROM referral_signups WHERE referral_signups.owner_email = referral_codes.owner_email AND referral_signups.qualified = 0) AS pending_count,
+      (SELECT COALESCE(SUM(reward_krw),0) FROM referral_signups WHERE referral_signups.owner_email = referral_codes.owner_email AND referral_signups.qualified = 1) AS total_earned_krw,
+      (SELECT COALESCE(SUM(amount_krw),0) FROM referral_withdrawals WHERE referral_withdrawals.owner_email = referral_codes.owner_email AND referral_withdrawals.status = 'paid') AS total_paid_krw
+     FROM referral_codes
+     LEFT JOIN general_members ON general_members.email = referral_codes.owner_email
+     ORDER BY referred_count DESC, referral_codes.created_at ASC LIMIT 300`
+  ).all();
+
+  return json({ ok: true, issuers: rows.results || [] });
 }
 
 // Gate.io 파트너 리베이트 API 원본 응답 확인 (베타) — 응답 스키마가 공개 문서화 안 돼있어서
@@ -787,8 +1080,8 @@ async function handleAdminListWithdrawals(request, env) {
   const isAdmin = await getIsAdmin(request, env);
   if (!isAdmin) return json({ ok: false, error: '관리자만 사용할 수 있습니다.' }, 403);
   const rows = await env.DB.prepare(
-    `SELECT referral_withdrawals.*, users.nickname AS owner_nickname
-     FROM referral_withdrawals LEFT JOIN users ON users.uid = referral_withdrawals.owner_uid
+    `SELECT referral_withdrawals.*, general_members.nickname AS owner_nickname
+     FROM referral_withdrawals LEFT JOIN general_members ON general_members.email = referral_withdrawals.owner_email
      ORDER BY referral_withdrawals.id DESC LIMIT 200`
   ).all();
   return json({ ok: true, withdrawals: rows.results || [] });
@@ -802,7 +1095,8 @@ async function handleAdminUpdateWithdrawal(request, env) {
   const status = body.status;
   const allowed = ['pending', 'approved', 'rejected', 'paid'];
   if (!id || !allowed.includes(status)) return json({ ok: false, error: '잘못된 요청입니다.' }, 400);
-  await env.DB.prepare('UPDATE referral_withdrawals SET status = ? WHERE id = ?').bind(status, id).run();
+  const paidAt = status === 'paid' ? Date.now() : null;
+  await env.DB.prepare('UPDATE referral_withdrawals SET status = ?, paid_at = COALESCE(?, paid_at) WHERE id = ?').bind(status, paidAt, id).run();
   return json({ ok: true });
 }
 
@@ -861,14 +1155,14 @@ async function getMemberUid(request, env) {
   return session ? session.uid : null;
 }
 
-// 스터디룸 콘텐츠 전용 — 로그인 + 관리자 승인(예치 확인 완료)까지 된 회원만 통과.
-// 추천인 코드 발급/사용, 닉네임, 비밀번호 등 "계정" 기능은 getMemberUid만으로 충분하고
-// 이 함수는 쓰지 않는다 — 스터디룸 입장 전이어도 추천인 프로그램은 이용 가능해야 하기 때문.
-async function getApprovedMemberUid(request, env) {
-  const uid = await getMemberUid(request, env);
-  if (!uid) return null;
-  const user = await env.DB.prepare('SELECT study_room_approved FROM users WHERE uid = ?').bind(uid).first();
-  return (user && user.study_room_approved) ? uid : null;
+async function getGeneralEmail(request, env) {
+  if (!env.DB) return null;
+  const token = getCookie(request, GENERAL_SESSION_COOKIE);
+  if (!token) return null;
+  const session = await env.DB.prepare(
+    'SELECT * FROM general_sessions WHERE token = ? AND expires_at > ?'
+  ).bind(token, Date.now()).first();
+  return session ? session.email : null;
 }
 
 // ───────────────────────── Gate.io 레퍼럴 확인 (공용 로직) ─────────────────────────
@@ -933,8 +1227,6 @@ async function ensureSchema(env) {
       salt TEXT NOT NULL,
       password_hash TEXT NOT NULL,
       nickname TEXT,
-      trading_volume REAL NOT NULL DEFAULT 0,
-      study_room_approved INTEGER NOT NULL DEFAULT 0,
       created_at INTEGER NOT NULL
     )`),
     env.DB.prepare(`CREATE TABLE IF NOT EXISTS sessions (
@@ -968,69 +1260,106 @@ async function ensureSchema(env) {
       content TEXT NOT NULL,
       created_at INTEGER NOT NULL
     )`),
+    env.DB.prepare(`CREATE TABLE IF NOT EXISTS general_members (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      email TEXT UNIQUE NOT NULL,
+      salt TEXT NOT NULL,
+      password_hash TEXT NOT NULL,
+      nickname TEXT,
+      gate_uid TEXT UNIQUE,
+      gate_api_key TEXT,
+      gate_api_secret TEXT,
+      trading_volume REAL NOT NULL DEFAULT 0,
+      ranking_opt_in INTEGER NOT NULL DEFAULT 0,
+      created_at INTEGER NOT NULL
+    )`),
+    env.DB.prepare(`CREATE TABLE IF NOT EXISTS general_sessions (
+      token TEXT PRIMARY KEY,
+      email TEXT NOT NULL,
+      created_at INTEGER NOT NULL,
+      expires_at INTEGER NOT NULL
+    )`),
     env.DB.prepare(`CREATE TABLE IF NOT EXISTS referral_codes (
       code TEXT PRIMARY KEY,
-      owner_uid TEXT NOT NULL UNIQUE,
+      owner_email TEXT NOT NULL UNIQUE,
       created_at INTEGER NOT NULL
     )`),
     env.DB.prepare(`CREATE TABLE IF NOT EXISTS referral_signups (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       code TEXT NOT NULL,
-      owner_uid TEXT NOT NULL,
-      referred_uid TEXT NOT NULL UNIQUE,
+      owner_email TEXT NOT NULL,
+      referred_email TEXT NOT NULL UNIQUE,
       reward_krw INTEGER NOT NULL,
       qualified INTEGER NOT NULL DEFAULT 0,
       created_at INTEGER NOT NULL
     )`),
     env.DB.prepare(`CREATE TABLE IF NOT EXISTS referral_withdrawals (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
-      owner_uid TEXT NOT NULL,
+      owner_email TEXT NOT NULL,
       telegram_id TEXT NOT NULL,
       wallet_address TEXT NOT NULL,
       amount_krw INTEGER NOT NULL,
       status TEXT NOT NULL DEFAULT 'pending',
+      paid_at INTEGER,
       created_at INTEGER NOT NULL
     )`),
   ]);
+
   // 예전 DB에 없던 컬럼들 보강 (이미 있으면 무시)
+  try { await env.DB.prepare('ALTER TABLE posts ADD COLUMN image_data TEXT').run(); } catch (e) {}
+  try { await env.DB.prepare('ALTER TABLE users ADD COLUMN nickname TEXT').run(); } catch (e) {}
+  try { await env.DB.prepare('ALTER TABLE posts ADD COLUMN thumb_data TEXT').run(); } catch (e) {}
+  try { await env.DB.prepare('ALTER TABLE posts ADD COLUMN min_grade TEXT').run(); } catch (e) {}
+  try { await env.DB.prepare('ALTER TABLE referral_withdrawals ADD COLUMN paid_at INTEGER').run(); } catch (e) {}
+
+  // 지난 세션에서 시도했던 "스터디룸 입장 관리자 승인" + users.trading_volume은 이번에
+  // 완전히 되돌림(계정 분리 설계로 재설계) — 더는 쓰지 않는 컬럼이라 제거를 시도한다.
+  // (D1이 DROP COLUMN을 지원 안 하거나 컬럼이 이미 없으면 그냥 무시됨, 앱 동작엔 영향 없음)
+  try { await env.DB.prepare('ALTER TABLE users DROP COLUMN study_room_approved').run(); } catch (e) {}
+  try { await env.DB.prepare('ALTER TABLE users DROP COLUMN trading_volume').run(); } catch (e) {}
+
+  // referral_codes/referral_signups/referral_withdrawals는 원래 스터디룸 UID 소유였는데
+  // 이번에 일반 계정(이메일) 소유로 완전히 이전됨 — 기존 실적은 초기화하기로 했으므로
+  // (컬럼명이 달라 그대로 이어붙일 수 없음) 예전 스키마가 남아있으면 통째로 지우고 새로 만든다.
   try {
-    await env.DB.prepare('ALTER TABLE posts ADD COLUMN image_data TEXT').run();
+    const legacyCheck = await env.DB.prepare('SELECT owner_uid FROM referral_codes LIMIT 1').first().catch(() => undefined);
+    if (legacyCheck !== undefined) {
+      await env.DB.batch([
+        env.DB.prepare('DROP TABLE IF EXISTS referral_withdrawals'),
+        env.DB.prepare('DROP TABLE IF EXISTS referral_signups'),
+        env.DB.prepare('DROP TABLE IF EXISTS referral_codes'),
+      ]);
+      await env.DB.batch([
+        env.DB.prepare(`CREATE TABLE referral_codes (
+          code TEXT PRIMARY KEY,
+          owner_email TEXT NOT NULL UNIQUE,
+          created_at INTEGER NOT NULL
+        )`),
+        env.DB.prepare(`CREATE TABLE referral_signups (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          code TEXT NOT NULL,
+          owner_email TEXT NOT NULL,
+          referred_email TEXT NOT NULL UNIQUE,
+          reward_krw INTEGER NOT NULL,
+          qualified INTEGER NOT NULL DEFAULT 0,
+          created_at INTEGER NOT NULL
+        )`),
+        env.DB.prepare(`CREATE TABLE referral_withdrawals (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          owner_email TEXT NOT NULL,
+          telegram_id TEXT NOT NULL,
+          wallet_address TEXT NOT NULL,
+          amount_krw INTEGER NOT NULL,
+          status TEXT NOT NULL DEFAULT 'pending',
+          paid_at INTEGER,
+          created_at INTEGER NOT NULL
+        )`),
+      ]);
+    }
   } catch (e) {
-    // 컬럼이 이미 있으면 여기로 오는 게 정상
+    // 예전 테이블이 없거나 이미 새 스키마면 여기로 옴 — 무시
   }
-  try {
-    await env.DB.prepare('ALTER TABLE users ADD COLUMN nickname TEXT').run();
-  } catch (e) {
-    // 컬럼이 이미 있으면 여기로 오는 게 정상
-  }
-  try {
-    await env.DB.prepare('ALTER TABLE posts ADD COLUMN thumb_data TEXT').run();
-  } catch (e) {
-    // 컬럼이 이미 있으면 여기로 오는 게 정상
-  }
-  try {
-    await env.DB.prepare('ALTER TABLE posts ADD COLUMN min_grade TEXT').run();
-  } catch (e) {
-    // 컬럼이 이미 있으면 여기로 오는 게 정상
-  }
-  try {
-    await env.DB.prepare('ALTER TABLE users ADD COLUMN trading_volume REAL NOT NULL DEFAULT 0').run();
-  } catch (e) {
-    // 컬럼이 이미 있으면 여기로 오는 게 정상
-  }
-  try {
-    await env.DB.prepare('ALTER TABLE users ADD COLUMN study_room_approved INTEGER NOT NULL DEFAULT 0').run();
-    // 컬럼이 방금 처음 추가된 경우에만 도달함 — 기존 회원들은 이미 실질적으로 스터디룸을 쓰고 있었으므로
-    // 전부 승인 상태로 백필 (이후 신규 가입자는 기본값 0, 관리자가 개별 승인)
-    await env.DB.prepare('UPDATE users SET study_room_approved = 1').run();
-  } catch (e) {
-    // 컬럼이 이미 있으면 여기로 오는 게 정상
-  }
-  try {
-    await env.DB.prepare('ALTER TABLE referral_signups ADD COLUMN qualified INTEGER NOT NULL DEFAULT 0').run();
-  } catch (e) {
-    // 컬럼이 이미 있으면 여기로 오는 게 정상
-  }
+
   schemaReady = true;
 }
 
@@ -1046,9 +1375,23 @@ async function createSession(env, uid) {
   return token;
 }
 
+async function createGeneralSession(env, email) {
+  const token = toHex(crypto.getRandomValues(new Uint8Array(32)).buffer);
+  const now = Date.now();
+  const expires = now + GENERAL_SESSION_DAYS * 24 * 60 * 60 * 1000;
+  await env.DB.prepare(
+    'INSERT INTO general_sessions (token, email, created_at, expires_at) VALUES (?, ?, ?, ?)'
+  ).bind(token, email, now, expires).run();
+  return token;
+}
+
 function sessionCookie(token) {
   const maxAge = SESSION_DAYS * 24 * 60 * 60;
   return `${SESSION_COOKIE}=${token}; Path=/; Max-Age=${maxAge}; HttpOnly; Secure; SameSite=Lax`;
+}
+function generalSessionCookie(token) {
+  const maxAge = GENERAL_SESSION_DAYS * 24 * 60 * 60;
+  return `${GENERAL_SESSION_COOKIE}=${token}; Path=/; Max-Age=${maxAge}; HttpOnly; Secure; SameSite=Lax`;
 }
 function clearCookie(name) {
   return `${name}=; Path=/; Max-Age=0; HttpOnly; Secure; SameSite=Lax`;
