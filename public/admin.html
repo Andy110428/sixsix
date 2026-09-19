@@ -53,6 +53,7 @@
   .result-box{ margin-top:14px; padding:12px 14px; border-radius:var(--radius-sm); font-size:0.85rem; font-family:'JetBrains Mono',monospace; }
   .result-box.good{ background:rgba(212,162,78,0.1); border:1px solid rgba(212,162,78,0.35); color:var(--cyan); }
   .result-box.warn{ background:rgba(255,92,122,0.1); border:1px solid rgba(255,92,122,0.35); color:var(--danger); }
+  .result-box.pending{ background:rgba(255,255,255,0.04); border:1px solid var(--line); color:var(--text-dim); }
 
   main.wrap{ padding:36px 24px 80px; }
   .page-head{ margin-bottom:24px; }
@@ -84,6 +85,13 @@
   .post-detail .comment:first-of-type{ border-top:none; }
 
   .empty-note{ color:var(--text-faint); font-size:0.85rem; padding:8px 0; }
+
+  .app-row{ display:flex; flex-direction:column; gap:6px; padding:14px 0; border-top:1px solid var(--line-soft); font-size:0.86rem; }
+  .app-row:first-of-type{ border-top:none; }
+  .app-status{ font-family:'JetBrains Mono',monospace; font-size:0.72rem; padding:3px 9px; border-radius:999px; border:1px solid var(--line); color:var(--text-dim); display:inline-block; }
+  .app-status.pending{ color:var(--amber); border-color:rgba(232,192,125,0.35); }
+  .app-status.approved{ color:var(--cyan); border-color:rgba(212,162,78,0.35); }
+  .app-status.rejected{ color:var(--danger); border-color:rgba(255,92,122,0.35); }
 
   footer{ border-top:1px solid var(--line); padding:28px 0; }
   .footer-row{ display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; }
@@ -135,35 +143,26 @@
   </div>
 
   <div class="panel">
-    <h2>스터디룸 회원 관리 (UID 조회)</h2>
-    <p class="panel-note">UID로 조회하면 비밀번호를 초기화할 수 있어요. 스터디룸 계정은 Gate.io 전용 링크 가입 확인만으로 바로 이용 가능하고 별도 승인 절차는 없어요.</p>
+    <h2>회원 관리</h2>
+    <p class="panel-note">이메일 또는 등록된 Gate UID로 검색하세요. 계정은 단일 시스템이라 스터디룸/추천인 여부를 한 화면에서 확인할 수 있어요.</p>
     <div style="display:flex; gap:8px;">
-      <input type="text" id="reset-uid" placeholder="회원 UID" inputmode="numeric" style="flex:1;">
-      <button type="button" class="btn btn-ghost" id="reset-find-btn" style="width:auto; white-space:nowrap;">조회</button>
+      <input type="text" id="member-query" placeholder="이메일 또는 UID" style="flex:1;">
+      <button type="button" class="btn btn-ghost" id="member-find-btn" style="width:auto; white-space:nowrap;">조회</button>
     </div>
-    <div id="reset-find-result" class="result-box" hidden></div>
+    <div id="member-find-result" class="result-box" hidden></div>
 
-    <div id="found-user-actions" hidden style="margin-top:14px;">
-      <button type="button" class="btn btn-primary" id="reset-pw-btn">비밀번호 초기화</button>
-      <div id="reset-pw-result" class="result-box" hidden></div>
-    </div>
-  </div>
-
-  <div class="panel">
-    <h2>일반 회원(추천인) 관리</h2>
-    <p class="panel-note">추천인/랭킹 시스템은 이메일로 가입하는 별도 계정이에요. 이메일 또는 연동된 Gate UID로 검색해서 거래량을 입력하면 랭킹과 추천인 확정 여부에 함께 반영돼요.</p>
-    <div style="display:flex; gap:8px;">
-      <input type="text" id="general-query" placeholder="이메일 또는 Gate UID" style="flex:1;">
-      <button type="button" class="btn btn-ghost" id="general-find-btn" style="width:auto; white-space:nowrap;">조회</button>
-    </div>
-    <div id="general-find-result" class="result-box" hidden></div>
-
-    <div id="found-general-actions" hidden style="margin-top:14px;">
-      <div style="display:flex; gap:8px;">
-        <input type="number" id="general-volume-input" placeholder="거래량 (USD)" min="0" step="1" style="flex:1;">
-        <button type="button" class="btn btn-ghost" id="general-volume-btn" style="width:auto; white-space:nowrap;">거래량 설정</button>
+    <div id="found-member-actions" hidden style="margin-top:14px; display:flex; flex-direction:column; gap:14px;">
+      <div>
+        <button type="button" class="btn btn-primary" id="reset-pw-btn">비밀번호 초기화</button>
+        <div id="reset-pw-result" class="result-box" hidden></div>
       </div>
-      <div id="general-volume-result" class="result-box" hidden></div>
+      <div>
+        <div style="display:flex; gap:8px;">
+          <input type="number" id="member-volume-input" placeholder="거래량 (USD)" min="0" step="1" style="flex:1;">
+          <button type="button" class="btn btn-ghost" id="member-volume-btn" style="width:auto; white-space:nowrap;">거래량 설정</button>
+        </div>
+        <div id="member-volume-result" class="result-box" hidden></div>
+      </div>
     </div>
 
     <div style="display:flex; gap:8px; margin:18px 0 10px;">
@@ -175,8 +174,14 @@
   </div>
 
   <div class="panel">
+    <h2>추천인 파트너 신청 관리</h2>
+    <p class="panel-note">회원이 referral.html에서 "파트너 신청하기"를 누르면 여기 올라와요. 승인해야 추천인 코드 발급/대시보드를 쓸 수 있어요.</p>
+    <div id="applications-list"></div>
+  </div>
+
+  <div class="panel">
     <h2>추천인 코드 발급자 현황</h2>
-    <p class="panel-note">추천인 코드를 발급한 모든 일반 회원의 실적을 한눈에 확인해요.</p>
+    <p class="panel-note">추천인 코드를 발급한 모든 회원의 실적을 한눈에 확인해요.</p>
     <div id="issuers-list"></div>
   </div>
 
@@ -184,6 +189,35 @@
     <h2>추천인 출금 신청</h2>
     <p class="panel-note">신청이 오면 텔레그램으로도 알림이 가요(설정했다면). 심사 후 아래에서 상태를 바꿔주세요.</p>
     <div id="withdrawals-list"></div>
+  </div>
+
+  <div class="panel">
+    <h2>경제 캘린더 관리</h2>
+    <p class="panel-note">위젯이 아니라 직접 입력하는 일정이에요. 중요도는 별 1~3개로 표시돼요.</p>
+    <form id="event-form" class="auth-form">
+      <input type="hidden" id="event-editing-id" value="">
+      <div style="display:flex; gap:8px;">
+        <input type="datetime-local" id="event-time" style="flex:1;">
+        <select id="event-importance" style="max-width:140px;">
+          <option value="1">★ 낮음</option>
+          <option value="2">★★ 보통</option>
+          <option value="3" selected>★★★ 높음</option>
+        </select>
+      </div>
+      <input type="text" id="event-country" placeholder="국가(선택, 예: US)">
+      <input type="text" id="event-title" placeholder="일정 제목 (예: 9월 CPI 발표)">
+      <div style="display:flex; gap:8px;">
+        <input type="text" id="event-forecast" placeholder="예상치(선택)">
+        <input type="text" id="event-previous" placeholder="이전치(선택)">
+        <input type="text" id="event-actual" placeholder="실제치(선택)">
+      </div>
+      <div style="display:flex; gap:8px;">
+        <button type="submit" class="btn btn-primary">등록하기</button>
+        <button type="button" class="btn btn-ghost" id="event-cancel-btn" hidden>취소</button>
+      </div>
+    </form>
+    <div id="event-result" class="result-box" hidden></div>
+    <div id="events-list" style="margin-top:16px;"></div>
   </div>
 
   <div class="panel">
@@ -260,7 +294,10 @@
 
   function showResult(el, text, kind){ el.hidden = false; el.textContent = text; el.className = 'result-box ' + kind; }
 
-  function unlock(){ gate.hidden = true; dashboard.hidden = false; logoutBtn.hidden = false; loadAllLists(); loadStats(); loadIssuers(); loadWithdrawals(); }
+  function unlock(){
+    gate.hidden = true; dashboard.hidden = false; logoutBtn.hidden = false;
+    loadAllLists(); loadStats(); loadIssuers(); loadWithdrawals(); loadApplications(); loadEvents();
+  }
   function lock(){ gate.hidden = false; dashboard.hidden = true; logoutBtn.hidden = true; }
 
   async function checkSession(){
@@ -290,43 +327,58 @@
     lock();
   });
 
-  var resetUidInput = document.getElementById('reset-uid');
-  var resetFindBtn = document.getElementById('reset-find-btn');
-  var resetFindResult = document.getElementById('reset-find-result');
-  var foundUserActions = document.getElementById('found-user-actions');
+  // ── 회원 관리 ──
+  var memberQueryInput = document.getElementById('member-query');
+  var memberFindBtn = document.getElementById('member-find-btn');
+  var memberFindResult = document.getElementById('member-find-result');
+  var foundMemberActions = document.getElementById('found-member-actions');
   var resetPwBtn = document.getElementById('reset-pw-btn');
   var resetPwResult = document.getElementById('reset-pw-result');
-  var foundUid = null;
+  var memberVolumeInput = document.getElementById('member-volume-input');
+  var memberVolumeBtn = document.getElementById('member-volume-btn');
+  var memberVolumeResult = document.getElementById('member-volume-result');
+  var foundEmail = null;
 
-  resetFindBtn.addEventListener('click', async function(){
-    var uid = resetUidInput.value.trim();
-    foundUserActions.hidden = true;
+  var partnerStatusLabel = { none:'미신청', pending:'심사중', approved:'승인됨', rejected:'거절됨' };
+
+  memberFindBtn.addEventListener('click', async function(){
+    var query = memberQueryInput.value.trim();
+    foundMemberActions.hidden = true;
     resetPwResult.hidden = true;
-    foundUid = null;
-    if(!uid){ showResult(resetFindResult, 'UID를 입력해주세요.', 'warn'); return; }
-    resetFindBtn.disabled = true;
+    memberVolumeResult.hidden = true;
+    foundEmail = null;
+    if(!query){ showResult(memberFindResult, '이메일 또는 UID를 입력해주세요.', 'warn'); return; }
+    memberFindBtn.disabled = true;
     try{
-      var res = await fetch('/api/admin/find-user?uid=' + encodeURIComponent(uid), { credentials:'same-origin' });
+      var res = await fetch('/api/admin/find-member?query=' + encodeURIComponent(query), { credentials:'same-origin' });
       var data = await res.json();
       if(data.ok && data.found){
-        foundUid = data.uid;
-        showResult(resetFindResult, '찾음 — UID ' + data.uid + (data.nickname ? ' (' + data.nickname + ')' : ''), 'good');
-        foundUserActions.hidden = false;
+        foundEmail = data.email;
+        showResult(memberFindResult,
+          '찾음 — ' + data.email + (data.nickname ? ' (' + data.nickname + ')' : '') +
+          ' · 스터디룸 UID ' + (data.uid || '미등록') +
+          ' · API 연동 UID ' + (data.gate_uid || '미연동') +
+          ' · 거래량 $' + Number(data.trading_volume || 0).toLocaleString() +
+          ' · 랭킹 참여 ' + (data.ranking_opt_in ? 'O' : 'X') +
+          ' · 추천인 파트너 ' + (partnerStatusLabel[data.referral_partner_status] || data.referral_partner_status) +
+          ' · 추천인 코드 ' + (data.referral_code || '미발급'), 'good');
+        memberVolumeInput.value = data.trading_volume || 0;
+        foundMemberActions.hidden = false;
       } else if(data.ok){
-        showResult(resetFindResult, '해당 UID로 가입된 계정이 없습니다.', 'warn');
+        showResult(memberFindResult, '해당 이메일/UID로 가입된 계정이 없습니다.', 'warn');
       } else {
-        showResult(resetFindResult, data.error || '조회에 실패했습니다.', 'warn');
+        showResult(memberFindResult, data.error || '조회에 실패했습니다.', 'warn');
       }
-    } catch(e){ showResult(resetFindResult, '오류가 발생했습니다.', 'warn'); }
-    finally{ resetFindBtn.disabled = false; }
+    } catch(e){ showResult(memberFindResult, '오류가 발생했습니다.', 'warn'); }
+    finally{ memberFindBtn.disabled = false; }
   });
 
   resetPwBtn.addEventListener('click', async function(){
-    if(!foundUid) return;
-    if(!confirm('UID ' + foundUid + '의 비밀번호를 초기화할까요? 기존 로그인 세션은 모두 만료됩니다.')) return;
+    if(!foundEmail) return;
+    if(!confirm(foundEmail + '의 비밀번호를 초기화할까요? 기존 로그인 세션은 모두 만료됩니다.')) return;
     resetPwBtn.disabled = true;
     try{
-      var res = await fetch('/api/admin/reset-password', { method:'POST', credentials:'same-origin', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ uid: foundUid }) });
+      var res = await fetch('/api/admin/reset-password', { method:'POST', credentials:'same-origin', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ email: foundEmail }) });
       var data = await res.json();
       if(data.ok){ showResult(resetPwResult, '임시 비밀번호: ' + data.newPassword + '  (회원에게 이 비밀번호를 전달해주세요)', 'good'); }
       else showResult(resetPwResult, data.error || '재설정에 실패했습니다.', 'warn');
@@ -334,65 +386,27 @@
     finally{ resetPwBtn.disabled = false; }
   });
 
-  var generalQueryInput = document.getElementById('general-query');
-  var generalFindBtn = document.getElementById('general-find-btn');
-  var generalFindResult = document.getElementById('general-find-result');
-  var foundGeneralActions = document.getElementById('found-general-actions');
-  var generalVolumeInput = document.getElementById('general-volume-input');
-  var generalVolumeBtn = document.getElementById('general-volume-btn');
-  var generalVolumeResult = document.getElementById('general-volume-result');
-  var foundGeneralEmail = null;
-
-  generalFindBtn.addEventListener('click', async function(){
-    var query = generalQueryInput.value.trim();
-    foundGeneralActions.hidden = true;
-    generalVolumeResult.hidden = true;
-    foundGeneralEmail = null;
-    if(!query){ showResult(generalFindResult, '이메일 또는 UID를 입력해주세요.', 'warn'); return; }
-    generalFindBtn.disabled = true;
+  memberVolumeBtn.addEventListener('click', async function(){
+    if(!foundEmail) return;
+    var volume = Number(memberVolumeInput.value);
+    if(!Number.isFinite(volume) || volume < 0){ showResult(memberVolumeResult, '거래량 값을 확인해주세요.', 'warn'); return; }
+    memberVolumeBtn.disabled = true;
     try{
-      var res = await fetch('/api/admin/general/find?query=' + encodeURIComponent(query), { credentials:'same-origin' });
+      var res = await fetch('/api/admin/set-volume', { method:'POST', credentials:'same-origin', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ email: foundEmail, volume: volume }) });
       var data = await res.json();
-      if(data.ok && data.found){
-        foundGeneralEmail = data.email;
-        showResult(generalFindResult,
-          '찾음 — ' + data.email + (data.nickname ? ' (' + data.nickname + ')' : '') +
-          ' · UID ' + (data.gate_uid || '미연동') +
-          ' · 거래량 $' + Number(data.trading_volume || 0).toLocaleString() +
-          ' · 랭킹 참여 ' + (data.ranking_opt_in ? 'O' : 'X') +
-          ' · 추천인 코드 ' + (data.referral_code || '미발급'), 'good');
-        generalVolumeInput.value = data.trading_volume || 0;
-        foundGeneralActions.hidden = false;
-      } else if(data.ok){
-        showResult(generalFindResult, '해당 이메일/UID로 가입된 일반 계정이 없습니다.', 'warn');
-      } else {
-        showResult(generalFindResult, data.error || '조회에 실패했습니다.', 'warn');
-      }
-    } catch(e){ showResult(generalFindResult, '오류가 발생했습니다.', 'warn'); }
-    finally{ generalFindBtn.disabled = false; }
-  });
-
-  generalVolumeBtn.addEventListener('click', async function(){
-    if(!foundGeneralEmail) return;
-    var volume = Number(generalVolumeInput.value);
-    if(!Number.isFinite(volume) || volume < 0){ showResult(generalVolumeResult, '거래량 값을 확인해주세요.', 'warn'); return; }
-    generalVolumeBtn.disabled = true;
-    try{
-      var res = await fetch('/api/admin/general/set-volume', { method:'POST', credentials:'same-origin', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ email: foundGeneralEmail, volume: volume }) });
-      var data = await res.json();
-      if(data.ok){ showResult(generalVolumeResult, '거래량이 저장되었습니다. (추천인 확정 여부도 자동 반영됨)', 'good'); loadIssuers(); }
-      else showResult(generalVolumeResult, data.error || '저장에 실패했습니다.', 'warn');
-    } catch(e){ showResult(generalVolumeResult, '오류가 발생했습니다.', 'warn'); }
-    finally{ generalVolumeBtn.disabled = false; }
+      if(data.ok){ showResult(memberVolumeResult, '거래량이 저장되었습니다. (추천인 확정 여부도 자동 반영됨)', 'good'); loadIssuers(); }
+      else showResult(memberVolumeResult, data.error || '저장에 실패했습니다.', 'warn');
+    } catch(e){ showResult(memberVolumeResult, '오류가 발생했습니다.', 'warn'); }
+    finally{ memberVolumeBtn.disabled = false; }
   });
 
   var resetRankingsBtn = document.getElementById('reset-rankings-btn');
   var resetRankingsResult = document.getElementById('reset-rankings-result');
   resetRankingsBtn.addEventListener('click', async function(){
-    if(!confirm('전체 일반 회원의 거래량을 0으로 초기화할까요? 되돌릴 수 없습니다.')) return;
+    if(!confirm('전체 회원의 거래량을 0으로 초기화할까요? 되돌릴 수 없습니다.')) return;
     resetRankingsBtn.disabled = true;
     try{
-      var res = await fetch('/api/admin/general/reset-volumes', { method:'POST', credentials:'same-origin' });
+      var res = await fetch('/api/admin/reset-volumes', { method:'POST', credentials:'same-origin' });
       var data = await res.json();
       if(data.ok){ showResult(resetRankingsResult, '초기화되었습니다.', 'good'); loadIssuers(); }
       else showResult(resetRankingsResult, data.error || '초기화에 실패했습니다.', 'warn');
@@ -415,6 +429,45 @@
     } catch(e){ gateRawResult.className = 'result-box warn'; gateRawResult.textContent = '오류가 발생했습니다.'; }
     finally{ gateRawBtn.disabled = false; }
   });
+
+  // ── 추천인 파트너 신청 관리 ──
+  async function loadApplications(){
+    var el = document.getElementById('applications-list');
+    try{
+      var res = await fetch('/api/admin/referral/applications', { credentials:'same-origin' });
+      var data = await res.json();
+      var list = (data.ok && data.applications) ? data.applications : [];
+      if(list.length === 0){ el.innerHTML = '<div class="empty-note">파트너 신청 내역이 없습니다.</div>'; return; }
+      el.innerHTML = '';
+      list.forEach(function(a){
+        var row = document.createElement('div');
+        row.className = 'app-row';
+        row.innerHTML =
+          '<div><span class="app-status ' + a.status + '">' + (partnerStatusLabel[a.status] || a.status) + '</span> ' +
+          (a.applicant_nickname ? escapeHtml(a.applicant_nickname) + ' · ' : '') + escapeHtml(a.email) + '</div>' +
+          '<div style="color:var(--text-dim);">텔레그램: ' + escapeHtml(a.telegram_id) + ' · 지갑(USDT-TRC20): ' + escapeHtml(a.wallet_address) + '</div>' +
+          '<div style="color:var(--text-dim);">활동 계획: ' + escapeHtml(a.activity_plan || '-') + '</div>' +
+          (a.notes ? '<div style="color:var(--text-dim);">기타사항: ' + escapeHtml(a.notes) + '</div>' : '');
+        if(a.status === 'pending'){
+          var actions = document.createElement('div');
+          actions.style.cssText = 'display:flex; gap:8px; margin-top:4px;';
+          ['approved','rejected'].forEach(function(status){
+            var btn = document.createElement('button');
+            btn.className = 'btn btn-ghost';
+            btn.style.width = 'auto';
+            btn.textContent = status === 'approved' ? '승인' : '거절';
+            btn.addEventListener('click', async function(){
+              await fetch('/api/admin/referral/applications/update', { method:'POST', credentials:'same-origin', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ id: a.id, status: status }) });
+              loadApplications();
+            });
+            actions.appendChild(btn);
+          });
+          row.appendChild(actions);
+        }
+        el.appendChild(row);
+      });
+    } catch(e){ el.innerHTML = '<div class="empty-note">불러오기에 실패했습니다.</div>'; }
+  }
 
   async function loadIssuers(){
     var el = document.getElementById('issuers-list');
@@ -468,6 +521,108 @@
         el.appendChild(row);
       });
     } catch(e){ el.innerHTML = '<div class="empty-note">불러오기에 실패했습니다.</div>'; }
+  }
+
+  // ── 경제 캘린더 관리 ──
+  var eventForm = document.getElementById('event-form');
+  var eventResult = document.getElementById('event-result');
+  var eventCancelBtn = document.getElementById('event-cancel-btn');
+
+  function toLocalInputValue(ts){
+    var d = new Date(ts);
+    var pad = function(n){ return String(n).padStart(2, '0'); };
+    return d.getFullYear() + '-' + pad(d.getMonth()+1) + '-' + pad(d.getDate()) + 'T' + pad(d.getHours()) + ':' + pad(d.getMinutes());
+  }
+
+  eventForm.addEventListener('submit', async function(e){
+    e.preventDefault();
+    var editingId = document.getElementById('event-editing-id').value;
+    var timeVal = document.getElementById('event-time').value;
+    var title = document.getElementById('event-title').value.trim();
+    if(!timeVal || !title){ showResult(eventResult, '일정 시각과 제목을 입력해주세요.', 'warn'); return; }
+    var payload = {
+      event_time: new Date(timeVal).getTime(),
+      country: document.getElementById('event-country').value.trim(),
+      title: title,
+      importance: Number(document.getElementById('event-importance').value),
+      forecast: document.getElementById('event-forecast').value.trim(),
+      previous: document.getElementById('event-previous').value.trim(),
+      actual: document.getElementById('event-actual').value.trim(),
+    };
+    var url = '/api/admin/economic-events/create';
+    if(editingId){ payload.id = Number(editingId); url = '/api/admin/economic-events/update'; }
+    var btn = eventForm.querySelector('button[type=submit]'); btn.disabled = true;
+    try{
+      var res = await fetch(url, { method:'POST', credentials:'same-origin', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+      var data = await res.json();
+      if(data.ok){ showResult(eventResult, editingId ? '수정되었습니다.' : '등록되었습니다.', 'good'); resetEventForm(); loadEvents(); }
+      else showResult(eventResult, data.error || '처리에 실패했습니다.', 'warn');
+    } catch(e){ showResult(eventResult, '오류가 발생했습니다.', 'warn'); }
+    finally{ btn.disabled = false; }
+  });
+
+  function resetEventForm(){
+    document.getElementById('event-editing-id').value = '';
+    eventForm.reset();
+    document.getElementById('event-importance').value = '3';
+    eventCancelBtn.hidden = true;
+    eventForm.querySelector('button[type=submit]').textContent = '등록하기';
+  }
+  eventCancelBtn.addEventListener('click', resetEventForm);
+
+  async function loadEvents(){
+    var el = document.getElementById('events-list');
+    try{
+      var res = await fetch('/api/admin/economic-events', { credentials:'same-origin' });
+      var data = await res.json();
+      var list = (data.ok && data.events) ? data.events : [];
+      if(list.length === 0){ el.innerHTML = '<div class="empty-note">등록된 일정이 없습니다.</div>'; return; }
+      el.innerHTML = '';
+      list.forEach(function(ev){
+        var row = document.createElement('div');
+        row.className = 'post-row';
+        var left = document.createElement('span');
+        left.className = 'title-cell';
+        left.textContent = '★'.repeat(ev.importance) + ' ' + fmtDateTime(ev.event_time) + ' · ' + ev.title;
+        var actions = document.createElement('div');
+        actions.className = 'row-actions';
+        var editBtn = document.createElement('button');
+        editBtn.className = 'edit-btn';
+        editBtn.textContent = '수정';
+        editBtn.addEventListener('click', function(){
+          document.getElementById('event-editing-id').value = ev.id;
+          document.getElementById('event-time').value = toLocalInputValue(ev.event_time);
+          document.getElementById('event-country').value = ev.country || '';
+          document.getElementById('event-title').value = ev.title;
+          document.getElementById('event-importance').value = String(ev.importance);
+          document.getElementById('event-forecast').value = ev.forecast || '';
+          document.getElementById('event-previous').value = ev.previous || '';
+          document.getElementById('event-actual').value = ev.actual || '';
+          eventCancelBtn.hidden = false;
+          eventForm.querySelector('button[type=submit]').textContent = '수정 완료';
+          window.scrollTo({ top: eventForm.offsetTop - 20, behavior: 'smooth' });
+        });
+        var del = document.createElement('button');
+        del.className = 'del-btn';
+        del.textContent = '삭제';
+        del.addEventListener('click', async function(){
+          if(!confirm('삭제하시겠습니까?')) return;
+          await fetch('/api/admin/economic-events/delete', { method:'POST', credentials:'same-origin', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ id: ev.id }) });
+          loadEvents();
+        });
+        actions.appendChild(editBtn);
+        actions.appendChild(del);
+        row.appendChild(left);
+        row.appendChild(actions);
+        el.appendChild(row);
+      });
+    } catch(e){ el.innerHTML = '<div class="empty-note">불러오기에 실패했습니다.</div>'; }
+  }
+
+  function fmtDateTime(ts){
+    var d = new Date(ts);
+    var pad = function(n){ return String(n).padStart(2, '0'); };
+    return (d.getMonth()+1) + '/' + d.getDate() + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes());
   }
 
   postForm.addEventListener('submit', async function(e){
@@ -575,8 +730,9 @@
       var data = await res.json();
       if(!data.ok) return;
       el.innerHTML =
-        statBox(data.members, '스터디룸 회원') +
-        statBox(data.general_members, '일반(추천인) 계정') +
+        statBox(data.members, '전체 계정') +
+        statBox(data.study_room_members, '스터디룸(UID 등록)') +
+        statBox(data.partners, '추천인 파트너') +
         statBox(data.notices, '공지') +
         statBox(data.lectures, '강의') +
         statBox(data.questions, '질문') +

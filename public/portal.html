@@ -8,7 +8,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
   :root{
     --bg:#09090b; --bg-soft:#101014; --panel:#151519; --line:rgba(255,255,255,0.08);
-    --text:#f4f3f1; --text-dim:#96938d; --cyan:#d4a24e; --violet:#8a6633; --amber:#e8c07d; --danger:#ff5c7a;
+    --text:#f4f3f1; --text-dim:#96938d; --cyan:#d4a24e; --violet:#8a6633; --amber:#e8c07d; --danger:#ff5c7a; --good:#4ade80;
   }
   *{ box-sizing: border-box; }
   [hidden]{ display:none !important; }
@@ -23,16 +23,34 @@
   .wrap{ max-width:920px; margin:0 auto; padding:0 24px; }
 
   header{ position:sticky; top:0; z-index:50; backdrop-filter:blur(14px); background:rgba(10,9,8,0.75); border-bottom:1px solid var(--line); }
-  .nav{ display:flex; align-items:center; justify-content:space-between; padding:16px 24px; max-width:920px; margin:0 auto; flex-wrap: wrap; gap: 10px; }
-  .brand{ display:flex; align-items:center; gap:10px; font-weight:700; font-size:1.05rem; }
+  .nav{ display:flex; align-items:center; justify-content:space-between; padding:16px 24px; max-width:920px; margin:0 auto; gap: 10px; position:relative; }
+  .brand{ display:flex; align-items:center; gap:10px; font-weight:700; font-size:1.05rem; flex-shrink:0; }
   .brand .dot{ width:9px; height:9px; border-radius:50%; background:var(--cyan); box-shadow:0 0 10px var(--cyan),0 0 22px var(--cyan); }
   .brand .tag{ font-family:'JetBrains Mono',monospace; font-size:0.7rem; color:var(--text-dim); border:1px solid var(--line); padding:2px 8px; border-radius:999px; margin-left:6px; }
   .tabs{ display:flex; gap:4px; align-items:center; flex-wrap: wrap; }
-  .tab-link{ padding:8px 14px; border-radius:8px; font-size:0.9rem; font-weight:600; color:var(--text-dim); border:none; background:none; cursor:pointer; }
+  .tab-link{ padding:8px 14px; border-radius:8px; font-size:0.9rem; font-weight:600; color:var(--text-dim); border:none; background:none; cursor:pointer; white-space:nowrap; }
   .tab-link:hover{ color:var(--text); background:rgba(255,255,255,0.04); }
   .tab-link.active{ color:var(--cyan); background:rgba(212,162,78,0.08); }
-  .icon-btn{ padding:7px 12px; border-radius:8px; font-size:0.82rem; color:var(--text-dim); border:1px solid var(--line); background:none; cursor:pointer; }
+  .icon-btn{ padding:7px 12px; border-radius:8px; font-size:0.82rem; color:var(--text-dim); border:1px solid var(--line); background:none; cursor:pointer; white-space:nowrap; }
   .icon-btn:hover{ color:var(--text); border-color:rgba(255,255,255,0.25); }
+
+  .tabs-menu-btn{ display:none; width:42px; height:42px; flex-shrink:0; border-radius:8px; border:1px solid var(--line); background:rgba(255,255,255,0.03); flex-direction:column; align-items:center; justify-content:center; gap:5px; cursor:pointer; }
+  .tabs-menu-btn span{ display:block; width:18px; height:2px; background:var(--text); border-radius:2px; }
+
+  @media (max-width:860px){
+    .tabs-menu-btn{ display:flex; }
+    .tabs{
+      position:absolute; top:calc(100% + 8px); right:16px; left:16px;
+      flex-direction:column; align-items:stretch;
+      background:var(--panel); border:1px solid var(--line); border-radius:12px;
+      padding:8px; box-shadow:0 16px 40px -12px rgba(0,0,0,0.6);
+      opacity:0; visibility:hidden; transform:translateY(-6px);
+      transition:opacity .15s ease, transform .15s ease, visibility .15s;
+      z-index:70;
+    }
+    .tabs.open{ opacity:1; visibility:visible; transform:translateY(0); }
+    .tabs .tab-link, .tabs .icon-btn{ width:100%; text-align:left; }
+  }
 
   .btn{ display:inline-flex; align-items:center; justify-content:center; gap:8px; padding:11px 18px; border-radius:8px; font-weight:600; font-size:0.9rem; cursor:pointer; border:1px solid var(--line); transition:transform .15s ease; }
   .btn:hover{ transform:translateY(-1px); }
@@ -49,8 +67,8 @@
   .auth-tab{ flex:1; padding:9px; border:none; background:none; border-radius:8px; color:var(--text-dim); font-weight:600; font-size:0.9rem; cursor:pointer; }
   .auth-tab.active{ background:var(--panel); color:var(--cyan); box-shadow:0 0 0 1px var(--line); }
   .auth-form{ display:flex; flex-direction:column; gap:10px; }
-  input, textarea{ padding:12px 14px; border-radius:8px; border:1px solid var(--line); background:var(--bg-soft); color:var(--text); font-family:'JetBrains Mono',monospace; font-size:0.92rem; }
-  input:focus, textarea:focus{ outline:none; border-color:rgba(212,162,78,0.5); }
+  input, textarea, select{ padding:12px 14px; border-radius:8px; border:1px solid var(--line); background:var(--bg-soft); color:var(--text); font-family:'JetBrains Mono',monospace; font-size:0.92rem; width:100%; }
+  input:focus, textarea:focus, select:focus{ outline:none; border-color:rgba(212,162,78,0.5); }
   textarea{ font-family:'Inter',sans-serif; resize:vertical; min-height:120px; }
   .auth-form .btn{ margin-top:6px; }
 
@@ -75,9 +93,21 @@
   .post-card .arrow{ color:var(--text-dim); flex-shrink:0; }
   .post-thumb{ width:52px; height:52px; border-radius:8px; object-fit:cover; flex-shrink:0; }
 
-  .calendar-frame-wrap{ border-radius:16px; overflow:hidden; border:1px solid var(--line); background:var(--panel); }
-  .calendar-frame{ width:100%; height:600px; border:none; display:block; }
-  .calendar-note{ color:var(--text-dim); font-size:0.78rem; margin-top:12px; }
+  .event-row{ background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:16px 20px; display:flex; align-items:center; gap:16px; margin-bottom:10px; }
+  .event-stars{ color:var(--amber); font-size:0.9rem; flex-shrink:0; width:64px; }
+  .event-time{ font-family:'JetBrains Mono',monospace; font-size:0.78rem; color:var(--text-dim); flex-shrink:0; width:120px; }
+  .event-body h3{ font-size:0.94rem; }
+  .event-figs{ font-size:0.78rem; color:var(--text-dim); margin-top:4px; }
+  .calendar-note{ color:var(--text-dim); font-size:0.78rem; margin-top:4px; margin-bottom:16px; }
+
+  .liq-card{ background:var(--panel); border:1px solid var(--line); border-radius:16px; padding:32px; text-align:center; }
+  .liq-card p{ color:var(--text-dim); font-size:0.9rem; max-width:480px; margin:10px auto 20px; }
+
+  .rank-widget{ background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:18px 20px; max-width:340px; margin:0 auto 40px; }
+  .rank-widget h3{ font-size:0.86rem; color:var(--text-dim); font-weight:600; margin-bottom:10px; display:flex; align-items:center; gap:6px; }
+  .rank-row{ display:flex; justify-content:space-between; align-items:center; padding:6px 0; font-size:0.82rem; border-top:1px solid rgba(255,255,255,0.05); }
+  .rank-row:first-of-type{ border-top:none; }
+  .rank-vol{ font-family:'JetBrains Mono',monospace; color:var(--cyan); }
 
   .stat-box{ background:var(--bg-soft); border:1px solid var(--line); border-radius:10px; padding:12px; text-align:center; }
   .stat-box .num{ font-family:'Sora',sans-serif; font-size:1.1rem; font-weight:700; color:var(--cyan); }
@@ -87,6 +117,12 @@
   .empty-note{ text-align:center; padding:36px 20px; color:var(--text-dim); font-size:0.88rem; border:1px dashed var(--line); border-radius:12px; }
 
   .new-post-form{ background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:20px; margin-bottom:20px; display:flex; flex-direction:column; gap:10px; }
+
+  .uid-box{ background:var(--bg-soft); border:1px solid var(--line); border-radius:10px; padding:14px 16px; margin-bottom:14px; font-size:0.86rem; }
+  .api-note{ color:var(--text-dim); font-size:0.8rem; margin:10px 0 14px; padding:10px 12px; background:rgba(212,162,78,0.06); border:1px solid rgba(212,162,78,0.2); border-radius:8px; }
+  .connected-box{ display:flex; align-items:center; justify-content:space-between; gap:10px; background:rgba(74,222,128,0.08); border:1px solid rgba(74,222,128,0.3); border-radius:8px; padding:10px 14px; margin-bottom:10px; font-family:'JetBrains Mono',monospace; font-size:0.84rem; }
+  .toggle-row{ display:flex; align-items:center; gap:10px; cursor:pointer; font-size:0.88rem; margin-top:4px; }
+  .toggle-row input{ width:auto; accent-color:var(--cyan); }
 
   /* 게시글 상세 모달 */
   .modal-backdrop{ display:none; position:fixed; inset:0; z-index:100; background:rgba(3,4,8,0.75); backdrop-filter:blur(4px); align-items:center; justify-content:center; padding:20px; }
@@ -117,6 +153,9 @@
 <header>
   <div class="nav">
     <a class="brand" href="index.html"><span class="dot"></span> TEAM SIXX <span class="tag">STUDY ROOM</span></a>
+    <button type="button" class="tabs-menu-btn" id="tabs-menu-btn" aria-label="메뉴 열기">
+      <span></span><span></span><span></span>
+    </button>
     <div class="tabs" id="tabs" hidden>
       <button type="button" class="tab-link active" data-cat="notice">공지사항</button>
       <button type="button" class="tab-link" data-cat="briefing">코인 브리핑</button>
@@ -124,6 +163,7 @@
       <button type="button" class="tab-link" data-cat="question">질문</button>
       <button type="button" class="tab-link" data-cat="profit">수익인증</button>
       <button type="button" class="tab-link" id="calendar-tab">경제 캘린더</button>
+      <button type="button" class="tab-link" id="liq-tab">청산맵</button>
       <a class="icon-btn" href="referral.html">추천인 프로그램</a>
       <a class="icon-btn" id="admin-link" href="admin.html" hidden>관리자 페이지로</a>
       <button type="button" class="icon-btn" id="profile-btn">내 정보</button>
@@ -136,25 +176,40 @@
 <div class="gate-wrap" id="auth-gate">
   <div class="gate-card">
     <h1>스터디룸</h1>
-    <p class="desc">가입 시 등록한 UID로 로그인하세요.</p>
+    <p class="desc">이메일로 로그인하세요. 스터디룸 입장은 로그인 후 "내 정보"에서 UID를 등록하면 바로 열려요.</p>
     <div class="auth-tabs">
       <button type="button" class="auth-tab active" data-tab="login">로그인</button>
       <button type="button" class="auth-tab" data-tab="signup">회원가입</button>
     </div>
     <form id="login-form" class="auth-form">
-      <input type="text" id="login-uid" placeholder="Gate.io UID" inputmode="numeric" autocomplete="username">
+      <input type="email" id="login-email" placeholder="이메일" autocomplete="username">
       <input type="password" id="login-pw" placeholder="비밀번호" autocomplete="current-password">
       <button type="submit" class="btn btn-primary">로그인</button>
     </form>
     <form id="signup-form" class="auth-form" hidden>
-      <input type="text" id="signup-uid" placeholder="Gate.io UID" inputmode="numeric" autocomplete="username">
+      <input type="email" id="signup-email" placeholder="이메일" autocomplete="username">
       <input type="password" id="signup-pw" placeholder="비밀번호 (8자 이상)" autocomplete="new-password">
       <input type="password" id="signup-pw2" placeholder="비밀번호 확인" autocomplete="new-password">
       <button type="submit" class="btn btn-primary">회원가입</button>
     </form>
     <div id="auth-result" class="result-box" hidden></div>
-    <div class="gate-help">비밀번호를 잊으셨나요? <a href="https://t.me/team_sixx" target="_blank" rel="noopener">@team_sixx</a>로 UID를 보내주시면 재설정해드립니다.</div>
+    <div class="gate-help">비밀번호를 잊으셨나요? <a href="https://t.me/team_sixx" target="_blank" rel="noopener">@team_sixx</a>로 문의해주시면 재설정해드립니다.</div>
     <div class="gate-help">아직 가입 전이신가요? <a href="join.html">입장 절차 보기 →</a></div>
+  </div>
+</div>
+
+<!-- 로그인은 됐지만 스터디룸 UID 미등록 -->
+<div class="gate-wrap" id="uid-gate" hidden>
+  <div class="gate-card">
+    <h1>UID 등록이 필요해요</h1>
+    <p class="desc">스터디룸에 들어가려면 전용 링크로 가입한 Gate.io UID를 등록해야 해요. 등록하는 즉시 확인되고 바로 입장할 수 있어요.</p>
+    <form id="uid-gate-form" class="auth-form">
+      <input type="text" id="uid-gate-input" placeholder="Gate.io UID" inputmode="numeric">
+      <button type="submit" class="btn btn-primary">UID 등록하기</button>
+    </form>
+    <div id="uid-gate-result" class="result-box" hidden></div>
+    <div class="gate-help">아직 가입 전이신가요? <a href="join.html">입장 절차 보기 →</a></div>
+    <button type="button" class="btn btn-ghost btn-block" id="uid-gate-logout-btn" style="margin-top:16px;">로그아웃</button>
   </div>
 </div>
 
@@ -188,23 +243,46 @@
         <div>
           <span class="kicker">CALENDAR</span>
           <h2>경제 캘린더</h2>
-          <p class="section-note">CPI·FOMC·PPI 등 코인 가격에 영향을 주는 주요 경제 일정입니다.</p>
+          <p class="section-note">CPI·FOMC·PPI 등 코인 가격에 영향을 주는 주요 경제 일정입니다. 운영자가 직접 정리해서 올려요 (외부 위젯 아님).</p>
         </div>
       </div>
-      <div class="calendar-frame-wrap">
-        <iframe class="calendar-frame" src="https://sslecal2.investing.com/?ecoDayBackground=%23151519&innerBorderColor=%232a2a2e&columns=exc_flags,exc_currency,exc_importance,exc_actual,exc_forecast,exc_previous&features=datepicker,timezone&countries=5,32,6,37,72,22,17,39,14,10,35,43,56,36,110,11,26,12,4,17&calType=day&timeZone=8&lang=1" loading="lazy"></iframe>
-      </div>
-      <p class="calendar-note">외부 위젯(investing.com)을 불러옵니다. 안 보이면 광고 차단 확장 프로그램을 확인해주세요.</p>
+      <p class="calendar-note">★ 개수가 중요도예요. 오늘 이후 예정된 일정과 최근 지난 일정을 함께 보여줘요.</p>
+      <div id="events-list"></div>
+      <div id="events-empty" class="empty-note" hidden>등록된 일정이 없습니다.</div>
     </div>
   </section>
+
+  <section id="liq-section" hidden>
+    <div class="wrap">
+      <div class="section-head">
+        <div>
+          <span class="kicker">LIQUIDATIONS</span>
+          <h2>비트코인 청산맵</h2>
+          <p class="section-note">레버리지 포지션이 몰려있는 가격대를 보여주는 외부 전문 도구예요.</p>
+        </div>
+      </div>
+      <div class="liq-card">
+        <h3>실시간 청산 히트맵 (CoinGlass)</h3>
+        <p>임베드로 넣기엔 외부 사이트 보안 정책상 화면 안에 깨져 보일 수 있어서, 새 창에서 정상적으로 열리는 링크로 안내해요.</p>
+        <a class="btn btn-primary" style="width:auto; display:inline-flex; padding-left:28px; padding-right:28px;" href="https://www.coinglass.com/pro/futures/LiquidationHeatMap?coin=BTC&type=symbol" target="_blank" rel="noopener">청산맵 새 창에서 열기 ↗</a>
+      </div>
+    </div>
+  </section>
+</div>
+
+<div class="wrap" style="padding:0 24px 24px;" id="rank-widget-wrap" hidden>
+  <div class="rank-widget">
+    <h3>🏆 거래량 랭킹 TOP 5</h3>
+    <div id="rank-widget-list"></div>
+  </div>
 </div>
 
 <div class="wrap" style="padding:0 24px 24px;">
   <a href="referral.html" class="promo-card">
     <div>
       <span class="num mono" style="color:var(--cyan); font-size:0.78rem;">REFERRAL PROGRAM</span>
-      <h3 style="margin-top:6px;">추천인 코드로 친구를 초대하고 USDT를 받아보세요</h3>
-      <p style="color:var(--text-dim); font-size:0.86rem; margin-top:6px;">누구나 바로 추천인 코드를 발급할 수 있어요. 초대한 분의 거래량이 $100,000를 넘으면 보상이 확정돼요 →</p>
+      <h3 style="margin-top:6px;">추천인 파트너가 되어 USDT를 받아보세요</h3>
+      <p style="color:var(--text-dim); font-size:0.86rem; margin-top:6px;">파트너 승인을 받으면 추천인 코드를 발급하고, 초대한 분의 거래량이 $100,000를 넘으면 보상이 확정돼요 →</p>
     </div>
   </a>
 </div>
@@ -231,15 +309,41 @@
   </div>
 </div>
 
-<!-- 내 정보(닉네임/비밀번호 변경) 모달 -->
+<!-- 내 정보 모달 -->
 <div class="modal-backdrop" id="profile-modal">
-  <div class="modal" style="max-width:400px;">
+  <div class="modal" style="max-width:440px;">
     <button type="button" class="modal-close" id="profile-modal-close">✕</button>
     <h2>내 정보</h2>
 
     <div id="my-stats" class="stats-grid" style="display:grid; grid-template-columns:repeat(2,1fr); gap:10px; margin-top:16px;"></div>
 
-    <h3 style="font-size:0.95rem; margin-top:20px; margin-bottom:10px; color:var(--text-dim);">닉네임</h3>
+    <h3 style="font-size:0.95rem; margin-top:22px; margin-bottom:10px; color:var(--text-dim);">스터디룸 UID</h3>
+    <div id="uid-registered-box" class="uid-box" hidden>등록된 UID: <b class="mono" id="uid-registered-value"></b></div>
+    <form id="uid-form" class="auth-form" hidden>
+      <input type="text" id="uid-input" placeholder="Gate.io UID" inputmode="numeric">
+      <button type="submit" class="btn btn-primary">UID 등록하기</button>
+    </form>
+    <div id="uid-result" class="result-box" hidden></div>
+
+    <h3 style="font-size:0.95rem; margin-top:22px; margin-bottom:6px; color:var(--text-dim);">Gate.io API 연동 (랭킹용, 선택)</h3>
+    <div class="api-note">Read-Only(읽기 전용) 권한의 키만 사용하세요. 출금·거래 권한은 요구하지 않아요.</div>
+    <div id="api-connected-box" class="connected-box" hidden>
+      <span>연동된 UID: <b class="mono" id="connected-uid"></b></span>
+      <button type="button" class="btn btn-ghost" id="disconnect-api-btn" style="width:auto;">해제</button>
+    </div>
+    <form id="api-connect-form" class="auth-form">
+      <input type="text" id="api-key-input" placeholder="Gate.io API Key (Read-Only)">
+      <input type="text" id="api-secret-input" placeholder="Gate.io API Secret">
+      <button type="submit" class="btn btn-primary">연동하기</button>
+    </form>
+    <div id="api-connect-result" class="result-box" hidden></div>
+    <label class="toggle-row">
+      <input type="checkbox" id="ranking-opt-checkbox">
+      <span>거래량 랭킹에 참여합니다 (API 연동 필요)</span>
+    </label>
+    <div id="ranking-opt-result" class="result-box" hidden></div>
+
+    <h3 style="font-size:0.95rem; margin-top:24px; margin-bottom:10px; color:var(--text-dim);">닉네임</h3>
     <form id="nickname-form" class="auth-form">
       <input type="text" id="nickname-input" placeholder="닉네임 (1~20자)" maxlength="20">
       <button type="submit" class="btn btn-primary">닉네임 저장</button>
@@ -260,8 +364,11 @@
 <script>
 (function(){
   var authGate = document.getElementById('auth-gate');
+  var uidGate = document.getElementById('uid-gate');
   var content = document.getElementById('gated-content');
   var tabs = document.getElementById('tabs');
+  var tabsMenuBtn = document.getElementById('tabs-menu-btn');
+  var rankWidgetWrap = document.getElementById('rank-widget-wrap');
   var authResult = document.getElementById('auth-result');
 
   var authTabs = document.querySelectorAll('.auth-tab');
@@ -271,6 +378,8 @@
   var profileBtn = document.getElementById('profile-btn');
   var adminLink = document.getElementById('admin-link');
   var viewMode = 'member';
+
+  tabsMenuBtn.addEventListener('click', function(){ tabs.classList.toggle('open'); });
 
   var currentCategory = 'notice';
   var catMeta = {
@@ -286,12 +395,16 @@
 
   function unlock(mode){
     viewMode = mode || 'member';
-    authGate.hidden = true; content.hidden = false; tabs.hidden = false;
+    authGate.hidden = true; uidGate.hidden = true; content.hidden = false; tabs.hidden = false; rankWidgetWrap.hidden = false;
     profileBtn.hidden = viewMode === 'admin';
     adminLink.hidden = viewMode !== 'admin';
     loadPosts();
+    loadRankWidget();
   }
-  function lock(){ authGate.hidden = false; content.hidden = true; tabs.hidden = true; }
+  function showUidGate(){
+    authGate.hidden = true; uidGate.hidden = false; content.hidden = true; tabs.hidden = true; rankWidgetWrap.hidden = true;
+  }
+  function lock(){ authGate.hidden = false; uidGate.hidden = true; content.hidden = true; tabs.hidden = true; rankWidgetWrap.hidden = true; }
 
   // ── 로그인/회원가입 탭 ──
   authTabs.forEach(function(tab){
@@ -304,14 +417,18 @@
     });
   });
 
-  var currentUid = null;
+  var currentEmail = null;
   var currentNickname = null;
 
   async function checkSession(){
     try{
       var res = await fetch('/api/me', { credentials: 'same-origin' });
       var data = await res.json();
-      if (data.ok) { currentUid = data.uid; currentNickname = data.nickname; unlock('member'); return; }
+      if (data.ok) {
+        currentEmail = data.email; currentNickname = data.nickname;
+        if (data.uid) unlock('member'); else showUidGate();
+        return;
+      }
 
       // 회원 세션이 없으면 관리자로 로그인된 상태인지 확인 (관리자도 스터디룸을 둘러볼 수 있게)
       var adminRes = await fetch('/api/admin/me', { credentials: 'same-origin' });
@@ -325,18 +442,24 @@
 
   loginForm.addEventListener('submit', async function(e){
     e.preventDefault();
-    var uid = document.getElementById('login-uid').value.trim();
+    var email = document.getElementById('login-email').value.trim();
     var pw = document.getElementById('login-pw').value;
-    if(!uid || !pw){ showResult(authResult, 'UID와 비밀번호를 입력해주세요.', 'warn'); return; }
+    if(!email || !pw){ showResult(authResult, '이메일과 비밀번호를 입력해주세요.', 'warn'); return; }
     var btn = loginForm.querySelector('button'); btn.disabled = true;
     showResult(authResult, '로그인 중입니다...', 'pending');
     try{
-      var res = await fetch('/api/login', { method:'POST', credentials:'same-origin', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ uid: uid, password: pw }) });
+      var res = await fetch('/api/login', { method:'POST', credentials:'same-origin', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ email: email, password: pw }) });
       var data = await res.json();
-      if (data.ok){ currentUid = data.uid; currentNickname = data.nickname; unlock('member'); return; }
+      if (data.ok){
+        currentEmail = data.email; currentNickname = data.nickname;
+        var meRes = await fetch('/api/me', { credentials:'same-origin' });
+        var me = await meRes.json();
+        if (me.ok && me.uid) unlock('member'); else showUidGate();
+        return;
+      }
 
       // 회원 로그인 실패 시, 관리자 아이디/비번일 수도 있으니 한 번 더 시도
-      var adminRes = await fetch('/api/admin/login', { method:'POST', credentials:'same-origin', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ username: uid, password: pw }) });
+      var adminRes = await fetch('/api/admin/login', { method:'POST', credentials:'same-origin', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ username: email, password: pw }) });
       var adminData = await adminRes.json();
       if (adminData.ok){ window.location.href = 'admin.html'; return; }
 
@@ -347,18 +470,17 @@
 
   signupForm.addEventListener('submit', async function(e){
     e.preventDefault();
-    var uid = document.getElementById('signup-uid').value.trim();
+    var email = document.getElementById('signup-email').value.trim();
     var pw = document.getElementById('signup-pw').value;
     var pw2 = document.getElementById('signup-pw2').value;
-    if(!/^[0-9]{3,15}$/.test(uid)){ showResult(authResult, 'UID는 숫자만 입력해주세요.', 'warn'); return; }
+    if(!email){ showResult(authResult, '이메일을 입력해주세요.', 'warn'); return; }
     if(pw.length < 8){ showResult(authResult, '비밀번호는 8자 이상이어야 합니다.', 'warn'); return; }
     if(pw !== pw2){ showResult(authResult, '비밀번호가 서로 다릅니다.', 'warn'); return; }
     var btn = signupForm.querySelector('button'); btn.disabled = true;
-    showResult(authResult, 'UID 확인 중입니다...', 'pending');
     try{
-      var res = await fetch('/api/signup', { method:'POST', credentials:'same-origin', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ uid: uid, password: pw }) });
+      var res = await fetch('/api/signup', { method:'POST', credentials:'same-origin', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ email: email, password: pw }) });
       var data = await res.json();
-      if (data.ok) { currentUid = data.uid; unlock('member'); } else showResult(authResult, data.error || '회원가입에 실패했습니다.', 'warn');
+      if (data.ok) { currentEmail = data.email; showUidGate(); } else showResult(authResult, data.error || '회원가입에 실패했습니다.', 'warn');
     } catch(e){ showResult(authResult, '오류가 발생했습니다.', 'warn'); }
     finally{ btn.disabled = false; }
   });
@@ -369,16 +491,41 @@
     lock();
   });
 
+  // ── UID 미등록 게이트 화면 ──
+  var uidGateForm = document.getElementById('uid-gate-form');
+  var uidGateInput = document.getElementById('uid-gate-input');
+  var uidGateResult = document.getElementById('uid-gate-result');
+  uidGateForm.addEventListener('submit', async function(e){
+    e.preventDefault();
+    var uid = uidGateInput.value.trim();
+    if(!uid){ showResult(uidGateResult, 'UID를 입력해주세요.', 'warn'); return; }
+    var btn = uidGateForm.querySelector('button'); btn.disabled = true;
+    showResult(uidGateResult, '확인 중입니다...', 'pending');
+    try{
+      var res = await fetch('/api/account/register-uid', { method:'POST', credentials:'same-origin', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ uid: uid }) });
+      var data = await res.json();
+      if(data.ok){ unlock('member'); } else showResult(uidGateResult, data.error || '등록에 실패했습니다.', 'warn');
+    } catch(e){ showResult(uidGateResult, '오류가 발생했습니다.', 'warn'); }
+    finally{ btn.disabled = false; }
+  });
+  document.getElementById('uid-gate-logout-btn').addEventListener('click', async function(){
+    try{ await fetch('/api/logout', { method:'POST', credentials:'same-origin' }); } catch(e){}
+    lock();
+  });
+
   // ── 게시판 탭 ──
   var boardSection = document.getElementById('board');
   var calendarSection = document.getElementById('calendar-section');
   var calendarTab = document.getElementById('calendar-tab');
-  var allSections = [boardSection, calendarSection];
+  var liqSection = document.getElementById('liq-section');
+  var liqTab = document.getElementById('liq-tab');
+  var allSections = [boardSection, calendarSection, liqSection];
   var allTabLinks = document.querySelectorAll('.tab-link');
   var tabLinks = document.querySelectorAll('.tab-link[data-cat]');
 
   function showSection(section){
     allSections.forEach(function(s){ s.hidden = (s !== section); });
+    tabs.classList.remove('open');
   }
 
   tabLinks.forEach(function(tab){
@@ -395,7 +542,60 @@
     allTabLinks.forEach(function(t){ t.classList.remove('active'); });
     calendarTab.classList.add('active');
     showSection(calendarSection);
+    loadEvents();
   });
+
+  liqTab.addEventListener('click', function(){
+    allTabLinks.forEach(function(t){ t.classList.remove('active'); });
+    liqTab.classList.add('active');
+    showSection(liqSection);
+  });
+
+  async function loadEvents(){
+    var el = document.getElementById('events-list');
+    var emptyEl = document.getElementById('events-empty');
+    el.innerHTML = '';
+    emptyEl.hidden = true;
+    try{
+      var res = await fetch('/api/economic-events', { credentials:'same-origin' });
+      var data = await res.json();
+      var list = (data.ok && data.events) ? data.events : [];
+      if(list.length === 0){ emptyEl.hidden = false; return; }
+      list.forEach(function(ev){
+        var row = document.createElement('div');
+        row.className = 'event-row';
+        var figs = [];
+        if(ev.forecast) figs.push('예상 ' + ev.forecast);
+        if(ev.previous) figs.push('이전 ' + ev.previous);
+        if(ev.actual) figs.push('실제 ' + ev.actual);
+        row.innerHTML =
+          '<div class="event-time">' + fmtEventTime(ev.event_time) + '</div>' +
+          '<div class="event-stars">' + '★'.repeat(ev.importance) + '<span style="opacity:0.25;">' + '★'.repeat(3-ev.importance) + '</span></div>' +
+          '<div class="event-body"><h3>' + (ev.country ? '[' + escapeHtml(ev.country) + '] ' : '') + escapeHtml(ev.title) + '</h3>' +
+          (figs.length ? '<div class="event-figs">' + figs.map(escapeHtml).join(' · ') + '</div>' : '') + '</div>';
+        el.appendChild(row);
+      });
+    } catch(e){ emptyEl.hidden = false; }
+  }
+  function fmtEventTime(ts){
+    var d = new Date(ts);
+    var pad = function(n){ return String(n).padStart(2, '0'); };
+    return (d.getMonth()+1) + '/' + d.getDate() + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes());
+  }
+
+  // ── 랭킹 사이드 위젯 ──
+  async function loadRankWidget(){
+    var el = document.getElementById('rank-widget-list');
+    try{
+      var res = await fetch('/api/rankings', { credentials:'same-origin' });
+      var data = await res.json();
+      var list = (data.ok && data.rankings) ? data.rankings.slice(0, 5) : [];
+      if(list.length === 0){ el.innerHTML = '<div class="empty-note" style="padding:12px;">아직 참여자가 없어요.</div>'; return; }
+      el.innerHTML = list.map(function(r){
+        return '<div class="rank-row"><span>' + r.rank + '. ' + (r.is_me ? '<span style="color:var(--cyan);">나</span> · ' : '') + escapeHtml(r.label) + '</span><span class="rank-vol">$' + Number(r.trading_volume).toLocaleString() + '</span></div>';
+      }).join('');
+    } catch(e){ el.innerHTML = ''; }
+  }
 
   var newPostForm = document.getElementById('new-post-form');
   var newPostTitle = document.getElementById('new-post-title');
@@ -568,17 +768,22 @@
     } finally { btn.disabled = false; }
   });
 
-  // ── 내 정보(닉네임 / 비밀번호 변경) ──
+  // ── 내 정보 ──
   var profileModal = document.getElementById('profile-modal');
   var passwordForm = document.getElementById('password-form');
   var profileResult = document.getElementById('profile-result');
   var nicknameForm = document.getElementById('nickname-form');
   var nicknameInput = document.getElementById('nickname-input');
   var nicknameResult = document.getElementById('nickname-result');
+  var uidForm = document.getElementById('uid-form');
+  var uidInput = document.getElementById('uid-input');
+  var uidResult = document.getElementById('uid-result');
+  var uidRegisteredBox = document.getElementById('uid-registered-box');
 
   profileBtn.addEventListener('click', function(){
     clearResult(profileResult);
     clearResult(nicknameResult);
+    clearResult(uidResult);
     passwordForm.reset();
     nicknameInput.value = currentNickname || '';
     profileModal.classList.add('open');
@@ -595,10 +800,87 @@
       el.innerHTML =
         '<div class="stat-box"><div class="num">' + (data.grade_label || '-') + '</div><div class="label">등급</div></div>' +
         '<div class="stat-box"><div class="num">' + (data.activity || 0) + '</div><div class="label">활동량(댓글+글)</div></div>';
+
+      if(data.uid){
+        uidRegisteredBox.hidden = false;
+        document.getElementById('uid-registered-value').textContent = data.uid;
+        uidForm.hidden = true;
+      } else {
+        uidRegisteredBox.hidden = true;
+        uidForm.hidden = false;
+      }
+
+      updateApiBox(data);
+      document.getElementById('ranking-opt-checkbox').checked = !!data.ranking_opt_in;
     } catch(e){}
   }
+
+  function updateApiBox(data){
+    var box = document.getElementById('api-connected-box');
+    var form = document.getElementById('api-connect-form');
+    if(data.has_gate_api){
+      box.hidden = false;
+      document.getElementById('connected-uid').textContent = data.gate_uid;
+      form.hidden = true;
+    } else {
+      box.hidden = true;
+      form.hidden = false;
+    }
+  }
+
   document.getElementById('profile-modal-close').addEventListener('click', function(){ profileModal.classList.remove('open'); });
   profileModal.addEventListener('click', function(e){ if(e.target === profileModal) profileModal.classList.remove('open'); });
+
+  uidForm.addEventListener('submit', async function(e){
+    e.preventDefault();
+    var uid = uidInput.value.trim();
+    if(!uid){ showResult(uidResult, 'UID를 입력해주세요.', 'warn'); return; }
+    var btn = uidForm.querySelector('button'); btn.disabled = true;
+    showResult(uidResult, '확인 중입니다...', 'pending');
+    try{
+      var res = await fetch('/api/account/register-uid', { method:'POST', credentials:'same-origin', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ uid: uid }) });
+      var data = await res.json();
+      if(data.ok){
+        showResult(uidResult, 'UID가 등록되었습니다. 스터디룸 이용이 가능해요!', 'good');
+        loadMyStats();
+        if (content.hidden) unlock('member');
+      } else showResult(uidResult, data.error || '등록에 실패했습니다.', 'warn');
+    } catch(e){ showResult(uidResult, '오류가 발생했습니다.', 'warn'); }
+    finally{ btn.disabled = false; }
+  });
+
+  document.getElementById('api-connect-form').addEventListener('submit', async function(e){
+    e.preventDefault();
+    var apiKey = document.getElementById('api-key-input').value.trim();
+    var apiSecret = document.getElementById('api-secret-input').value.trim();
+    var result = document.getElementById('api-connect-result');
+    if(!apiKey || !apiSecret){ showResult(result, 'API 키와 시크릿을 모두 입력해주세요.', 'warn'); return; }
+    var btn = e.target.querySelector('button'); btn.disabled = true;
+    try{
+      var res = await fetch('/api/account/connect-gate-api', { method:'POST', credentials:'same-origin', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ api_key: apiKey, api_secret: apiSecret }) });
+      var data = await res.json();
+      if(data.ok){ showResult(result, '연동되었습니다. (UID ' + data.gate_uid + ')', 'good'); loadMyStats(); }
+      else showResult(result, data.error || '연동에 실패했습니다.', 'warn');
+    } catch(e){ showResult(result, '오류가 발생했습니다.', 'warn'); }
+    finally{ btn.disabled = false; }
+  });
+
+  document.getElementById('disconnect-api-btn').addEventListener('click', async function(){
+    if(!confirm('API 연동을 해제할까요? 랭킹 참여도 함께 꺼져요.')) return;
+    try{ await fetch('/api/account/disconnect-gate-api', { method:'POST', credentials:'same-origin' }); } catch(e){}
+    loadMyStats();
+  });
+
+  document.getElementById('ranking-opt-checkbox').addEventListener('change', async function(e){
+    var optIn = e.target.checked;
+    var result = document.getElementById('ranking-opt-result');
+    try{
+      var res = await fetch('/api/account/ranking-opt-in', { method:'POST', credentials:'same-origin', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ opt_in: optIn }) });
+      var data = await res.json();
+      if(data.ok){ showResult(result, optIn ? '랭킹 참여를 시작했습니다.' : '랭킹 참여를 중단했습니다.', 'good'); loadRankWidget(); }
+      else { showResult(result, data.error || '처리에 실패했습니다.', 'warn'); e.target.checked = !optIn; }
+    } catch(e){ showResult(result, '오류가 발생했습니다.', 'warn'); e.target.checked = !optIn; }
+  });
 
   nicknameForm.addEventListener('submit', async function(e){
     e.preventDefault();

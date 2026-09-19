@@ -367,6 +367,13 @@
     font-weight: 600;
     background: rgba(212,162,78,0.08);
   }
+
+  .rank-widget{ background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:18px 20px; max-width:340px; margin:32px auto 0; }
+  .rank-widget h3{ font-size:0.86rem; color:var(--text-dim); font-weight:600; margin:0 0 10px; }
+  .rank-row{ display:flex; justify-content:space-between; align-items:center; padding:6px 0; font-size:0.82rem; border-top:1px solid rgba(255,255,255,0.05); }
+  .rank-row:first-of-type{ border-top:none; }
+  .rank-vol{ font-family:'JetBrains Mono',monospace; color:var(--cyan); }
+  .rank-empty{ color:var(--text-dim); font-size:0.8rem; text-align:center; padding:8px 0; }
 </style>
 </head>
 <body>
@@ -462,12 +469,17 @@
 <section id="referral-teaser">
   <div class="wrap">
     <div class="section-head reveal">
-      <span class="kicker">REFERRAL PROGRAM</span>
-      <h2>추천인 코드로 USDT 받기</h2>
-      <p>누구나 추천인 코드를 발급받아, 코드로 가입한 사람의 거래량이 $100,000를 넘으면 건당 2만원(USDT-TRC20)을 받을 수 있어요.</p>
+      <span class="kicker">REFERRAL PARTNER</span>
+      <h2>추천인 파트너로 USDT 받기</h2>
+      <p>파트너 신청 후 승인되면 추천인 코드를 발급받아, 코드로 가입한 사람의 거래량이 $100,000를 넘으면 건당 2만원(USDT-TRC20)을 받을 수 있어요.</p>
     </div>
     <div class="hero-actions">
       <a class="btn btn-primary" href="referral.html">추천인 프로그램 알아보기 ↗</a>
+    </div>
+
+    <div class="rank-widget reveal" id="rank-widget">
+      <h3>🏆 거래량 랭킹 TOP 5</h3>
+      <div id="rank-widget-list"></div>
     </div>
   </div>
 </section>
@@ -530,6 +542,21 @@
     dropdown.querySelectorAll('a').forEach(function(a){
       a.addEventListener('click', closeMenu);
     });
+  })();
+
+  (function(){
+    var el = document.getElementById('rank-widget-list');
+    if(!el) return;
+    function escapeHtml(s){
+      return String(s).replace(/[&<>"']/g, function(c){ return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]; });
+    }
+    fetch('/api/rankings').then(function(res){ return res.json(); }).then(function(data){
+      var list = (data.ok && data.rankings) ? data.rankings.slice(0, 5) : [];
+      if(list.length === 0){ el.innerHTML = '<div class="rank-empty">아직 참여자가 없어요.</div>'; return; }
+      el.innerHTML = list.map(function(r){
+        return '<div class="rank-row"><span>' + r.rank + '. ' + escapeHtml(r.label) + '</span><span class="rank-vol">$' + Number(r.trading_volume).toLocaleString() + '</span></div>';
+      }).join('');
+    }).catch(function(){ el.innerHTML = ''; });
   })();
 
   (function(){
