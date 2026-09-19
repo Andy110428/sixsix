@@ -113,6 +113,7 @@ export default {
       if (path === '/api/admin/reset-password' && method === 'POST') return await handleAdminResetPassword(request, env);
       if (path === '/api/admin/set-volume' && method === 'POST') return await handleAdminSetVolume(request, env);
       if (path === '/api/admin/reset-volumes' && method === 'POST') return await handleAdminResetVolumes(request, env);
+      if (path === '/api/admin/reset-members' && method === 'POST') return await handleAdminResetMembers(request, env);
       if (path === '/api/admin/referral/issuers' && method === 'GET') return await handleAdminReferralIssuers(request, env);
       if (path === '/api/admin/referral/applications' && method === 'GET') return await handleAdminListApplications(request, env);
       if (path === '/api/admin/referral/applications/update' && method === 'POST') return await handleAdminUpdateApplication(request, env);
@@ -1052,6 +1053,24 @@ async function handleAdminResetVolumes(request, env) {
   if (!isAdmin) return json({ ok: false, error: '관리자만 사용할 수 있습니다.' }, 403);
   await env.DB.prepare('UPDATE members SET trading_volume = 0').run();
   return json({ ok: true });
+}
+
+// 관리자용 — 회원 계정 전체 삭제(로그인/UID/API연동 정보 전부 초기화). 게시글·댓글·추천인 실적은 남기고 작성자 연결만 끊김. 되돌릴 수 없음.
+async function handleAdminResetMembers(request, env) {
+  const isAdmin = await getIsAdmin(request, env);
+  if (!isAdmin) return json({ ok: false, error: '관리자만 사용할 수 있습니다.' }, 403);
+
+  const body = await safeJson(request);
+  if (body.confirm !== 'RESET') {
+    return json({ ok: false, error: '확인 문구가 일치하지 않습니다.' }, 400);
+  }
+
+  const before = await env.DB.prepare('SELECT COUNT(*) AS c FROM members').first();
+  await env.DB.batch([
+    env.DB.prepare('DELETE FROM members'),
+    env.DB.prepare('DELETE FROM sessions'),
+  ]);
+  return json({ ok: true, deleted: before ? before.c : 0 });
 }
 
 async function handleAdminReferralIssuers(request, env) {
