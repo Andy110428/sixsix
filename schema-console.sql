@@ -5,6 +5,7 @@ CREATE TABLE IF NOT EXISTS users (
   password_hash TEXT NOT NULL,
   nickname TEXT,
   trading_volume REAL NOT NULL DEFAULT 0,
+  study_room_approved INTEGER NOT NULL DEFAULT 0,
   created_at INTEGER NOT NULL
 );
 
@@ -55,6 +56,7 @@ CREATE TABLE IF NOT EXISTS referral_signups (
   owner_uid TEXT NOT NULL,
   referred_uid TEXT NOT NULL UNIQUE,
   reward_krw INTEGER NOT NULL,
+  qualified INTEGER NOT NULL DEFAULT 0,
   created_at INTEGER NOT NULL
 );
 

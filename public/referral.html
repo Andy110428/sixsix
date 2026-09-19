@@ -96,32 +96,32 @@
   <div class="page-head">
     <span class="kicker">REFERRAL PROGRAM</span>
     <h1>추천인 프로그램</h1>
-    <p>스터디룸 회원이라면 누구나 조건 충족 시 추천인 코드를 발급받아, 코드로 가입하는 사람마다 USDT로 리워드를 받을 수 있어요.</p>
+    <p>계정만 있으면 누구나 추천인 코드를 바로 발급받을 수 있어요. 내 코드로 가입한 사람의 거래량이 $100,000를 넘으면 리워드가 확정돼요.</p>
   </div>
 
   <div class="cond-grid">
     <div class="cond-card">
       <span class="num">조건 01</span>
       <h3>발급 자격</h3>
-      <p>거래량 $100,000 이상인 스터디룸 회원만 추천인 코드를 발급받을 수 있어요. (어뷰징 방지)</p>
+      <p>제한 없이 누구나 발급 가능해요. 스터디룸 입장 승인 여부와도 무관해요.</p>
     </div>
     <div class="cond-card">
       <span class="num">조건 02</span>
-      <h3>리워드</h3>
-      <p>내 코드로 가입하는 사람마다 <b>20,000원</b>, 반드시 <b>USDT(TRC20)</b>로만 지급돼요.</p>
+      <h3>리워드 확정</h3>
+      <p>내 코드로 가입한 사람의 거래량이 <b>$100,000</b>를 넘는 순간, 건당 <b>20,000원</b>이 확정되고 <b>USDT(TRC20)</b>로 지급돼요. (어뷰징 방지)</p>
     </div>
     <div class="cond-card">
       <span class="num">조건 03</span>
       <h3>출금 조건</h3>
-      <p>추천 가입자 <b>5명 이상</b>부터, 최소 <b>100,000원</b> 이상부터 출금 신청이 가능해요.</p>
+      <p>확정된 추천 가입자 <b>5명 이상</b>부터, 최소 <b>100,000원</b> 이상부터 출금 신청이 가능해요.</p>
     </div>
   </div>
 
   <!-- 로그인 필요 안내 -->
   <div class="panel" id="need-login-panel" hidden>
     <h2>로그인이 필요해요</h2>
-    <p style="color:var(--text-dim); font-size:0.9rem; margin-bottom:16px;">추천인 코드 발급 및 대시보드 확인은 스터디룸 회원 로그인이 필요합니다.</p>
-    <a class="btn btn-primary" href="portal.html" style="display:inline-flex; width:auto; padding-left:24px; padding-right:24px;">로그인하러 가기 →</a>
+    <p style="color:var(--text-dim); font-size:0.9rem; margin-bottom:16px;">추천인 코드 발급 및 대시보드 확인은 회원(UID) 계정 로그인이 필요합니다. 스터디룸 입장 승인 전이어도 계정만 있으면 이용할 수 있어요.</p>
+    <a class="btn btn-primary" href="portal.html" style="display:inline-flex; width:auto; padding-left:24px; padding-right:24px;">로그인 / 회원가입하러 가기 →</a>
   </div>
 
   <!-- 관리자 로그인 안내 -->
@@ -130,16 +130,10 @@
     <p style="color:var(--text-dim); font-size:0.9rem;">추천인 코드/대시보드는 회원(UID) 계정 전용이에요. 출금 신청 심사는 <a href="admin.html" style="color:var(--cyan); font-weight:600;">admin.html</a>에서 확인해주세요.</p>
   </div>
 
-  <!-- 자격 미달 -->
-  <div class="panel" id="not-eligible-panel" hidden>
-    <h2>아직 발급 조건을 채우지 못했어요</h2>
-    <p id="not-eligible-text" style="color:var(--text-dim); font-size:0.9rem;"></p>
-  </div>
-
   <!-- 코드 발급 전 -->
   <div class="panel" id="issue-panel" hidden>
     <h2>추천인 코드 발급받기</h2>
-    <p style="color:var(--text-dim); font-size:0.9rem; margin-bottom:16px;">발급 조건을 충족했어요! 버튼을 누르면 나만의 추천인 코드가 발급돼요.</p>
+    <p style="color:var(--text-dim); font-size:0.9rem; margin-bottom:16px;">버튼을 누르면 나만의 추천인 코드가 바로 발급돼요.</p>
     <button type="button" class="btn btn-primary" id="issue-btn" style="max-width:240px;">코드 발급받기</button>
     <div id="issue-result" class="result-box" hidden></div>
   </div>
@@ -153,8 +147,9 @@
         <button type="button" class="btn btn-ghost" id="copy-code-btn" style="width:auto;">복사</button>
       </div>
       <p style="color:var(--text-dim); font-size:0.82rem; margin-top:10px;">가입 화면의 "추천인 코드" 입력란에 이 코드를 넣으면 나에게 연결돼요.</p>
-      <div class="dash-stats">
-        <div class="stat-box"><div class="num" id="stat-referred">0</div><div class="label">추천 가입자</div></div>
+      <div class="dash-stats" style="grid-template-columns:repeat(4,1fr);">
+        <div class="stat-box"><div class="num" id="stat-referred">0</div><div class="label">확정 가입자</div></div>
+        <div class="stat-box"><div class="num" id="stat-pending">0</div><div class="label">대기중(거래량 미달)</div></div>
         <div class="stat-box"><div class="num" id="stat-earned">0원</div><div class="label">총 적립액</div></div>
         <div class="stat-box"><div class="num" id="stat-available">0원</div><div class="label">출금 가능액</div></div>
       </div>
@@ -214,14 +209,6 @@
       var data = await res.json();
       if(!data.ok){ document.getElementById('need-login-panel').hidden = false; return; }
 
-      if(!data.eligible){
-        document.getElementById('not-eligible-panel').hidden = false;
-        document.getElementById('not-eligible-text').textContent =
-          '현재 거래량 $' + Number(data.trading_volume).toLocaleString() + ' / 필요 거래량 $' + Number(data.eligible_volume_required).toLocaleString() +
-          '. 운영자에게 거래량 반영을 요청해보세요.';
-        return;
-      }
-
       if(!data.code){
         document.getElementById('issue-panel').hidden = false;
         document.getElementById('issue-btn').addEventListener('click', issueCode);
@@ -257,6 +244,7 @@
     document.getElementById('dashboard-panels').hidden = false;
     document.getElementById('my-code').textContent = data.code;
     document.getElementById('stat-referred').textContent = data.referred_count;
+    document.getElementById('stat-pending').textContent = data.pending_count;
     document.getElementById('stat-earned').textContent = Number(data.total_earned_krw).toLocaleString() + '원';
     document.getElementById('stat-available').textContent = Number(data.available_krw).toLocaleString() + '원';
 
