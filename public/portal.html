@@ -368,7 +368,8 @@
         <ol>
           <li>Gate.io 웹사이트에 로그인 → 우측 상단 프로필 아이콘 → "API 관리(API Management)" 이동</li>
           <li>"API 키 생성" 버튼 클릭</li>
-          <li>권한(Permissions) 설정에서 <b>"읽기 전용(Read Only)"</b>만 체크 — 출금/거래 권한은 절대 체크하지 마세요</li>
+          <li>권한(Permissions) 목록에 지갑(Wallet)·현물거래(Spot Trade)·선물거래(Futures) 등 항목이 여러 개 나와요. 각 항목마다 <b>"읽기 전용(Read Only)"</b>으로만 설정하고, 어떤 항목이든 <b>"읽기+쓰기(Read & Write)"/거래/출금 권한은 절대 켜지 마세요</b>. 잘 모르겠으면 전부 "읽기 전용"으로만 켜도 괜찮아요 — 중요한 건 쓰기/거래/출금 권한이 하나도 켜져있지 않은지 확인하는 거예요</li>
+          <li>특히 "출금(Withdraw)" 권한은 꼭 꺼져있는지 다시 한번 확인해주세요</li>
           <li>IP 화이트리스트는 비워둬도 괜찮아요</li>
           <li>생성 완료 후 나오는 API Key와 Secret Key를 복사해서 아래에 붙여넣으세요 (Secret은 그때 한 번만 보여지니 꼭 복사해두세요)</li>
         </ol>
