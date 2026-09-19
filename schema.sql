@@ -31,7 +31,8 @@ CREATE TABLE IF NOT EXISTS posts (
   category TEXT NOT NULL,
   title TEXT NOT NULL,
   content TEXT NOT NULL,
-  image_data TEXT,             -- 이미지(base64), 수익인증용, 없으면 NULL
+  image_data TEXT,             -- 이미지(base64), 없으면 NULL
+  thumb_data TEXT,             -- 목록에 보여줄 작은 미리보기 이미지(base64), 없으면 NULL
   author_type TEXT NOT NULL,
   author_id TEXT NOT NULL,
   created_at INTEGER NOT NULL
