@@ -127,6 +127,16 @@
   .toggle-row{ display:flex; align-items:center; gap:10px; cursor:pointer; font-size:0.88rem; margin-top:4px; }
   .toggle-row input{ width:auto; accent-color:var(--cyan); }
 
+  .help-guide{ margin:0 0 14px; font-size:0.82rem; }
+  .help-guide summary{ cursor:pointer; color:var(--cyan); font-weight:600; list-style:none; }
+  .help-guide summary::-webkit-details-marker{ display:none; }
+  .help-guide summary::before{ content:'❓ '; }
+  .help-guide[open] summary{ margin-bottom:8px; }
+  .help-guide .guide-body{ background:var(--bg-soft); border:1px solid var(--line); border-radius:8px; padding:12px 14px; color:var(--text-dim); line-height:1.6; }
+  .help-guide .guide-body ol{ margin:0; padding-left:18px; }
+  .help-guide .guide-body li{ margin-bottom:4px; }
+  .help-guide .guide-body li:last-child{ margin-bottom:0; }
+
   /* 게시글 상세 모달 */
   .modal-backdrop{ display:none; position:fixed; inset:0; z-index:100; background:rgba(3,4,8,0.75); backdrop-filter:blur(4px); align-items:center; justify-content:center; padding:20px; }
   .modal-backdrop.open{ display:flex; }
@@ -206,6 +216,17 @@
   <div class="gate-card">
     <h1>UID 등록이 필요해요</h1>
     <p class="desc">스터디룸에 들어가려면 전용 링크로 가입한 Gate.io UID를 등록해야 해요. 등록하는 즉시 확인되고 바로 입장할 수 있어요.</p>
+    <details class="help-guide">
+      <summary>내 UID 어디서 확인하나요?</summary>
+      <div class="guide-body">
+        <ol>
+          <li>Gate.io 앱 또는 웹사이트에 로그인</li>
+          <li>우측 상단 프로필(계정) 아이콘 클릭 → "계정 관리" 또는 "개인센터" 이동</li>
+          <li>계정 정보 화면 상단에 숫자로 된 UID가 표시돼요 (예: 12345678)</li>
+          <li>그 숫자를 그대로 복사해서 아래 입력란에 붙여넣으면 돼요</li>
+        </ol>
+      </div>
+    </details>
     <form id="uid-gate-form" class="auth-form">
       <input type="text" id="uid-gate-input" placeholder="Gate.io UID" inputmode="numeric">
       <button type="submit" class="btn btn-primary">UID 등록하기</button>
@@ -322,6 +343,17 @@
 
     <h3 style="font-size:0.95rem; margin-top:22px; margin-bottom:10px; color:var(--text-dim);">스터디룸 UID</h3>
     <div id="uid-registered-box" class="uid-box" hidden>등록된 UID: <b class="mono" id="uid-registered-value"></b></div>
+    <details class="help-guide" id="uid-help-guide" hidden>
+      <summary>내 UID 어디서 확인하나요?</summary>
+      <div class="guide-body">
+        <ol>
+          <li>Gate.io 앱 또는 웹사이트에 로그인</li>
+          <li>우측 상단 프로필(계정) 아이콘 클릭 → "계정 관리" 또는 "개인센터" 이동</li>
+          <li>계정 정보 화면 상단에 숫자로 된 UID가 표시돼요 (예: 12345678)</li>
+          <li>그 숫자를 그대로 복사해서 아래 입력란에 붙여넣으면 돼요</li>
+        </ol>
+      </div>
+    </details>
     <form id="uid-form" class="auth-form" hidden>
       <input type="text" id="uid-input" placeholder="Gate.io UID" inputmode="numeric">
       <button type="submit" class="btn btn-primary">UID 등록하기</button>
@@ -330,6 +362,18 @@
 
     <h3 style="font-size:0.95rem; margin-top:22px; margin-bottom:6px; color:var(--text-dim);">Gate.io API 연동 (랭킹용, 선택)</h3>
     <div class="api-note">Read-Only(읽기 전용) 권한의 키만 사용하세요. 출금·거래 권한은 요구하지 않아요.</div>
+    <details class="help-guide">
+      <summary>API 키는 어떻게 발급하나요?</summary>
+      <div class="guide-body">
+        <ol>
+          <li>Gate.io 웹사이트에 로그인 → 우측 상단 프로필 아이콘 → "API 관리(API Management)" 이동</li>
+          <li>"API 키 생성" 버튼 클릭</li>
+          <li>권한(Permissions) 설정에서 <b>"읽기 전용(Read Only)"</b>만 체크 — 출금/거래 권한은 절대 체크하지 마세요</li>
+          <li>IP 화이트리스트는 비워둬도 괜찮아요</li>
+          <li>생성 완료 후 나오는 API Key와 Secret Key를 복사해서 아래에 붙여넣으세요 (Secret은 그때 한 번만 보여지니 꼭 복사해두세요)</li>
+        </ol>
+      </div>
+    </details>
     <div id="api-connected-box" class="connected-box" hidden>
       <span>연동된 UID: <b class="mono" id="connected-uid"></b></span>
       <button type="button" class="btn btn-ghost" id="disconnect-api-btn" style="width:auto;">해제</button>
@@ -810,6 +854,7 @@
   var uidInput = document.getElementById('uid-input');
   var uidResult = document.getElementById('uid-result');
   var uidRegisteredBox = document.getElementById('uid-registered-box');
+  var uidHelpGuide = document.getElementById('uid-help-guide');
 
   profileBtn.addEventListener('click', function(){
     clearResult(profileResult);
@@ -836,9 +881,11 @@
         uidRegisteredBox.hidden = false;
         document.getElementById('uid-registered-value').textContent = data.uid;
         uidForm.hidden = true;
+        uidHelpGuide.hidden = true;
       } else {
         uidRegisteredBox.hidden = true;
         uidForm.hidden = false;
+        uidHelpGuide.hidden = false;
       }
 
       updateApiBox(data);
