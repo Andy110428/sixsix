@@ -160,6 +160,17 @@
   </div>
 </div>
 
+<!-- 계정은 있지만 스터디룸 입장 승인 대기중 -->
+<div class="gate-wrap" id="pending-gate" hidden>
+  <div class="gate-card">
+    <h1>승인 대기중</h1>
+    <p class="desc">스터디룸 입장은 예치 확인 후 운영자가 직접 승인합니다.<br>조건에 맞게 예치를 완료하셨다면 텔레그램으로 스크린샷을 보내주세요.</p>
+    <div class="gate-help">추천인 코드는 승인 여부와 상관없이 바로 발급하고 이용할 수 있어요. <a href="referral.html">추천인 코드 페이지로 →</a></div>
+    <div class="gate-help">문의: <a href="https://t.me/team_sixx" target="_blank" rel="noopener">@team_sixx</a></div>
+    <button type="button" class="btn btn-ghost" id="pending-logout-btn" style="margin-top:16px; width:100%;">로그아웃</button>
+  </div>
+</div>
+
 <!-- 로그인 후 콘텐츠 -->
 <div id="gated-content" hidden>
   <section id="board">
@@ -220,7 +231,7 @@
     <div>
       <span class="num mono" style="color:var(--cyan); font-size:0.78rem;">REFERRAL PROGRAM</span>
       <h3 style="margin-top:6px;">추천인 코드로 친구를 초대하고 USDT를 받아보세요</h3>
-      <p style="color:var(--text-dim); font-size:0.86rem; margin-top:6px;">거래량 $100,000 이상이면 나만의 추천인 코드를 발급할 수 있어요 →</p>
+      <p style="color:var(--text-dim); font-size:0.86rem; margin-top:6px;">누구나 바로 추천인 코드를 발급할 수 있어요. 초대한 분의 거래량이 $100,000를 넘으면 보상이 확정돼요 →</p>
     </div>
   </a>
 </div>
@@ -276,6 +287,7 @@
 <script>
 (function(){
   var authGate = document.getElementById('auth-gate');
+  var pendingGate = document.getElementById('pending-gate');
   var content = document.getElementById('gated-content');
   var tabs = document.getElementById('tabs');
   var authResult = document.getElementById('auth-result');
@@ -303,7 +315,7 @@
 
   function unlock(mode){
     viewMode = mode || 'member';
-    authGate.hidden = true; content.hidden = false; tabs.hidden = false;
+    authGate.hidden = true; pendingGate.hidden = true; content.hidden = false; tabs.hidden = false;
     profileBtn.hidden = viewMode === 'admin';
     adminLink.hidden = viewMode !== 'admin';
     referralLink.hidden = true;
@@ -315,7 +327,12 @@
     }
     loadPosts();
   }
-  function lock(){ authGate.hidden = false; content.hidden = true; tabs.hidden = true; }
+  // 계정은 있지만 관리자가 스터디룸 입장을 아직 승인하지 않은 상태 — 추천인 코드는 그대로 사용 가능
+  function showPending(){
+    viewMode = 'member';
+    authGate.hidden = true; pendingGate.hidden = false; content.hidden = true; tabs.hidden = true;
+  }
+  function lock(){ authGate.hidden = false; pendingGate.hidden = true; content.hidden = true; tabs.hidden = true; }
 
   // ── 로그인/회원가입 탭 ──
   authTabs.forEach(function(tab){
@@ -335,7 +352,11 @@
     try{
       var res = await fetch('/api/me', { credentials: 'same-origin' });
       var data = await res.json();
-      if (data.ok) { currentUid = data.uid; currentNickname = data.nickname; unlock('member'); return; }
+      if (data.ok) {
+        currentUid = data.uid; currentNickname = data.nickname;
+        if (data.study_room_approved) unlock('member'); else showPending();
+        return;
+      }
 
       // 회원 세션이 없으면 관리자로 로그인된 상태인지 확인 (관리자도 스터디룸을 둘러볼 수 있게)
       var adminRes = await fetch('/api/admin/me', { credentials: 'same-origin' });
@@ -357,7 +378,11 @@
     try{
       var res = await fetch('/api/login', { method:'POST', credentials:'same-origin', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ uid: uid, password: pw }) });
       var data = await res.json();
-      if (data.ok){ currentUid = data.uid; currentNickname = data.nickname; unlock(); return; }
+      if (data.ok){
+        currentUid = data.uid; currentNickname = data.nickname;
+        if (data.study_room_approved) unlock('member'); else showPending();
+        return;
+      }
 
       // 회원 로그인 실패 시, 관리자 아이디/비번일 수도 있으니 한 번 더 시도
       var adminRes = await fetch('/api/admin/login', { method:'POST', credentials:'same-origin', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ username: uid, password: pw }) });
@@ -383,7 +408,7 @@
     try{
       var res = await fetch('/api/signup', { method:'POST', credentials:'same-origin', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ uid: uid, password: pw, referral_code: referralCode }) });
       var data = await res.json();
-      if (data.ok) unlock(); else showResult(authResult, data.error || '회원가입에 실패했습니다.', 'warn');
+      if (data.ok) { currentUid = data.uid; showPending(); } else showResult(authResult, data.error || '회원가입에 실패했습니다.', 'warn');
     } catch(e){ showResult(authResult, '오류가 발생했습니다.', 'warn'); }
     finally{ btn.disabled = false; }
   });
@@ -391,6 +416,12 @@
   logoutBtn.addEventListener('click', async function(){
     var endpoint = viewMode === 'admin' ? '/api/admin/logout' : '/api/logout';
     try{ await fetch(endpoint, { method:'POST', credentials:'same-origin' }); } catch(e){}
+    lock();
+  });
+
+  var pendingLogoutBtn = document.getElementById('pending-logout-btn');
+  pendingLogoutBtn.addEventListener('click', async function(){
+    try{ await fetch('/api/logout', { method:'POST', credentials:'same-origin' }); } catch(e){}
     lock();
   });
 

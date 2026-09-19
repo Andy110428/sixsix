@@ -2,35 +2,44 @@
 //
 // 회원 API:
 //   GET  /api/check-uid?uid=...      Gate.io 레퍼럴 확인만 (계정 생성 없음)
-//   POST /api/signup                 회원가입 (Gate.io 검증 후 계정 생성)
+//   POST /api/signup                 계정 생성 (Gate.io 검증만 필요 — 스터디룸 입장은 별도 승인 필요)
 //   POST /api/login                  회원 로그인
-//   GET  /api/me                     로그인 상태 확인 (닉네임 포함)
+//   GET  /api/me                     로그인 상태 확인 (닉네임/스터디룸 승인여부 포함)
 //   POST /api/logout                 로그아웃
 //   POST /api/account/change-password  비밀번호 변경
 //   POST /api/account/nickname       닉네임 설정
 //
-// 게시판 API:
-//   GET  /api/posts?category=notice|lecture|question|profit
+// ⚠️ 계정(회원가입) ≠ 스터디룸 입장. 계정은 UID 레퍼럴 확인만 되면 누구나 만들 수 있고
+//    (추천인 코드 발급/사용 목적), 스터디룸 콘텐츠(공지/브리핑/강의/질문/수익인증/랭킹)는
+//    users.study_room_approved = 1인 계정만 접근 가능. 이 플래그는 관리자가 예치 스크린샷
+//    확인 후 admin.html에서 수동으로 켜줌 (POST /api/admin/approve-member).
+//
+// 게시판 API (스터디룸 승인된 회원 또는 관리자만):
+//   GET  /api/posts?category=notice|briefing|lecture|question|profit
 //   GET  /api/posts/detail?id=...
-//   POST /api/posts                  글쓰기 (notice/lecture=관리자만, question/profit=회원+관리자)
+//   POST /api/posts                  글쓰기 (notice/lecture/briefing=관리자만, question/profit=승인회원+관리자)
 //   POST /api/posts/delete           글 삭제 (관리자만)
-//   POST /api/comments               댓글 작성 (회원 또는 관리자)
+//   POST /api/comments               댓글 작성 (승인회원 또는 관리자)
 //
 // 등급/거래량 API:
-//   GET  /api/rankings                거래량 랭킹 목록 (로그인 필요)
+//   GET  /api/rankings                거래량 랭킹 목록 (스터디룸 승인된 회원 또는 관리자만)
 //
-// 추천인 API:
-//   POST /api/referral/issue-code     내 추천인 코드 발급 (거래량 $100,000 이상만)
-//   GET  /api/referral/me             내 추천인 현황 (코드/가입자수/적립액/출금내역)
+// 추천인 API — 스터디룸 승인 여부와 무관하게, 계정만 있으면 누구나 사용 가능:
+//   POST /api/referral/issue-code     내 추천인 코드 발급 (제한 없음, 계정만 있으면 발급 가능)
+//   GET  /api/referral/me             내 추천인 현황 (코드/확정 적립/대기중 적립/출금내역)
 //   POST /api/referral/withdraw       출금 신청 (텔레그램ID + USDT-TRC20 주소 + 금액)
+//   ※ 추천 보상은 "추천받은 사람이 거래량 $100,000 달성"해야 확정됨 (가입만 하고 활동 안 하는
+//     어뷰징 방지). 관리자가 admin.html에서 그 사람 거래량을 $100,000 이상으로 입력하는 순간
+//     자동으로 확정 처리됨 (checkAndQualifyReferral()).
 //
 // 관리자 API:
 //   POST /api/admin/login            아이디/비번 확인
 //   GET  /api/admin/me
 //   POST /api/admin/logout
-//   GET  /api/admin/find-user?uid=...  회원 UID 검색 (비밀번호 재설정/거래량 설정 전 조회용)
+//   GET  /api/admin/find-user?uid=...  회원 UID 검색 (비밀번호 재설정/거래량 설정/승인 전 조회용)
 //   POST /api/admin/reset-password   회원 비밀번호 재설정 (newPassword 생략 시 임시 비밀번호 자동 생성)
-//   POST /api/admin/set-volume       회원 거래량 수동 입력
+//   POST /api/admin/approve-member   스터디룸 입장 승인/취소 (예치 스크린샷 확인 후)
+//   POST /api/admin/set-volume       회원 거래량 수동 입력 (추천인 확정 여부도 자동 체크됨)
 //   POST /api/admin/reset-volumes    전체 거래량 0으로 초기화 (랭킹 리셋)
 //   GET  /api/admin/gate-rebate-raw  Gate.io 파트너 리베이트 API 원본 응답 확인 (베타, 스키마 미확정)
 //   GET  /api/admin/referral/withdrawals   출금 신청 목록
@@ -65,6 +74,7 @@ export default {
       if (path === '/api/account/nickname' && method === 'POST') return await handleSetNickname(request, env);
       if (path === '/api/admin/find-user' && method === 'GET') return await handleAdminFindUser(request, env);
       if (path === '/api/admin/reset-password' && method === 'POST') return await handleAdminResetPassword(request, env);
+      if (path === '/api/admin/approve-member' && method === 'POST') return await handleAdminApproveMember(request, env);
 
       if (path === '/api/posts' && method === 'GET') return await handleListPosts(request, env);
       if (path === '/api/posts/detail' && method === 'GET') return await handlePostDetail(request, env);
@@ -140,14 +150,15 @@ async function handleSignup(request, env) {
     'INSERT INTO users (uid, salt, password_hash, created_at) VALUES (?, ?, ?, ?)'
   ).bind(uid, salt, hash, Date.now()).run();
 
-  // 추천인 코드로 가입한 경우, 코드 발급자에게 적립 (코드가 잘못됐거나 자기 자신이어도 가입 자체는 계속 진행)
+  // 추천인 코드로 가입한 경우 기록해둠 — 보상은 이 사람(추천받은 사람)의 거래량이
+  // $100,000를 넘는 순간 확정됨 (qualified=0으로 시작, checkAndQualifyReferral()이 나중에 올림)
   const referralCode = (body.referral_code || '').trim().toUpperCase();
   if (referralCode) {
     try {
       const owner = await env.DB.prepare('SELECT owner_uid FROM referral_codes WHERE code = ?').bind(referralCode).first();
       if (owner && owner.owner_uid !== uid) {
         await env.DB.prepare(
-          'INSERT INTO referral_signups (code, owner_uid, referred_uid, reward_krw, created_at) VALUES (?, ?, ?, ?, ?)'
+          'INSERT INTO referral_signups (code, owner_uid, referred_uid, reward_krw, qualified, created_at) VALUES (?, ?, ?, ?, 0, ?)'
         ).bind(referralCode, owner.owner_uid, uid, REFERRAL_REWARD_KRW, Date.now()).run();
       }
     } catch (e) {
@@ -156,7 +167,7 @@ async function handleSignup(request, env) {
   }
 
   const token = await createSession(env, uid);
-  return json({ ok: true, uid }, 200, { 'Set-Cookie': sessionCookie(token) });
+  return json({ ok: true, uid, study_room_approved: false }, 200, { 'Set-Cookie': sessionCookie(token) });
 }
 
 async function handleLogin(request, env) {
@@ -174,14 +185,15 @@ async function handleLogin(request, env) {
   }
 
   const token = await createSession(env, uid);
-  return json({ ok: true, uid, nickname: user.nickname || null }, 200, { 'Set-Cookie': sessionCookie(token) });
+  return json({ ok: true, uid, nickname: user.nickname || null, study_room_approved: !!user.study_room_approved }, 200, { 'Set-Cookie': sessionCookie(token) });
 }
 
 async function handleMe(request, env) {
   const uid = await getMemberUid(request, env);
   if (!uid) return json({ ok: false });
-  const user = await env.DB.prepare('SELECT nickname, trading_volume FROM users WHERE uid = ?').bind(uid).first();
+  const user = await env.DB.prepare('SELECT nickname, trading_volume, study_room_approved FROM users WHERE uid = ?').bind(uid).first();
   const volume = (user && user.trading_volume) || 0;
+  const approved = !!(user && user.study_room_approved);
   const activity = await getMemberActivity(env, uid);
   const grade = gradeForActivity(activity);
   const rankRow = await env.DB.prepare('SELECT COUNT(*) AS c FROM users WHERE trading_volume > ?').bind(volume).first();
@@ -194,6 +206,7 @@ async function handleMe(request, env) {
     grade: grade.key,
     grade_label: grade.label,
     activity,
+    study_room_approved: approved,
   });
 }
 
@@ -247,9 +260,26 @@ async function handleAdminFindUser(request, env) {
   const uid = (url.searchParams.get('uid') || '').trim();
   if (!uid) return json({ ok: false, error: 'UID를 입력해주세요.' }, 400);
 
-  const user = await env.DB.prepare('SELECT uid, nickname, trading_volume, created_at FROM users WHERE uid = ?').bind(uid).first();
+  const user = await env.DB.prepare('SELECT uid, nickname, trading_volume, study_room_approved, created_at FROM users WHERE uid = ?').bind(uid).first();
   if (!user) return json({ ok: true, found: false });
-  return json({ ok: true, found: true, uid: user.uid, nickname: user.nickname || null, trading_volume: user.trading_volume || 0, created_at: user.created_at });
+  return json({ ok: true, found: true, uid: user.uid, nickname: user.nickname || null, trading_volume: user.trading_volume || 0, study_room_approved: !!user.study_room_approved, created_at: user.created_at });
+}
+
+// 관리자가 회원의 스터디룸 입장 승인 여부를 토글 (예치 스크린샷 수동 검토 후 처리)
+async function handleAdminApproveMember(request, env) {
+  const isAdmin = await getIsAdmin(request, env);
+  if (!isAdmin) return json({ ok: false, error: '관리자만 사용할 수 있습니다.' }, 403);
+
+  const body = await safeJson(request);
+  const uid = (body.uid || '').trim();
+  const approved = !!body.approved;
+  if (!uid) return json({ ok: false, error: 'UID를 입력해주세요.' }, 400);
+
+  const user = await env.DB.prepare('SELECT id FROM users WHERE uid = ?').bind(uid).first();
+  if (!user) return json({ ok: false, error: '해당 UID로 가입된 계정이 없습니다.' }, 404);
+
+  await env.DB.prepare('UPDATE users SET study_room_approved = ? WHERE uid = ?').bind(approved ? 1 : 0, uid).run();
+  return json({ ok: true, uid, study_room_approved: approved });
 }
 
 // 관리자가 회원 UID의 비밀번호를 대신 재설정 (비밀번호 찾기 - 수동 처리)
@@ -325,7 +355,9 @@ async function getMemberGrade(env, uid) {
 const REFERRAL_REWARD_KRW = 20000;
 const REFERRAL_MIN_REFERRALS_TO_WITHDRAW = 5;
 const REFERRAL_MIN_WITHDRAW_KRW = 100000;
-const REFERRAL_ELIGIBLE_VOLUME_USD = 100000;
+// 코드 발급 자체는 제한 없음. 이 값은 "추천받은 사람"의 거래량이 이 이상이어야
+// 그 추천 건이 확정(적립)되는 기준 — 발급자 자격 조건이 아님.
+const REFERRAL_QUALIFY_VOLUME_USD = 100000;
 
 function generateReferralCode() {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -339,13 +371,24 @@ function generateReferralCode() {
 async function getViewerGradeRank(request, env) {
   const isAdmin = await getIsAdmin(request, env);
   if (isAdmin) return 999;
-  const uid = await getMemberUid(request, env);
+  const uid = await getApprovedMemberUid(request, env);
   if (!uid) return -1;
   const grade = await getMemberGrade(env, uid);
   return gradeRank(grade);
 }
 
+// 스터디룸 콘텐츠(게시판/랭킹)는 승인된 회원 또는 관리자만 — 계정만 있고 승인 전이면 막힘
+async function canAccessStudyRoom(request, env) {
+  const isAdmin = await getIsAdmin(request, env);
+  if (isAdmin) return true;
+  const uid = await getApprovedMemberUid(request, env);
+  return !!uid;
+}
+
 async function handleListPosts(request, env) {
+  if (!(await canAccessStudyRoom(request, env))) {
+    return json({ ok: false, error: '스터디룸 입장이 승인된 계정만 볼 수 있습니다.' }, 403);
+  }
   const url = new URL(request.url);
   const category = url.searchParams.get('category') || '';
   if (!ALLOWED_CATEGORIES.includes(category)) return json({ ok: false, error: '잘못된 카테고리입니다.' }, 400);
@@ -372,6 +415,9 @@ async function handleListPosts(request, env) {
 }
 
 async function handlePostDetail(request, env) {
+  if (!(await canAccessStudyRoom(request, env))) {
+    return json({ ok: false, error: '스터디룸 입장이 승인된 계정만 볼 수 있습니다.' }, 403);
+  }
   const url = new URL(request.url);
   const id = Number(url.searchParams.get('id'));
   if (!id) return json({ ok: false, error: '잘못된 요청입니다.' }, 400);
@@ -425,8 +471,8 @@ async function handleCreatePost(request, env) {
     authorType = 'admin';
     authorId = 'admin';
   } else {
-    const uid = await getMemberUid(request, env);
-    if (!uid) return json({ ok: false, error: '로그인이 필요합니다.' }, 401);
+    const uid = await getApprovedMemberUid(request, env);
+    if (!uid) return json({ ok: false, error: '스터디룸 입장이 승인된 계정만 작성할 수 있습니다.' }, 403);
     authorType = 'member';
     authorId = uid;
   }
@@ -480,8 +526,8 @@ async function handleCreateComment(request, env) {
     authorType = 'admin';
     authorId = 'admin';
   } else {
-    const uid = await getMemberUid(request, env);
-    if (!uid) return json({ ok: false, error: '로그인이 필요합니다.' }, 401);
+    const uid = await getApprovedMemberUid(request, env);
+    if (!uid) return json({ ok: false, error: '스터디룸 입장이 승인된 계정만 작성할 수 있습니다.' }, 403);
     authorType = 'member';
     authorId = uid;
   }
@@ -530,9 +576,9 @@ async function handleAdminStats(request, env) {
 // ───────────────────────── 거래량 랭킹 ─────────────────────────
 
 async function handleRankings(request, env) {
-  const uid = await getMemberUid(request, env);
+  const uid = await getApprovedMemberUid(request, env);
   const isAdmin = await getIsAdmin(request, env);
-  if (!uid && !isAdmin) return json({ ok: false, error: '로그인이 필요합니다.' }, 401);
+  if (!uid && !isAdmin) return json({ ok: false, error: '스터디룸 입장이 승인된 계정만 볼 수 있습니다.' }, 403);
 
   const rows = await env.DB.prepare(
     'SELECT uid, nickname, trading_volume FROM users WHERE trading_volume > 0 ORDER BY trading_volume DESC LIMIT 50'
@@ -551,12 +597,6 @@ async function handleRankings(request, env) {
 async function handleReferralIssueCode(request, env) {
   const uid = await getMemberUid(request, env);
   if (!uid) return json({ ok: false, error: '로그인이 필요합니다.' }, 401);
-
-  const user = await env.DB.prepare('SELECT trading_volume FROM users WHERE uid = ?').bind(uid).first();
-  const volume = (user && user.trading_volume) || 0;
-  if (volume < REFERRAL_ELIGIBLE_VOLUME_USD) {
-    return json({ ok: false, error: `추천인 코드는 거래량 $${REFERRAL_ELIGIBLE_VOLUME_USD.toLocaleString()} 이상부터 발급할 수 있습니다. (현재 $${volume.toLocaleString()})` }, 403);
-  }
 
   const existing = await env.DB.prepare('SELECT code FROM referral_codes WHERE owner_uid = ?').bind(uid).first();
   if (existing) return json({ ok: true, code: existing.code });
@@ -577,20 +617,21 @@ async function handleReferralMe(request, env) {
   const uid = await getMemberUid(request, env);
   if (!uid) return json({ ok: false, error: '로그인이 필요합니다.' }, 401);
 
-  const user = await env.DB.prepare('SELECT trading_volume FROM users WHERE uid = ?').bind(uid).first();
-  const volume = (user && user.trading_volume) || 0;
-  const eligible = volume >= REFERRAL_ELIGIBLE_VOLUME_USD;
-
   const codeRow = await env.DB.prepare('SELECT code FROM referral_codes WHERE owner_uid = ?').bind(uid).first();
   const code = codeRow ? codeRow.code : null;
 
-  let referredCount = 0, totalEarned = 0, withdrawals = [], availableKrw = 0;
+  let referredCount = 0, pendingCount = 0, totalEarned = 0, withdrawals = [], availableKrw = 0;
   if (code) {
     const countRow = await env.DB.prepare(
-      'SELECT COUNT(*) AS c, COALESCE(SUM(reward_krw),0) AS total FROM referral_signups WHERE owner_uid = ?'
+      'SELECT COUNT(*) AS c, COALESCE(SUM(reward_krw),0) AS total FROM referral_signups WHERE owner_uid = ? AND qualified = 1'
     ).bind(uid).first();
     referredCount = countRow ? countRow.c : 0;
     totalEarned = countRow ? countRow.total : 0;
+
+    const pendingRow = await env.DB.prepare(
+      'SELECT COUNT(*) AS c FROM referral_signups WHERE owner_uid = ? AND qualified = 0'
+    ).bind(uid).first();
+    pendingCount = pendingRow ? pendingRow.c : 0;
 
     const wRows = await env.DB.prepare(
       'SELECT id, telegram_id, wallet_address, amount_krw, status, created_at FROM referral_withdrawals WHERE owner_uid = ? ORDER BY id DESC'
@@ -605,11 +646,10 @@ async function handleReferralMe(request, env) {
 
   return json({
     ok: true,
-    trading_volume: volume,
-    eligible,
-    eligible_volume_required: REFERRAL_ELIGIBLE_VOLUME_USD,
     code,
     referred_count: referredCount,
+    pending_count: pendingCount,
+    qualify_volume_required: REFERRAL_QUALIFY_VOLUME_USD,
     total_earned_krw: totalEarned,
     available_krw: availableKrw,
     min_referrals_to_withdraw: REFERRAL_MIN_REFERRALS_TO_WITHDRAW,
@@ -637,7 +677,7 @@ async function handleReferralWithdraw(request, env) {
   }
 
   const countRow = await env.DB.prepare(
-    'SELECT COUNT(*) AS c, COALESCE(SUM(reward_krw),0) AS total FROM referral_signups WHERE owner_uid = ?'
+    'SELECT COUNT(*) AS c, COALESCE(SUM(reward_krw),0) AS total FROM referral_signups WHERE owner_uid = ? AND qualified = 1'
   ).bind(uid).first();
   const referredCount = countRow ? countRow.c : 0;
   if (referredCount < REFERRAL_MIN_REFERRALS_TO_WITHDRAW) {
@@ -692,7 +732,16 @@ async function handleAdminSetVolume(request, env) {
   if (!user) return json({ ok: false, error: '해당 UID로 가입된 계정이 없습니다.' }, 404);
 
   await env.DB.prepare('UPDATE users SET trading_volume = ? WHERE uid = ?').bind(volume, uid).run();
+  await checkAndQualifyReferral(env, uid, volume);
   return json({ ok: true });
+}
+
+// 추천받은 사람(uid)의 거래량이 기준을 넘으면 그 추천 건을 확정(qualified) 처리 — 한 번 확정되면 되돌리지 않음
+async function checkAndQualifyReferral(env, uid, volume) {
+  if (volume < REFERRAL_QUALIFY_VOLUME_USD) return;
+  await env.DB.prepare(
+    "UPDATE referral_signups SET qualified = 1 WHERE referred_uid = ? AND qualified = 0"
+  ).bind(uid).run();
 }
 
 async function handleAdminResetVolumes(request, env) {
@@ -812,6 +861,16 @@ async function getMemberUid(request, env) {
   return session ? session.uid : null;
 }
 
+// 스터디룸 콘텐츠 전용 — 로그인 + 관리자 승인(예치 확인 완료)까지 된 회원만 통과.
+// 추천인 코드 발급/사용, 닉네임, 비밀번호 등 "계정" 기능은 getMemberUid만으로 충분하고
+// 이 함수는 쓰지 않는다 — 스터디룸 입장 전이어도 추천인 프로그램은 이용 가능해야 하기 때문.
+async function getApprovedMemberUid(request, env) {
+  const uid = await getMemberUid(request, env);
+  if (!uid) return null;
+  const user = await env.DB.prepare('SELECT study_room_approved FROM users WHERE uid = ?').bind(uid).first();
+  return (user && user.study_room_approved) ? uid : null;
+}
+
 // ───────────────────────── Gate.io 레퍼럴 확인 (공용 로직) ─────────────────────────
 
 async function checkGateReferral(uid, env) {
@@ -875,6 +934,7 @@ async function ensureSchema(env) {
       password_hash TEXT NOT NULL,
       nickname TEXT,
       trading_volume REAL NOT NULL DEFAULT 0,
+      study_room_approved INTEGER NOT NULL DEFAULT 0,
       created_at INTEGER NOT NULL
     )`),
     env.DB.prepare(`CREATE TABLE IF NOT EXISTS sessions (
@@ -919,6 +979,7 @@ async function ensureSchema(env) {
       owner_uid TEXT NOT NULL,
       referred_uid TEXT NOT NULL UNIQUE,
       reward_krw INTEGER NOT NULL,
+      qualified INTEGER NOT NULL DEFAULT 0,
       created_at INTEGER NOT NULL
     )`),
     env.DB.prepare(`CREATE TABLE IF NOT EXISTS referral_withdrawals (
@@ -954,6 +1015,19 @@ async function ensureSchema(env) {
   }
   try {
     await env.DB.prepare('ALTER TABLE users ADD COLUMN trading_volume REAL NOT NULL DEFAULT 0').run();
+  } catch (e) {
+    // 컬럼이 이미 있으면 여기로 오는 게 정상
+  }
+  try {
+    await env.DB.prepare('ALTER TABLE users ADD COLUMN study_room_approved INTEGER NOT NULL DEFAULT 0').run();
+    // 컬럼이 방금 처음 추가된 경우에만 도달함 — 기존 회원들은 이미 실질적으로 스터디룸을 쓰고 있었으므로
+    // 전부 승인 상태로 백필 (이후 신규 가입자는 기본값 0, 관리자가 개별 승인)
+    await env.DB.prepare('UPDATE users SET study_room_approved = 1').run();
+  } catch (e) {
+    // 컬럼이 이미 있으면 여기로 오는 게 정상
+  }
+  try {
+    await env.DB.prepare('ALTER TABLE referral_signups ADD COLUMN qualified INTEGER NOT NULL DEFAULT 0').run();
   } catch (e) {
     // 컬럼이 이미 있으면 여기로 오는 게 정상
   }

@@ -145,6 +145,11 @@
 
     <div id="found-user-actions" hidden style="margin-top:14px; display:flex; flex-direction:column; gap:14px;">
       <div>
+        <button type="button" class="btn btn-primary" id="approve-member-btn">스터디룸 입장 승인</button>
+        <button type="button" class="btn btn-ghost" id="revoke-member-btn">승인 취소</button>
+        <div id="approve-member-result" class="result-box" hidden></div>
+      </div>
+      <div>
         <button type="button" class="btn btn-primary" id="reset-pw-btn">비밀번호 초기화</button>
         <div id="reset-pw-result" class="result-box" hidden></div>
       </div>
@@ -289,7 +294,31 @@
   var setVolumeInput = document.getElementById('set-volume-input');
   var setVolumeBtn = document.getElementById('set-volume-btn');
   var setVolumeResult = document.getElementById('set-volume-result');
+  var approveMemberBtn = document.getElementById('approve-member-btn');
+  var revokeMemberBtn = document.getElementById('revoke-member-btn');
+  var approveMemberResult = document.getElementById('approve-member-result');
   var foundUid = null;
+
+  function updateApproveButtons(approved){
+    approveMemberBtn.disabled = !!approved;
+    revokeMemberBtn.disabled = !approved;
+  }
+
+  async function setApproval(approved){
+    if(!foundUid) return;
+    approveMemberBtn.disabled = true; revokeMemberBtn.disabled = true;
+    try{
+      var res = await fetch('/api/admin/approve-member', { method:'POST', credentials:'same-origin', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ uid: foundUid, approved: approved }) });
+      var data = await res.json();
+      if(data.ok){
+        showResult(approveMemberResult, approved ? '스터디룸 입장을 승인했습니다.' : '승인을 취소했습니다.', 'good');
+        updateApproveButtons(approved);
+      } else { showResult(approveMemberResult, data.error || '처리에 실패했습니다.', 'warn'); updateApproveButtons(!approved); }
+    } catch(e){ showResult(approveMemberResult, '오류가 발생했습니다.', 'warn'); updateApproveButtons(!approved); }
+  }
+
+  approveMemberBtn.addEventListener('click', function(){ setApproval(true); });
+  revokeMemberBtn.addEventListener('click', function(){ setApproval(false); });
 
   resetFindBtn.addEventListener('click', async function(){
     var uid = resetUidInput.value.trim();
@@ -304,8 +333,9 @@
       var data = await res.json();
       if(data.ok && data.found){
         foundUid = data.uid;
-        showResult(resetFindResult, '찾음 — UID ' + data.uid + (data.nickname ? ' (' + data.nickname + ')' : '') + ' · 거래량 $' + Number(data.trading_volume || 0).toLocaleString(), 'good');
+        showResult(resetFindResult, '찾음 — UID ' + data.uid + (data.nickname ? ' (' + data.nickname + ')' : '') + ' · 거래량 $' + Number(data.trading_volume || 0).toLocaleString() + ' · 스터디룸 ' + (data.study_room_approved ? '승인됨' : '미승인'), 'good');
         setVolumeInput.value = data.trading_volume || 0;
+        updateApproveButtons(data.study_room_approved);
         foundUserActions.hidden = false;
       } else if(data.ok){
         showResult(resetFindResult, '해당 UID로 가입된 계정이 없습니다.', 'warn');

@@ -7,7 +7,8 @@ CREATE TABLE IF NOT EXISTS users (
   salt TEXT NOT NULL,
   password_hash TEXT NOT NULL,
   nickname TEXT,                     -- 회원이 직접 설정하는 닉네임 (선택, 없으면 UID로 표시)
-  trading_volume REAL NOT NULL DEFAULT 0,  -- 거래량(USD), 관리자가 수동 입력 (등급/랭킹/추천인 자격에 사용)
+  trading_volume REAL NOT NULL DEFAULT 0,  -- 거래량(USD), 관리자가 수동 입력 (등급/랭킹/추천인 확정 조건에 사용)
+  study_room_approved INTEGER NOT NULL DEFAULT 0,  -- 스터디룸 입장 승인 여부 (계정 생성과 별개, 관리자가 예치 스크린샷 확인 후 승인)
   created_at INTEGER NOT NULL
 );
 
@@ -50,7 +51,7 @@ CREATE TABLE IF NOT EXISTS comments (
   created_at INTEGER NOT NULL
 );
 
--- 추천인 코드: 회원 1명당 1개, 거래량 $100,000 이상이어야 발급 가능 (앱 레벨에서 검증)
+-- 추천인 코드: 회원(계정) 1명당 1개, 발급 자체는 제한 없음 (스터디룸 승인 여부와 무관)
 CREATE TABLE IF NOT EXISTS referral_codes (
   code TEXT PRIMARY KEY,
   owner_uid TEXT NOT NULL UNIQUE,
@@ -58,12 +59,14 @@ CREATE TABLE IF NOT EXISTS referral_codes (
 );
 
 -- 추천인 코드로 가입한 회원 기록 (가입 1건당 2만원 적립, referred_uid는 1회만 크레딧)
+-- qualified: 추천받은 사람(referred_uid)의 거래량이 $100,000를 넘어야 1로 바뀜 (어뷰징 방지, 되돌리지 않음)
 CREATE TABLE IF NOT EXISTS referral_signups (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   code TEXT NOT NULL,
   owner_uid TEXT NOT NULL,
   referred_uid TEXT NOT NULL UNIQUE,
   reward_krw INTEGER NOT NULL,
+  qualified INTEGER NOT NULL DEFAULT 0,
   created_at INTEGER NOT NULL
 );
 
