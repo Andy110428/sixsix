@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>추천인 프로그램 — TEAM SIXX</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+  :root{
+    --bg: #09090b; --bg-soft: #101014; --panel: #151519; --panel-2:#1b1b20;
+    --line: rgba(255,255,255,0.08); --line-soft:rgba(255,255,255,0.05);
+    --text: #f4f3f1; --text-dim: #96938d; --text-faint:#65625d;
+    --cyan: #d4a24e; --violet: #8a6633; --amber: #e8c07d; --danger: #ff5c7a;
+  }
+  *{ box-sizing: border-box; }
+  [hidden]{ display:none !important; }
+  html{ scroll-behavior: smooth; }
+  body{ margin:0; background:var(--bg); color:var(--text); font-family:'Inter',sans-serif; line-height:1.6; -webkit-font-smoothing:antialiased; }
+  h1,h2,h3{ font-family:'Sora',sans-serif; margin:0; letter-spacing:-0.01em; }
+  .mono{ font-family:'JetBrains Mono',monospace; }
+  a{ color:inherit; text-decoration:none; }
+  .bg-grid{ position:fixed; inset:0; z-index:-2; background-image:linear-gradient(rgba(255,255,255,0.035) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.035) 1px,transparent 1px); background-size:64px 64px; mask-image:radial-gradient(ellipse 80% 60% at 50% 0%, black 40%, transparent 90%); }
+  .bg-glow{ position:fixed; z-index:-1; width:520px; height:520px; top:-200px; left:-140px; filter:blur(130px); opacity:0.16; border-radius:50%; background:var(--cyan); pointer-events:none; }
+  .wrap{ max-width:920px; margin:0 auto; padding:0 24px; }
+
+  header{ position:sticky; top:0; z-index:50; backdrop-filter:blur(14px); background:rgba(9,9,11,0.75); border-bottom:1px solid var(--line); }
+  .nav{ display:flex; align-items:center; justify-content:space-between; padding:16px 24px; max-width:920px; margin:0 auto; }
+  .brand{ font-weight:600; font-size:1rem; letter-spacing:0.04em; color:var(--text-dim); }
+
+  .btn{ display:inline-flex; align-items:center; justify-content:center; gap:8px; padding:12px 20px; border-radius:10px; font-weight:600; font-size:0.9rem; cursor:pointer; border:1px solid var(--line); transition:transform .15s ease, box-shadow .15s ease; }
+  .btn:hover{ transform:translateY(-1px); }
+  .btn-primary{ background:linear-gradient(135deg,var(--cyan),#f0c988); color:#170d03; border:none; box-shadow:0 4px 14px -6px rgba(212,162,78,0.35); width:100%; }
+  .btn-primary:disabled{ opacity:0.5; cursor:default; transform:none; }
+  .btn-ghost{ background:rgba(255,255,255,0.03); color:var(--text); }
+
+  main{ padding:44px 0 70px; }
+  .page-head{ margin-bottom:32px; }
+  .page-head .kicker{ font-family:'JetBrains Mono',monospace; font-size:0.78rem; color:var(--violet); letter-spacing:0.08em; display:block; margin-bottom:8px; }
+  .page-head h1{ font-size:1.9rem; margin-bottom:10px; }
+  .page-head p{ color:var(--text-dim); font-size:0.92rem; margin:0; max-width:600px; }
+
+  .cond-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-bottom:40px; }
+  .cond-card{ background:rgba(255,255,255,0.035); backdrop-filter:blur(16px); border:1px solid var(--line); border-radius:16px; padding:24px; }
+  .cond-card .num{ font-family:'JetBrains Mono',monospace; color:var(--cyan); font-size:0.78rem; display:block; margin-bottom:10px; }
+  .cond-card h3{ font-size:1.02rem; margin-bottom:6px; }
+  .cond-card p{ color:var(--text-dim); font-size:0.86rem; margin:0; }
+
+  .panel{ background:var(--panel); border:1px solid var(--line); border-radius:16px; padding:28px; margin-bottom:20px; position:relative; overflow:hidden; }
+  .panel::before{ content:""; position:absolute; top:0; left:0; right:0; height:2px; background:linear-gradient(90deg, transparent, var(--cyan), transparent); }
+  .panel h2{ font-size:1.1rem; margin-bottom:16px; }
+
+  .code-box{ display:flex; align-items:center; gap:10px; background:var(--bg-soft); border:1px solid var(--line); border-radius:10px; padding:14px 16px; font-family:'JetBrains Mono',monospace; font-size:1.2rem; font-weight:600; color:var(--cyan); letter-spacing:0.08em; }
+  .code-box button{ margin-left:auto; }
+
+  .dash-stats{ display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin:18px 0; }
+  .dash-stats .stat-box{ background:var(--bg-soft); border:1px solid var(--line); border-radius:10px; padding:16px 12px; text-align:center; }
+  .dash-stats .num{ font-family:'Sora',sans-serif; font-size:1.3rem; font-weight:700; color:var(--cyan); }
+  .dash-stats .label{ font-size:0.74rem; color:var(--text-dim); margin-top:4px; }
+
+  .auth-form{ display:flex; flex-direction:column; gap:10px; }
+  input{ padding:12px 14px; border-radius:8px; border:1px solid var(--line); background:var(--bg-soft); color:var(--text); font-family:'JetBrains Mono',monospace; font-size:0.92rem; width:100%; }
+  input:focus{ outline:none; border-color:rgba(212,162,78,0.5); }
+  input::placeholder{ color:var(--text-faint); }
+
+  .result-box{ margin-top:14px; padding:12px 14px; border-radius:8px; font-size:0.85rem; font-family:'JetBrains Mono',monospace; }
+  .result-box.good{ background:rgba(212,162,78,0.1); border:1px solid rgba(212,162,78,0.35); color:var(--cyan); }
+  .result-box.warn{ background:rgba(255,92,122,0.1); border:1px solid rgba(255,92,122,0.35); color:var(--danger); }
+  .result-box.pending{ background:rgba(255,255,255,0.04); border:1px solid var(--line); color:var(--text-dim); }
+
+  .wd-row{ display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-top:1px solid var(--line-soft); font-size:0.86rem; }
+  .wd-row:first-of-type{ border-top:none; }
+  .wd-status{ font-family:'JetBrains Mono',monospace; font-size:0.74rem; padding:3px 9px; border-radius:999px; border:1px solid var(--line); color:var(--text-dim); }
+
+  .empty-note{ color:var(--text-faint); font-size:0.85rem; }
+
+  footer{ border-top:1px solid var(--line); padding:32px 0; }
+  .footer-row{ display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px; }
+  .footer-row .disclaimer{ color:var(--text-faint); font-size:0.8rem; }
+
+  @media (max-width:720px){ .cond-grid, .dash-stats{ grid-template-columns:1fr; } }
+</style>
+</head>
+<body>
+
+<div class="bg-grid"></div>
+<div class="bg-glow"></div>
+
+<header>
+  <div class="nav">
+    <a class="brand" href="index.html">TEAM SIXX</a>
+    <a class="btn btn-ghost" href="portal.html">스터디룸</a>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="page-head">
+    <span class="kicker">REFERRAL PROGRAM</span>
+    <h1>추천인 프로그램</h1>
+    <p>스터디룸 회원이라면 누구나 조건 충족 시 추천인 코드를 발급받아, 코드로 가입하는 사람마다 USDT로 리워드를 받을 수 있어요.</p>
+  </div>
+
+  <div class="cond-grid">
+    <div class="cond-card">
+      <span class="num">조건 01</span>
+      <h3>발급 자격</h3>
+      <p>거래량 $100,000 이상인 스터디룸 회원만 추천인 코드를 발급받을 수 있어요. (어뷰징 방지)</p>
+    </div>
+    <div class="cond-card">
+      <span class="num">조건 02</span>
+      <h3>리워드</h3>
+      <p>내 코드로 가입하는 사람마다 <b>20,000원</b>, 반드시 <b>USDT(TRC20)</b>로만 지급돼요.</p>
+    </div>
+    <div class="cond-card">
+      <span class="num">조건 03</span>
+      <h3>출금 조건</h3>
+      <p>추천 가입자 <b>5명 이상</b>부터, 최소 <b>100,000원</b> 이상부터 출금 신청이 가능해요.</p>
+    </div>
+  </div>
+
+  <!-- 로그인 필요 안내 -->
+  <div class="panel" id="need-login-panel" hidden>
+    <h2>로그인이 필요해요</h2>
+    <p style="color:var(--text-dim); font-size:0.9rem; margin-bottom:16px;">추천인 코드 발급 및 대시보드 확인은 스터디룸 회원 로그인이 필요합니다.</p>
+    <a class="btn btn-primary" href="portal.html" style="display:inline-flex; width:auto; padding-left:24px; padding-right:24px;">로그인하러 가기 →</a>
+  </div>
+
+  <!-- 관리자 로그인 안내 -->
+  <div class="panel" id="admin-note-panel" hidden>
+    <h2>관리자 계정으로 로그인되어 있어요</h2>
+    <p style="color:var(--text-dim); font-size:0.9rem;">추천인 코드/대시보드는 회원(UID) 계정 전용이에요. 출금 신청 심사는 <a href="admin.html" style="color:var(--cyan); font-weight:600;">admin.html</a>에서 확인해주세요.</p>
+  </div>
+
+  <!-- 자격 미달 -->
+  <div class="panel" id="not-eligible-panel" hidden>
+    <h2>아직 발급 조건을 채우지 못했어요</h2>
+    <p id="not-eligible-text" style="color:var(--text-dim); font-size:0.9rem;"></p>
+  </div>
+
+  <!-- 코드 발급 전 -->
+  <div class="panel" id="issue-panel" hidden>
+    <h2>추천인 코드 발급받기</h2>
+    <p style="color:var(--text-dim); font-size:0.9rem; margin-bottom:16px;">발급 조건을 충족했어요! 버튼을 누르면 나만의 추천인 코드가 발급돼요.</p>
+    <button type="button" class="btn btn-primary" id="issue-btn" style="max-width:240px;">코드 발급받기</button>
+    <div id="issue-result" class="result-box" hidden></div>
+  </div>
+
+  <!-- 대시보드 -->
+  <div id="dashboard-panels" hidden>
+    <div class="panel">
+      <h2>내 추천인 코드</h2>
+      <div class="code-box">
+        <span id="my-code">-</span>
+        <button type="button" class="btn btn-ghost" id="copy-code-btn" style="width:auto;">복사</button>
+      </div>
+      <p style="color:var(--text-dim); font-size:0.82rem; margin-top:10px;">가입 화면의 "추천인 코드" 입력란에 이 코드를 넣으면 나에게 연결돼요.</p>
+      <div class="dash-stats">
+        <div class="stat-box"><div class="num" id="stat-referred">0</div><div class="label">추천 가입자</div></div>
+        <div class="stat-box"><div class="num" id="stat-earned">0원</div><div class="label">총 적립액</div></div>
+        <div class="stat-box"><div class="num" id="stat-available">0원</div><div class="label">출금 가능액</div></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>출금 신청</h2>
+      <p id="withdraw-note" style="color:var(--text-dim); font-size:0.86rem; margin-bottom:14px;"></p>
+      <form id="withdraw-form" class="auth-form">
+        <input type="text" id="wd-telegram" placeholder="텔레그램 아이디 (예: @team_sixx)">
+        <input type="text" id="wd-wallet" placeholder="USDT(TRC20) 지갑 주소">
+        <input type="number" id="wd-amount" placeholder="출금 금액 (원, 최소 100,000)" min="100000" step="1000">
+        <button type="submit" class="btn btn-primary" id="wd-submit-btn">출금 신청하기</button>
+      </form>
+      <div id="withdraw-result" class="result-box" hidden></div>
+    </div>
+
+    <div class="panel">
+      <h2>출금 신청 내역</h2>
+      <div id="withdraw-history"></div>
+    </div>
+  </div>
+</main>
+
+<footer>
+  <div class="wrap footer-row">
+    <a href="index.html" style="font-weight:700;">TEAM SIXX</a>
+    <div class="disclaimer">추천인 리워드 심사 및 지급은 운영자가 직접 확인 후 진행합니다.</div>
+  </div>
+</footer>
+
+<script>
+(function(){
+  var statusLabel = { pending:'대기중', approved:'승인됨', rejected:'거절됨', paid:'지급완료' };
+
+  function showResult(el, text, kind){ el.hidden = false; el.textContent = text; el.className = 'result-box ' + kind; }
+
+  async function init(){
+    try{
+      var meRes = await fetch('/api/me', { credentials:'same-origin' });
+      var me = await meRes.json();
+      if(me.ok){ return initMember(); }
+
+      var adminRes = await fetch('/api/admin/me', { credentials:'same-origin' });
+      var admin = await adminRes.json();
+      if(admin.ok){ document.getElementById('admin-note-panel').hidden = false; return; }
+
+      document.getElementById('need-login-panel').hidden = false;
+    } catch(e){
+      document.getElementById('need-login-panel').hidden = false;
+    }
+  }
+
+  async function initMember(){
+    try{
+      var res = await fetch('/api/referral/me', { credentials:'same-origin' });
+      var data = await res.json();
+      if(!data.ok){ document.getElementById('need-login-panel').hidden = false; return; }
+
+      if(!data.eligible){
+        document.getElementById('not-eligible-panel').hidden = false;
+        document.getElementById('not-eligible-text').textContent =
+          '현재 거래량 $' + Number(data.trading_volume).toLocaleString() + ' / 필요 거래량 $' + Number(data.eligible_volume_required).toLocaleString() +
+          '. 운영자에게 거래량 반영을 요청해보세요.';
+        return;
+      }
+
+      if(!data.code){
+        document.getElementById('issue-panel').hidden = false;
+        document.getElementById('issue-btn').addEventListener('click', issueCode);
+        return;
+      }
+
+      renderDashboard(data);
+    } catch(e){
+      document.getElementById('need-login-panel').hidden = false;
+    }
+  }
+
+  async function issueCode(){
+    var btn = document.getElementById('issue-btn');
+    var result = document.getElementById('issue-result');
+    btn.disabled = true;
+    try{
+      var res = await fetch('/api/referral/issue-code', { method:'POST', credentials:'same-origin' });
+      var data = await res.json();
+      if(data.ok){
+        document.getElementById('issue-panel').hidden = true;
+        var meRes = await fetch('/api/referral/me', { credentials:'same-origin' });
+        var meData = await meRes.json();
+        renderDashboard(meData);
+      } else {
+        showResult(result, data.error || '발급에 실패했습니다.', 'warn');
+      }
+    } catch(e){ showResult(result, '오류가 발생했습니다.', 'warn'); }
+    finally{ btn.disabled = false; }
+  }
+
+  function renderDashboard(data){
+    document.getElementById('dashboard-panels').hidden = false;
+    document.getElementById('my-code').textContent = data.code;
+    document.getElementById('stat-referred').textContent = data.referred_count;
+    document.getElementById('stat-earned').textContent = Number(data.total_earned_krw).toLocaleString() + '원';
+    document.getElementById('stat-available').textContent = Number(data.available_krw).toLocaleString() + '원';
+
+    var noteEl = document.getElementById('withdraw-note');
+    var submitBtn = document.getElementById('wd-submit-btn');
+    if(data.referred_count < data.min_referrals_to_withdraw){
+      noteEl.textContent = '추천 가입자가 ' + data.min_referrals_to_withdraw + '명 이상이어야 출금 신청이 가능해요. (현재 ' + data.referred_count + '명)';
+      submitBtn.disabled = true;
+    } else {
+      noteEl.textContent = '최소 출금 금액은 ' + Number(data.min_withdraw_krw).toLocaleString() + '원이에요. 신청하시면 운영자가 텔레그램으로 확인 후 USDT(TRC20)로 지급합니다.';
+      submitBtn.disabled = false;
+    }
+
+    var historyEl = document.getElementById('withdraw-history');
+    if(!data.withdrawals || data.withdrawals.length === 0){
+      historyEl.innerHTML = '<div class="empty-note">아직 출금 신청 내역이 없습니다.</div>';
+    } else {
+      historyEl.innerHTML = data.withdrawals.map(function(w){
+        return '<div class="wd-row"><span>' + fmtDate(w.created_at) + ' · ' + Number(w.amount_krw).toLocaleString() + '원</span>' +
+          '<span class="wd-status">' + (statusLabel[w.status] || w.status) + '</span></div>';
+      }).join('');
+    }
+  }
+
+  document.getElementById('copy-code-btn').addEventListener('click', function(){
+    var code = document.getElementById('my-code').textContent;
+    if(!code || code === '-') return;
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(code).catch(function(){});
+    }
+  });
+
+  document.getElementById('withdraw-form').addEventListener('submit', async function(e){
+    e.preventDefault();
+    var telegramId = document.getElementById('wd-telegram').value.trim();
+    var wallet = document.getElementById('wd-wallet').value.trim();
+    var amount = Number(document.getElementById('wd-amount').value);
+    var result = document.getElementById('withdraw-result');
+    if(!telegramId || !wallet || !amount){ showResult(result, '모든 항목을 입력해주세요.', 'warn'); return; }
+    var btn = document.getElementById('wd-submit-btn');
+    btn.disabled = true;
+    try{
+      var res = await fetch('/api/referral/withdraw', { method:'POST', credentials:'same-origin', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ telegram_id: telegramId, wallet_address: wallet, amount_krw: amount }) });
+      var data = await res.json();
+      if(data.ok){
+        showResult(result, '출금 신청이 접수되었습니다. 운영자 확인 후 진행됩니다.', 'good');
+        document.getElementById('withdraw-form').reset();
+        var meRes = await fetch('/api/referral/me', { credentials:'same-origin' });
+        var meData = await meRes.json();
+        renderDashboard(meData);
+      } else {
+        showResult(result, data.error || '신청에 실패했습니다.', 'warn');
+      }
+    } catch(e){ showResult(result, '오류가 발생했습니다.', 'warn'); }
+    finally{ btn.disabled = false; }
+  });
+
+  function fmtDate(ts){
+    var d = new Date(ts);
+    return d.getFullYear() + '.' + String(d.getMonth()+1).padStart(2,'0') + '.' + String(d.getDate()).padStart(2,'0');
+  }
+
+  init();
+})();
+</script>
+
+</body>
+</html>
