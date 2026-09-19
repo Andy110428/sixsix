@@ -26,6 +26,7 @@ CREATE TABLE IF NOT EXISTS posts (
   title TEXT NOT NULL,
   content TEXT NOT NULL,
   image_data TEXT,
+  thumb_data TEXT,
   author_type TEXT NOT NULL,
   author_id TEXT NOT NULL,
   created_at INTEGER NOT NULL

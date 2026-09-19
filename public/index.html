@@ -5,18 +5,18 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>TEAM SIXX — 비공개 코인 선물 스터디방</title>
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
 
   :root{
-    --bg: #06080d;
-    --bg-soft: #0b0f18;
-    --panel: #0e131d;
+    --bg: #09090b;
+    --bg-soft: #101014;
+    --panel: #151519;
     --line: rgba(255,255,255,0.08);
-    --text: #eef1f7;
-    --text-dim: #93a0b4;
-    --cyan: #ff7a29;
-    --violet: #c2540f;
-    --amber: #ffb648;
+    --text: #f4f3f1;
+    --text-dim: #96938d;
+    --cyan: #d4a24e;
+    --violet: #8a6633;
+    --amber: #e8c07d;
     --danger: #ff5c7a;
   }
 
@@ -32,11 +32,11 @@
     -webkit-font-smoothing: antialiased;
   }
   h1,h2,h3{
-    font-family: 'Space Grotesk', sans-serif;
+    font-family: 'Sora', sans-serif;
     margin: 0;
     letter-spacing: -0.01em;
   }
-  .mono{ font-family: 'IBM Plex Mono', monospace; }
+  .mono{ font-family: 'JetBrains Mono', monospace; }
   a{ color: inherit; text-decoration: none; }
   img{ max-width:100%; display:block; }
 
@@ -96,12 +96,12 @@
   }
   .btn:hover{ transform: translateY(-1px); }
   .btn-primary{
-    background: linear-gradient(135deg, var(--cyan), #ffb056);
+    background: linear-gradient(135deg, var(--cyan), #f0c988);
     color: #170d03;
     border: none;
-    box-shadow: 0 4px 14px -6px rgba(255,122,41,0.35);
+    box-shadow: 0 4px 14px -6px rgba(212,162,78,0.35);
   }
-  .btn-primary:hover{ box-shadow: 0 6px 18px -6px rgba(255,122,41,0.45); }
+  .btn-primary:hover{ box-shadow: 0 6px 18px -6px rgba(212,162,78,0.45); }
   .btn-ghost{
     background: rgba(255,255,255,0.03);
     color: var(--text);
@@ -110,7 +110,7 @@
   .btn-violet{
     background: rgba(255,255,255,0.03);
     color: var(--cyan);
-    border: 1px solid rgba(255,122,41,0.3);
+    border: 1px solid rgba(212,162,78,0.3);
   }
   .btn-block{ width:100%; padding: 14px 18px; font-size: 1rem; }
 
@@ -122,7 +122,7 @@
     display:block;
     color: var(--violet);
     font-size: 0.8rem;
-    font-family: 'IBM Plex Mono', monospace;
+    font-family: 'JetBrains Mono', monospace;
     letter-spacing: 0.08em;
     margin-bottom: 18px;
   }
@@ -178,7 +178,7 @@
   section{ padding: 88px 0; scroll-margin-top: 90px; }
   .section-head{ max-width: 620px; margin-bottom: 48px; }
   .section-head .kicker{
-    font-family: 'IBM Plex Mono', monospace;
+    font-family: 'JetBrains Mono', monospace;
     font-size: 0.82rem;
     color: var(--violet);
     margin-bottom: 12px;
@@ -210,10 +210,10 @@
     content:'';
     position:absolute; top:-40%; right:-30%;
     width: 220px; height: 220px;
-    background: radial-gradient(circle, rgba(255,122,41,0.08), transparent 70%);
+    background: radial-gradient(circle, rgba(212,162,78,0.08), transparent 70%);
   }
   .req-card .num{
-    font-family: 'IBM Plex Mono', monospace;
+    font-family: 'JetBrains Mono', monospace;
     color: var(--cyan);
     font-size: 0.85rem;
     margin-bottom: 16px;
@@ -222,7 +222,7 @@
   .req-card h3{ font-size: 1.25rem; margin-bottom: 10px; }
   .req-card p{ color: var(--text-dim); font-size: 0.95rem; }
   .req-card .value{
-    font-family: 'Space Grotesk', sans-serif;
+    font-family: 'Sora', sans-serif;
     font-size: 2rem;
     font-weight: 700;
     margin: 14px 0 6px;
@@ -242,7 +242,7 @@
   }
   .step:last-child{ border-bottom: 1px solid var(--line); }
   .step .idx{
-    font-family: 'IBM Plex Mono', monospace;
+    font-family: 'JetBrains Mono', monospace;
     color: var(--violet);
     font-size: 1.1rem;
     padding-top: 2px;
@@ -274,8 +274,8 @@
     margin-bottom: 18px;
     font-size: 1.3rem;
   }
-  .contact-card.channel .icon{ background: rgba(255,122,41,0.12); color: var(--cyan); }
-  .contact-card.support .icon{ background: rgba(194,84,15,0.14); color: var(--violet); }
+  .contact-card.channel .icon{ background: rgba(212,162,78,0.12); color: var(--cyan); }
+  .contact-card.support .icon{ background: rgba(138,102,51,0.14); color: var(--violet); }
   .contact-card h3{ font-size: 1.15rem; margin-bottom: 10px; }
   .contact-card p{ color: var(--text-dim); font-size: 0.95rem; margin-bottom: 20px; }
 
@@ -298,9 +298,9 @@
     z-index: 60;
     width: 58px; height: 58px;
     border-radius: 50%;
-    background: linear-gradient(135deg, var(--cyan), #ffb056);
+    background: linear-gradient(135deg, var(--cyan), #f0c988);
     display:flex; align-items:center; justify-content:center;
-    box-shadow: 0 6px 20px -6px rgba(255,122,41,0.45);
+    box-shadow: 0 6px 20px -6px rgba(212,162,78,0.45);
     font-size: 1.5rem;
     color: #170d03;
     transition: transform .15s ease;
@@ -365,7 +365,7 @@
   .menu-dropdown .menu-member{
     color: var(--text);
     font-weight: 600;
-    background: rgba(255,122,41,0.08);
+    background: rgba(212,162,78,0.08);
   }
 </style>
 </head>

@@ -178,6 +178,9 @@ async function handleSetNickname(request, env) {
     return json({ ok: false, error: '닉네임은 1~20자로 입력해주세요.' }, 400);
   }
 
+  const dup = await env.DB.prepare('SELECT uid FROM users WHERE nickname = ? AND uid != ?').bind(nickname, uid).first();
+  if (dup) return json({ ok: false, error: '이미 사용 중인 닉네임입니다.' }, 409);
+
   await env.DB.prepare('UPDATE users SET nickname = ? WHERE uid = ?').bind(nickname, uid).run();
   return json({ ok: true, nickname });
 }
@@ -232,8 +235,8 @@ function generateTempPassword() {
 
 // ───────────────────────── 게시판 ─────────────────────────
 
-const ALLOWED_CATEGORIES = ['notice', 'lecture', 'question', 'profit'];
-const ADMIN_ONLY_CATEGORIES = ['notice', 'lecture'];
+const ALLOWED_CATEGORIES = ['notice', 'lecture', 'question', 'profit', 'briefing'];
+const ADMIN_ONLY_CATEGORIES = ['notice', 'lecture', 'briefing'];
 
 async function handleListPosts(request, env) {
   const url = new URL(request.url);
@@ -242,7 +245,7 @@ async function handleListPosts(request, env) {
 
   const order = category === 'lecture' ? 'ASC' : 'DESC';
   const rows = await env.DB.prepare(
-    `SELECT posts.id, posts.title, posts.author_type, posts.author_id, posts.created_at, users.nickname AS author_nickname
+    `SELECT posts.id, posts.title, posts.author_type, posts.author_id, posts.created_at, posts.thumb_data, users.nickname AS author_nickname
      FROM posts LEFT JOIN users ON users.uid = posts.author_id
      WHERE posts.category = ? ORDER BY posts.id ${order} LIMIT 100`
   ).bind(category).all();
@@ -277,10 +280,12 @@ async function handleCreatePost(request, env) {
   const title = (body.title || '').trim();
   const content = (body.content || '').trim();
   const imageData = body.image_data || null;
+  const thumbData = body.thumb_data || null;
 
   if (!ALLOWED_CATEGORIES.includes(category)) return json({ ok: false, error: '잘못된 카테고리입니다.' }, 400);
   if (!title || !content) return json({ ok: false, error: '제목과 내용을 입력해주세요.' }, 400);
   if (imageData && imageData.length > 2_000_000) return json({ ok: false, error: '이미지 용량이 너무 큽니다. (최대 약 1.5MB)' }, 400);
+  if (thumbData && thumbData.length > 150_000) return json({ ok: false, error: '미리보기 이미지 생성에 실패했습니다.' }, 400);
 
   let authorType, authorId;
   const isAdmin = await getIsAdmin(request, env);
@@ -300,8 +305,8 @@ async function handleCreatePost(request, env) {
   }
 
   const result = await env.DB.prepare(
-    'INSERT INTO posts (category, title, content, image_data, author_type, author_id, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)'
-  ).bind(category, title, content, imageData, authorType, authorId, Date.now()).run();
+    'INSERT INTO posts (category, title, content, image_data, thumb_data, author_type, author_id, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
+  ).bind(category, title, content, imageData, thumbData, authorType, authorId, Date.now()).run();
 
   return json({ ok: true, id: result.meta.last_row_id });
 }
@@ -531,6 +536,7 @@ async function ensureSchema(env) {
       title TEXT NOT NULL,
       content TEXT NOT NULL,
       image_data TEXT,
+      thumb_data TEXT,
       author_type TEXT NOT NULL,
       author_id TEXT NOT NULL,
       created_at INTEGER NOT NULL
@@ -552,6 +558,11 @@ async function ensureSchema(env) {
   }
   try {
     await env.DB.prepare('ALTER TABLE users ADD COLUMN nickname TEXT').run();
+  } catch (e) {
+    // 컬럼이 이미 있으면 여기로 오는 게 정상
+  }
+  try {
+    await env.DB.prepare('ALTER TABLE posts ADD COLUMN thumb_data TEXT').run();
   } catch (e) {
     // 컬럼이 이미 있으면 여기로 오는 게 정상
   }
