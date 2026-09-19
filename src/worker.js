@@ -1358,13 +1358,36 @@ async function ensureSchema(env) {
         }
       }
     }
+  } catch (e) {
+    // users 테이블이 원래 없었으면 여기로 옴 — 무시
+  }
+
+  // general_members 테이블이 남아있으면(예전 일반/추천인 계정) members로 옮겨준다 — 이메일이 이미 있으니 그대로 승계.
+  try {
+    const legacyGeneral = await env.DB.prepare(
+      'SELECT email, salt, password_hash, nickname, gate_uid, gate_api_key, gate_api_secret, trading_volume, ranking_opt_in, created_at FROM general_members LIMIT 500'
+    ).all().catch(() => null);
+    if (legacyGeneral && legacyGeneral.results && legacyGeneral.results.length > 0) {
+      for (const g of legacyGeneral.results) {
+        try {
+          await env.DB.prepare(
+            'INSERT INTO members (email, salt, password_hash, nickname, gate_uid, gate_api_key, gate_api_secret, trading_volume, ranking_opt_in, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+          ).bind(g.email, g.salt, g.password_hash, g.nickname || null, g.gate_uid || null, g.gate_api_key || null, g.gate_api_secret || null, g.trading_volume || 0, g.ranking_opt_in || 0, g.created_at).run();
+        } catch (e) {
+          // 이미 옮겨졌거나 이메일/UID 충돌 — 건너뜀
+        }
+      }
+    }
+  } catch (e) {
+    // general_members 테이블이 원래 없었으면 여기로 옴 — 무시
+  }
+
+  try {
     await env.DB.batch([
       env.DB.prepare('DROP TABLE IF EXISTS users'),
       env.DB.prepare('DROP TABLE IF EXISTS general_members'),
     ]);
-  } catch (e) {
-    // users 테이블이 원래 없었으면 여기로 옴 — 무시
-  }
+  } catch (e) {}
 
   // sessions 테이블이 예전 스터디룸 스키마(uid 컬럼)로 남아있으면 — CREATE TABLE IF NOT EXISTS는
   // 이미 있는 테이블을 건드리지 않으므로 email 컬럼이 없는 채로 남아 로그인/회원가입이 전부 실패함.
