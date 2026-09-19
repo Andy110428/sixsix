@@ -10,7 +10,7 @@
     --bg: #09090b; --bg-soft: #101014; --panel: #151519; --panel-2:#1b1b20;
     --line: rgba(255,255,255,0.08); --line-soft:rgba(255,255,255,0.05);
     --text: #f4f3f1; --text-dim: #96938d; --text-faint:#65625d;
-    --cyan: #d4a24e; --violet: #8a6633; --amber: #e8c07d; --danger: #ff5c7a;
+    --cyan: #d4a24e; --violet: #8a6633; --amber: #e8c07d; --danger: #ff5c7a; --good:#4ade80;
   }
   *{ box-sizing: border-box; }
   [hidden]{ display:none !important; }
@@ -47,17 +47,21 @@
 
   .panel{ background:var(--panel); border:1px solid var(--line); border-radius:16px; padding:28px; margin-bottom:20px; position:relative; overflow:hidden; }
   .panel::before{ content:""; position:absolute; top:0; left:0; right:0; height:2px; background:linear-gradient(90deg, transparent, var(--cyan), transparent); }
-  .panel h2{ font-size:1.1rem; margin-bottom:16px; }
+  .panel h2{ font-size:1.1rem; margin-bottom:16px; display:flex; align-items:center; }
 
   .code-box{ display:flex; align-items:center; gap:10px; background:var(--bg-soft); border:1px solid var(--line); border-radius:10px; padding:14px 16px; font-family:'JetBrains Mono',monospace; font-size:1.2rem; font-weight:600; color:var(--cyan); letter-spacing:0.08em; }
   .code-box button{ margin-left:auto; }
 
-  .dash-stats{ display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin:18px 0; }
+  .dash-stats{ display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin:18px 0; }
   .dash-stats .stat-box{ background:var(--bg-soft); border:1px solid var(--line); border-radius:10px; padding:16px 12px; text-align:center; }
   .dash-stats .num{ font-family:'Sora',sans-serif; font-size:1.3rem; font-weight:700; color:var(--cyan); }
   .dash-stats .label{ font-size:0.74rem; color:var(--text-dim); margin-top:4px; }
 
-  .auth-form{ display:flex; flex-direction:column; gap:10px; }
+  .auth-tabs{ display:flex; gap:4px; background:var(--bg-soft); border-radius:10px; padding:4px; margin-bottom:16px; max-width:320px; }
+  .auth-tab{ flex:1; padding:9px; border:none; background:none; border-radius:8px; color:var(--text-dim); font-weight:600; font-size:0.9rem; cursor:pointer; }
+  .auth-tab.active{ background:var(--panel); color:var(--cyan); box-shadow:0 0 0 1px var(--line); }
+
+  .auth-form{ display:flex; flex-direction:column; gap:10px; max-width:360px; }
   input{ padding:12px 14px; border-radius:8px; border:1px solid var(--line); background:var(--bg-soft); color:var(--text); font-family:'JetBrains Mono',monospace; font-size:0.92rem; width:100%; }
   input:focus{ outline:none; border-color:rgba(212,162,78,0.5); }
   input::placeholder{ color:var(--text-faint); }
@@ -67,9 +71,20 @@
   .result-box.warn{ background:rgba(255,92,122,0.1); border:1px solid rgba(255,92,122,0.35); color:var(--danger); }
   .result-box.pending{ background:rgba(255,255,255,0.04); border:1px solid var(--line); color:var(--text-dim); }
 
-  .wd-row{ display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-top:1px solid var(--line-soft); font-size:0.86rem; }
-  .wd-row:first-of-type{ border-top:none; }
+  .wd-row, .feed-row, .lb-row{ display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-top:1px solid var(--line-soft); font-size:0.86rem; }
+  .wd-row:first-of-type, .feed-row:first-of-type, .lb-row:first-of-type{ border-top:none; }
   .wd-status{ font-family:'JetBrains Mono',monospace; font-size:0.74rem; padding:3px 9px; border-radius:999px; border:1px solid var(--line); color:var(--text-dim); }
+  .feed-amount{ font-family:'JetBrains Mono',monospace; color:var(--cyan); font-weight:600; }
+  .lb-volume{ font-family:'JetBrains Mono',monospace; color:var(--cyan); }
+
+  .live-dot{ display:inline-block; width:7px; height:7px; border-radius:50%; background:var(--good); box-shadow:0 0 6px var(--good); margin-right:8px; animation:pulse 1.6s ease-in-out infinite; }
+  @keyframes pulse{ 0%,100%{ opacity:1; } 50%{ opacity:0.35; } }
+
+  .api-note{ color:var(--text-dim); font-size:0.84rem; margin-bottom:16px; padding:12px 14px; background:rgba(212,162,78,0.06); border:1px solid rgba(212,162,78,0.2); border-radius:10px; }
+  .connected-box{ display:flex; align-items:center; justify-content:space-between; gap:10px; background:rgba(74,222,128,0.08); border:1px solid rgba(74,222,128,0.3); border-radius:10px; padding:12px 16px; margin-bottom:14px; font-family:'JetBrains Mono',monospace; font-size:0.88rem; }
+
+  .toggle-row{ display:flex; align-items:center; gap:10px; cursor:pointer; font-size:0.92rem; }
+  .toggle-row input{ width:auto; accent-color:var(--cyan); }
 
   .empty-note{ color:var(--text-faint); font-size:0.85rem; }
 
@@ -96,14 +111,14 @@
   <div class="page-head">
     <span class="kicker">REFERRAL PROGRAM</span>
     <h1>추천인 프로그램</h1>
-    <p>계정만 있으면 누구나 추천인 코드를 바로 발급받을 수 있어요. 내 코드로 가입한 사람의 거래량이 $100,000를 넘으면 리워드가 확정돼요.</p>
+    <p>이메일로 가입하는 별도 계정이에요 — 스터디룸 회원이 아니어도, Gate UID가 없어도 누구나 이용할 수 있어요. 계정만 있으면 바로 추천인 코드를 발급받을 수 있어요.</p>
   </div>
 
   <div class="cond-grid">
     <div class="cond-card">
       <span class="num">조건 01</span>
       <h3>발급 자격</h3>
-      <p>제한 없이 누구나 발급 가능해요. 스터디룸 입장 승인 여부와도 무관해요.</p>
+      <p>제한 없이 누구나 발급 가능해요. 스터디룸 회원 여부와도 무관해요.</p>
     </div>
     <div class="cond-card">
       <span class="num">조건 02</span>
@@ -117,17 +132,38 @@
     </div>
   </div>
 
-  <!-- 로그인 필요 안내 -->
-  <div class="panel" id="need-login-panel" hidden>
-    <h2>로그인이 필요해요</h2>
-    <p style="color:var(--text-dim); font-size:0.9rem; margin-bottom:16px;">추천인 코드 발급 및 대시보드 확인은 회원(UID) 계정 로그인이 필요합니다. 스터디룸 입장 승인 전이어도 계정만 있으면 이용할 수 있어요.</p>
-    <a class="btn btn-primary" href="portal.html" style="display:inline-flex; width:auto; padding-left:24px; padding-right:24px;">로그인 / 회원가입하러 가기 →</a>
+  <!-- 로그인 / 회원가입 -->
+  <div class="panel" id="auth-panel" hidden>
+    <h2>로그인 / 회원가입</h2>
+    <div class="auth-tabs">
+      <button type="button" class="auth-tab active" data-tab="login">로그인</button>
+      <button type="button" class="auth-tab" data-tab="signup">회원가입</button>
+    </div>
+    <form id="login-form" class="auth-form">
+      <input type="email" id="login-email" placeholder="이메일" autocomplete="username">
+      <input type="password" id="login-pw" placeholder="비밀번호" autocomplete="current-password">
+      <button type="submit" class="btn btn-primary">로그인</button>
+    </form>
+    <form id="signup-form" class="auth-form" hidden>
+      <input type="email" id="signup-email" placeholder="이메일" autocomplete="username">
+      <input type="password" id="signup-pw" placeholder="비밀번호 (8자 이상)" autocomplete="new-password">
+      <input type="password" id="signup-pw2" placeholder="비밀번호 확인" autocomplete="new-password">
+      <input type="text" id="signup-referral" placeholder="추천인 코드 (선택)">
+      <button type="submit" class="btn btn-primary">회원가입</button>
+    </form>
+    <div id="auth-result" class="result-box" hidden></div>
   </div>
 
   <!-- 관리자 로그인 안내 -->
   <div class="panel" id="admin-note-panel" hidden>
     <h2>관리자 계정으로 로그인되어 있어요</h2>
-    <p style="color:var(--text-dim); font-size:0.9rem;">추천인 코드/대시보드는 회원(UID) 계정 전용이에요. 출금 신청 심사는 <a href="admin.html" style="color:var(--cyan); font-weight:600;">admin.html</a>에서 확인해주세요.</p>
+    <p style="color:var(--text-dim); font-size:0.9rem;">추천인 코드/대시보드는 일반(이메일) 계정 전용이에요. 발급자 현황·출금 심사는 <a href="admin.html" style="color:var(--cyan); font-weight:600;">admin.html</a>에서 확인해주세요.</p>
+  </div>
+
+  <!-- 로그인 후: 계정 정보 + 로그아웃 -->
+  <div id="account-bar" hidden style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; color:var(--text-dim); font-size:0.86rem;">
+    <span id="account-email-label"></span>
+    <button type="button" class="btn btn-ghost" id="logout-btn" style="width:auto;">로그아웃</button>
   </div>
 
   <!-- 코드 발급 전 -->
@@ -146,13 +182,43 @@
         <span id="my-code">-</span>
         <button type="button" class="btn btn-ghost" id="copy-code-btn" style="width:auto;">복사</button>
       </div>
-      <p style="color:var(--text-dim); font-size:0.82rem; margin-top:10px;">가입 화면의 "추천인 코드" 입력란에 이 코드를 넣으면 나에게 연결돼요.</p>
-      <div class="dash-stats" style="grid-template-columns:repeat(4,1fr);">
+      <p style="color:var(--text-dim); font-size:0.82rem; margin-top:10px;">회원가입 화면의 "추천인 코드" 입력란에 이 코드를 넣으면 나에게 연결돼요.</p>
+      <div class="dash-stats">
         <div class="stat-box"><div class="num" id="stat-referred">0</div><div class="label">확정 가입자</div></div>
         <div class="stat-box"><div class="num" id="stat-pending">0</div><div class="label">대기중(거래량 미달)</div></div>
         <div class="stat-box"><div class="num" id="stat-earned">0원</div><div class="label">총 적립액</div></div>
         <div class="stat-box"><div class="num" id="stat-available">0원</div><div class="label">출금 가능액</div></div>
       </div>
+    </div>
+
+    <div class="panel">
+      <h2>Gate.io API 연동 (선택)</h2>
+      <div class="api-note">
+        ⚠️ <b>Read-Only(읽기 전용)</b> 권한의 API 키만 사용해주세요. 출금·거래 권한은 전혀 필요 없고,
+        이 사이트는 조회 권한 외 어떤 권한도 요청하지 않습니다. 연동하면 API 키로 계좌 소유가 자동
+        확인되고, 추천인 확정 심사·랭킹 시스템에 쓰여요. 연동은 선택이지만, 랭킹 시스템 참여나
+        앞으로 추가될 자동 거래량 확인 기능을 쓰려면 필요할 수 있어요.
+      </div>
+      <div id="api-connected-box" class="connected-box" hidden>
+        <span>연동된 UID: <b id="connected-uid" class="mono"></b></span>
+        <button type="button" class="btn btn-ghost" id="disconnect-api-btn" style="width:auto;">연동 해제</button>
+      </div>
+      <form id="api-connect-form" class="auth-form">
+        <input type="text" id="api-key-input" placeholder="Gate.io API Key (Read-Only)">
+        <input type="text" id="api-secret-input" placeholder="Gate.io API Secret">
+        <button type="submit" class="btn btn-primary">연동하기</button>
+      </form>
+      <div id="api-connect-result" class="result-box" hidden></div>
+    </div>
+
+    <div class="panel">
+      <h2>랭킹 시스템 참여 (선택)</h2>
+      <p style="color:var(--text-dim); font-size:0.9rem; margin-bottom:14px;">참여하면 아래 공개 랭킹에 내 거래량이 표시돼요 (닉네임이 없으면 이메일 일부만 마스킹해서 표시). 참여하려면 위에서 Gate.io API 연동이 먼저 필요해요.</p>
+      <label class="toggle-row">
+        <input type="checkbox" id="ranking-opt-checkbox">
+        <span>랭킹에 참여합니다</span>
+      </label>
+      <div id="ranking-opt-result" class="result-box" hidden></div>
     </div>
 
     <div class="panel">
@@ -172,6 +238,18 @@
       <div id="withdraw-history"></div>
     </div>
   </div>
+
+  <div class="panel">
+    <h2><span class="live-dot"></span>실시간 출금 피드</h2>
+    <p style="color:var(--text-dim); font-size:0.86rem; margin-bottom:14px;">최근 지급 완료된 추천인 리워드예요. (닉네임/금액 일부는 마스킹돼요)</p>
+    <div id="live-feed"></div>
+  </div>
+
+  <div class="panel">
+    <h2>거래량 랭킹</h2>
+    <p style="color:var(--text-dim); font-size:0.86rem; margin-bottom:14px;">랭킹 참여를 선택한 회원만 표시돼요.</p>
+    <div id="leaderboard-list"></div>
+  </div>
 </main>
 
 <footer>
@@ -186,39 +264,127 @@
   var statusLabel = { pending:'대기중', approved:'승인됨', rejected:'거절됨', paid:'지급완료' };
 
   function showResult(el, text, kind){ el.hidden = false; el.textContent = text; el.className = 'result-box ' + kind; }
+  function clearResult(el){ el.hidden = true; }
+
+  var authPanel = document.getElementById('auth-panel');
+  var adminNotePanel = document.getElementById('admin-note-panel');
+  var accountBar = document.getElementById('account-bar');
+  var accountEmailLabel = document.getElementById('account-email-label');
+  var logoutBtn = document.getElementById('logout-btn');
+  var authTabs = document.querySelectorAll('.auth-tab');
+  var loginForm = document.getElementById('login-form');
+  var signupForm = document.getElementById('signup-form');
+  var authResult = document.getElementById('auth-result');
+
+  authTabs.forEach(function(tab){
+    tab.addEventListener('click', function(){
+      authTabs.forEach(function(t){ t.classList.remove('active'); });
+      tab.classList.add('active');
+      clearResult(authResult);
+      loginForm.hidden = tab.dataset.tab !== 'login';
+      signupForm.hidden = tab.dataset.tab !== 'signup';
+    });
+  });
 
   async function init(){
     try{
-      var meRes = await fetch('/api/me', { credentials:'same-origin' });
+      var meRes = await fetch('/api/general/me', { credentials:'same-origin' });
       var me = await meRes.json();
-      if(me.ok){ return initMember(); }
+      if(me.ok){ enterMember(me); }
+      else{
+        var adminRes = await fetch('/api/admin/me', { credentials:'same-origin' });
+        var admin = await adminRes.json();
+        if(admin.ok){ adminNotePanel.hidden = false; }
+        else{ authPanel.hidden = false; }
+      }
+    } catch(e){ authPanel.hidden = false; }
 
-      var adminRes = await fetch('/api/admin/me', { credentials:'same-origin' });
-      var admin = await adminRes.json();
-      if(admin.ok){ document.getElementById('admin-note-panel').hidden = false; return; }
+    loadLiveFeed();
+    loadLeaderboard();
+    setInterval(loadLiveFeed, 20000);
+    setInterval(loadLeaderboard, 30000);
+  }
 
-      document.getElementById('need-login-panel').hidden = false;
-    } catch(e){
-      document.getElementById('need-login-panel').hidden = false;
+  function enterMember(me){
+    authPanel.hidden = true;
+    accountBar.hidden = false;
+    accountEmailLabel.textContent = (me.nickname ? me.nickname + ' · ' : '') + me.email;
+    updateApiBox(me);
+    document.getElementById('ranking-opt-checkbox').checked = !!me.ranking_opt_in;
+    loadReferralMe();
+  }
+
+  function updateApiBox(me){
+    var box = document.getElementById('api-connected-box');
+    var form = document.getElementById('api-connect-form');
+    if(me.has_gate_api){
+      box.hidden = false;
+      document.getElementById('connected-uid').textContent = me.gate_uid;
+      form.hidden = true;
+    } else {
+      box.hidden = true;
+      form.hidden = false;
     }
   }
 
-  async function initMember(){
+  loginForm.addEventListener('submit', async function(e){
+    e.preventDefault();
+    var email = document.getElementById('login-email').value.trim();
+    var pw = document.getElementById('login-pw').value;
+    if(!email || !pw){ showResult(authResult, '이메일과 비밀번호를 입력해주세요.', 'warn'); return; }
+    var btn = loginForm.querySelector('button'); btn.disabled = true;
+    try{
+      var res = await fetch('/api/general/login', { method:'POST', credentials:'same-origin', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ email: email, password: pw }) });
+      var data = await res.json();
+      if(data.ok){
+        var meRes = await fetch('/api/general/me', { credentials:'same-origin' });
+        var me = await meRes.json();
+        enterMember(me);
+      } else showResult(authResult, data.error || '로그인에 실패했습니다.', 'warn');
+    } catch(e){ showResult(authResult, '오류가 발생했습니다.', 'warn'); }
+    finally{ btn.disabled = false; }
+  });
+
+  signupForm.addEventListener('submit', async function(e){
+    e.preventDefault();
+    var email = document.getElementById('signup-email').value.trim();
+    var pw = document.getElementById('signup-pw').value;
+    var pw2 = document.getElementById('signup-pw2').value;
+    var referralCode = document.getElementById('signup-referral').value.trim();
+    if(!email){ showResult(authResult, '이메일을 입력해주세요.', 'warn'); return; }
+    if(pw.length < 8){ showResult(authResult, '비밀번호는 8자 이상이어야 합니다.', 'warn'); return; }
+    if(pw !== pw2){ showResult(authResult, '비밀번호가 서로 다릅니다.', 'warn'); return; }
+    var btn = signupForm.querySelector('button'); btn.disabled = true;
+    try{
+      var res = await fetch('/api/general/signup', { method:'POST', credentials:'same-origin', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ email: email, password: pw, referral_code: referralCode }) });
+      var data = await res.json();
+      if(data.ok){
+        var meRes = await fetch('/api/general/me', { credentials:'same-origin' });
+        var me = await meRes.json();
+        enterMember(me);
+      } else showResult(authResult, data.error || '회원가입에 실패했습니다.', 'warn');
+    } catch(e){ showResult(authResult, '오류가 발생했습니다.', 'warn'); }
+    finally{ btn.disabled = false; }
+  });
+
+  logoutBtn.addEventListener('click', async function(){
+    try{ await fetch('/api/general/logout', { method:'POST', credentials:'same-origin' }); } catch(e){}
+    window.location.reload();
+  });
+
+  async function loadReferralMe(){
     try{
       var res = await fetch('/api/referral/me', { credentials:'same-origin' });
       var data = await res.json();
-      if(!data.ok){ document.getElementById('need-login-panel').hidden = false; return; }
+      if(!data.ok) return;
 
       if(!data.code){
         document.getElementById('issue-panel').hidden = false;
         document.getElementById('issue-btn').addEventListener('click', issueCode);
         return;
       }
-
       renderDashboard(data);
-    } catch(e){
-      document.getElementById('need-login-panel').hidden = false;
-    }
+    } catch(e){}
   }
 
   async function issueCode(){
@@ -251,7 +417,7 @@
     var noteEl = document.getElementById('withdraw-note');
     var submitBtn = document.getElementById('wd-submit-btn');
     if(data.referred_count < data.min_referrals_to_withdraw){
-      noteEl.textContent = '추천 가입자가 ' + data.min_referrals_to_withdraw + '명 이상이어야 출금 신청이 가능해요. (현재 ' + data.referred_count + '명)';
+      noteEl.textContent = '확정된 추천 가입자가 ' + data.min_referrals_to_withdraw + '명 이상이어야 출금 신청이 가능해요. (현재 ' + data.referred_count + '명)';
       submitBtn.disabled = true;
     } else {
       noteEl.textContent = '최소 출금 금액은 ' + Number(data.min_withdraw_krw).toLocaleString() + '원이에요. 신청하시면 운영자가 텔레그램으로 확인 후 USDT(TRC20)로 지급합니다.';
@@ -302,9 +468,84 @@
     finally{ btn.disabled = false; }
   });
 
+  // ── Gate.io API 연동 ──
+  document.getElementById('api-connect-form').addEventListener('submit', async function(e){
+    e.preventDefault();
+    var apiKey = document.getElementById('api-key-input').value.trim();
+    var apiSecret = document.getElementById('api-secret-input').value.trim();
+    var result = document.getElementById('api-connect-result');
+    if(!apiKey || !apiSecret){ showResult(result, 'API 키와 시크릿을 모두 입력해주세요.', 'warn'); return; }
+    var btn = e.target.querySelector('button'); btn.disabled = true;
+    try{
+      var res = await fetch('/api/general/connect-gate-api', { method:'POST', credentials:'same-origin', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ api_key: apiKey, api_secret: apiSecret }) });
+      var data = await res.json();
+      if(data.ok){
+        showResult(result, '연동되었습니다. (UID ' + data.gate_uid + ')', 'good');
+        var meRes = await fetch('/api/general/me', { credentials:'same-origin' });
+        var me = await meRes.json();
+        updateApiBox(me);
+      } else showResult(result, data.error || '연동에 실패했습니다.', 'warn');
+    } catch(e){ showResult(result, '오류가 발생했습니다.', 'warn'); }
+    finally{ btn.disabled = false; }
+  });
+
+  document.getElementById('disconnect-api-btn').addEventListener('click', async function(){
+    if(!confirm('API 연동을 해제할까요? 랭킹 참여도 함께 꺼져요.')) return;
+    try{ await fetch('/api/general/disconnect-gate-api', { method:'POST', credentials:'same-origin' }); } catch(e){}
+    var meRes = await fetch('/api/general/me', { credentials:'same-origin' });
+    var me = await meRes.json();
+    updateApiBox(me);
+    document.getElementById('ranking-opt-checkbox').checked = false;
+  });
+
+  // ── 랭킹 참여 토글 ──
+  document.getElementById('ranking-opt-checkbox').addEventListener('change', async function(e){
+    var optIn = e.target.checked;
+    var result = document.getElementById('ranking-opt-result');
+    try{
+      var res = await fetch('/api/general/ranking-opt-in', { method:'POST', credentials:'same-origin', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ opt_in: optIn }) });
+      var data = await res.json();
+      if(data.ok){
+        showResult(result, optIn ? '랭킹 참여를 시작했습니다.' : '랭킹 참여를 중단했습니다.', 'good');
+        loadLeaderboard();
+      } else { showResult(result, data.error || '처리에 실패했습니다.', 'warn'); e.target.checked = !optIn; }
+    } catch(e){ showResult(result, '오류가 발생했습니다.', 'warn'); e.target.checked = !optIn; }
+  });
+
+  // ── 공개: 실시간 출금 피드 ──
+  async function loadLiveFeed(){
+    var el = document.getElementById('live-feed');
+    try{
+      var res = await fetch('/api/referral/recent-withdrawals');
+      var data = await res.json();
+      var list = (data.ok && data.feed) ? data.feed : [];
+      if(list.length === 0){ el.innerHTML = '<div class="empty-note">아직 지급 완료된 출금 내역이 없습니다.</div>'; return; }
+      el.innerHTML = list.map(function(f){
+        return '<div class="feed-row"><span>' + escapeHtml(f.label) + '님이 리워드를 받았어요</span><span class="feed-amount">' + escapeHtml(f.amount_label) + '</span></div>';
+      }).join('');
+    } catch(e){ el.innerHTML = '<div class="empty-note">불러오기에 실패했습니다.</div>'; }
+  }
+
+  // ── 공개: 거래량 랭킹 ──
+  async function loadLeaderboard(){
+    var el = document.getElementById('leaderboard-list');
+    try{
+      var res = await fetch('/api/general/rankings', { credentials:'same-origin' });
+      var data = await res.json();
+      var list = (data.ok && data.rankings) ? data.rankings : [];
+      if(list.length === 0){ el.innerHTML = '<div class="empty-note">아직 랭킹에 참여한 회원이 없습니다.</div>'; return; }
+      el.innerHTML = list.map(function(r){
+        return '<div class="lb-row"><span>' + r.rank + '위 · ' + (r.is_me ? '<span style="color:var(--cyan);">나</span> · ' : '') + escapeHtml(r.label) + '</span><span class="lb-volume">$' + Number(r.trading_volume).toLocaleString() + '</span></div>';
+      }).join('');
+    } catch(e){ el.innerHTML = '<div class="empty-note">불러오기에 실패했습니다.</div>'; }
+  }
+
   function fmtDate(ts){
     var d = new Date(ts);
     return d.getFullYear() + '.' + String(d.getMonth()+1).padStart(2,'0') + '.' + String(d.getDate()).padStart(2,'0');
+  }
+  function escapeHtml(s){
+    return String(s).replace(/[&<>"']/g, function(c){ return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]; });
   }
 
   init();

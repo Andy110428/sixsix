@@ -4,8 +4,6 @@ CREATE TABLE IF NOT EXISTS users (
   salt TEXT NOT NULL,
   password_hash TEXT NOT NULL,
   nickname TEXT,
-  trading_volume REAL NOT NULL DEFAULT 0,
-  study_room_approved INTEGER NOT NULL DEFAULT 0,
   created_at INTEGER NOT NULL
 );
 
@@ -44,17 +42,38 @@ CREATE TABLE IF NOT EXISTS comments (
   created_at INTEGER NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS general_members (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  email TEXT UNIQUE NOT NULL,
+  salt TEXT NOT NULL,
+  password_hash TEXT NOT NULL,
+  nickname TEXT,
+  gate_uid TEXT UNIQUE,
+  gate_api_key TEXT,
+  gate_api_secret TEXT,
+  trading_volume REAL NOT NULL DEFAULT 0,
+  ranking_opt_in INTEGER NOT NULL DEFAULT 0,
+  created_at INTEGER NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS general_sessions (
+  token TEXT PRIMARY KEY,
+  email TEXT NOT NULL,
+  created_at INTEGER NOT NULL,
+  expires_at INTEGER NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS referral_codes (
   code TEXT PRIMARY KEY,
-  owner_uid TEXT NOT NULL UNIQUE,
+  owner_email TEXT NOT NULL UNIQUE,
   created_at INTEGER NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS referral_signups (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   code TEXT NOT NULL,
-  owner_uid TEXT NOT NULL,
-  referred_uid TEXT NOT NULL UNIQUE,
+  owner_email TEXT NOT NULL,
+  referred_email TEXT NOT NULL UNIQUE,
   reward_krw INTEGER NOT NULL,
   qualified INTEGER NOT NULL DEFAULT 0,
   created_at INTEGER NOT NULL
@@ -62,10 +81,11 @@ CREATE TABLE IF NOT EXISTS referral_signups (
 
 CREATE TABLE IF NOT EXISTS referral_withdrawals (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
-  owner_uid TEXT NOT NULL,
+  owner_email TEXT NOT NULL,
   telegram_id TEXT NOT NULL,
   wallet_address TEXT NOT NULL,
   amount_krw INTEGER NOT NULL,
   status TEXT NOT NULL DEFAULT 'pending',
+  paid_at INTEGER,
   created_at INTEGER NOT NULL
 );
