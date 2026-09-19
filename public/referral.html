@@ -86,6 +86,11 @@
   .status-badge.rejected{ color:var(--danger); border-color:rgba(255,92,122,0.35); }
 
   .empty-note{ color:var(--text-faint); font-size:0.85rem; }
+  .ref-row{ display:flex; justify-content:space-between; align-items:center; gap:10px; padding:11px 0; border-top:1px solid var(--line-soft); font-size:0.86rem; }
+  .ref-row:first-of-type{ border-top:none; }
+  .ref-row .ref-sub{ color:var(--text-dim); font-size:0.78rem; margin-top:2px; }
+  .ref-qualified{ color:var(--cyan); font-family:'JetBrains Mono',monospace; font-size:0.76rem; padding:3px 9px; border-radius:999px; border:1px solid rgba(212,162,78,0.35); white-space:nowrap; }
+  .ref-waiting{ color:var(--text-dim); font-family:'JetBrains Mono',monospace; font-size:0.76rem; padding:3px 9px; border-radius:999px; border:1px solid var(--line); white-space:nowrap; }
 
   footer{ border-top:1px solid var(--line); padding:32px 0; }
   .footer-row{ display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px; }
@@ -212,6 +217,12 @@
         <div class="stat-box"><div class="num" id="stat-earned">0원</div><div class="label">총 적립액</div></div>
         <div class="stat-box"><div class="num" id="stat-available">0원</div><div class="label">출금 가능액</div></div>
       </div>
+    </div>
+
+    <div class="panel">
+      <h2>내가 추천한 회원</h2>
+      <p style="color:var(--text-dim); font-size:0.86rem; margin-bottom:14px;">거래량이 $100,000를 넘어야 확정(적립)돼요. 아직이면 얼마나 남았는지도 보여드려요.</p>
+      <div id="referred-list"></div>
     </div>
 
     <div class="panel">
@@ -430,6 +441,18 @@
     } else {
       noteEl.textContent = '최소 출금 금액은 ' + Number(data.min_withdraw_krw).toLocaleString() + '원이에요. 신청하시면 운영자가 텔레그램으로 확인 후 USDT(TRC20)로 지급합니다.';
       submitBtn.disabled = false;
+    }
+
+    var referredEl = document.getElementById('referred-list');
+    if(!data.signups || data.signups.length === 0){
+      referredEl.innerHTML = '<div class="empty-note">아직 내 코드로 가입한 회원이 없습니다.</div>';
+    } else {
+      referredEl.innerHTML = data.signups.map(function(s){
+        var badge = s.qualified
+          ? '<span class="ref-qualified">✅ 확정</span>'
+          : '<span class="ref-waiting">⏳ 남은 거래량 $' + Number(s.remaining_usd).toLocaleString() + '</span>';
+        return '<div class="ref-row"><div><div>' + escapeHtml(s.label) + '</div><div class="ref-sub">' + fmtDate(s.joined_at) + ' 가입 · 현재 거래량 $' + Number(s.trading_volume).toLocaleString() + '</div></div>' + badge + '</div>';
+      }).join('');
     }
 
     var historyEl = document.getElementById('withdraw-history');

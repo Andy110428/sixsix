@@ -9,9 +9,9 @@
 //        제출 → 관리자가 admin.html에서 승인해야 추천인 코드 발급/대시보드 이용 가능.
 //
 // 회원 API (members 테이블, session 쿠키):
-//   POST /api/signup                 이메일+비밀번호로 가입
+//   POST /api/signup                 이메일+비밀번호로 가입 (referral_code 있으면 referral_signups에 기록, qualified=0으로 시작)
 //   POST /api/login
-//   GET  /api/me                     로그인 상태 + uid/닉네임/등급/파트너 상태/API 연동 여부 등
+//   GET  /api/me                     로그인 상태 + uid/닉네임/등급/파트너 상태/API 연동 여부/내가 가입할 때 쓴 추천인 코드 등
 //   POST /api/logout
 //   POST /api/account/change-password
 //   POST /api/account/nickname
@@ -146,16 +146,34 @@ async function handleSignup(request, env) {
   const body = await safeJson(request);
   const email = (body.email || '').trim().toLowerCase();
   const password = body.password || '';
+  const referralCode = (body.referral_code || '').trim().toUpperCase();
   if (!isValidEmail(email)) return json({ ok: false, error: '올바른 이메일 주소를 입력해주세요.' }, 400);
   if (password.length < 8) return json({ ok: false, error: '비밀번호는 8자 이상이어야 합니다.' }, 400);
 
   const existing = await env.DB.prepare('SELECT id FROM members WHERE email = ?').bind(email).first();
   if (existing) return json({ ok: false, error: '이미 가입된 이메일입니다. 로그인해주세요.' }, 409);
 
+  // 추천인 코드가 있으면 소유자를 미리 확인해둠 (가입 완료 후 referral_signups에 기록)
+  let referralOwnerEmail = null;
+  if (referralCode) {
+    const codeRow = await env.DB.prepare('SELECT owner_email FROM referral_codes WHERE code = ?').bind(referralCode).first();
+    if (codeRow && codeRow.owner_email !== email) referralOwnerEmail = codeRow.owner_email;
+  }
+
   const { salt, hash } = await hashPassword(password);
   await env.DB.prepare(
     'INSERT INTO members (email, salt, password_hash, created_at) VALUES (?, ?, ?, ?)'
   ).bind(email, salt, hash, Date.now()).run();
+
+  if (referralOwnerEmail) {
+    try {
+      await env.DB.prepare(
+        'INSERT INTO referral_signups (code, owner_email, referred_email, reward_krw, qualified, created_at) VALUES (?, ?, ?, ?, 0, ?)'
+      ).bind(referralCode, referralOwnerEmail, email, REFERRAL_REWARD_KRW, Date.now()).run();
+    } catch (e) {
+      // referred_email은 UNIQUE — 신규 가입 이메일이라 이론상 충돌 안 나지만 방어적으로 무시
+    }
+  }
 
   const token = await createSession(env, email);
   return json({ ok: true, email }, 200, { 'Set-Cookie': sessionCookie(token) });
@@ -193,6 +211,12 @@ async function handleMe(request, env) {
     grade = gradeForActivity(activity);
   }
 
+  const referredBy = await env.DB.prepare(
+    `SELECT referral_signups.code, members.nickname AS owner_nickname, members.email AS owner_email
+     FROM referral_signups LEFT JOIN members ON members.email = referral_signups.owner_email
+     WHERE referral_signups.referred_email = ?`
+  ).bind(email).first();
+
   return json({
     ok: true,
     email,
@@ -206,6 +230,8 @@ async function handleMe(request, env) {
     trading_volume: member.trading_volume || 0,
     ranking_opt_in: !!member.ranking_opt_in,
     referral_partner_status: member.referral_partner_status || 'none',
+    referred_by_code: referredBy ? referredBy.code : null,
+    referred_by_label: referredBy ? (referredBy.owner_nickname || maskEmail(referredBy.owner_email)) : null,
   });
 }
 
@@ -991,7 +1017,7 @@ async function handleReferralMe(request, env) {
   const codeRow = await env.DB.prepare('SELECT code FROM referral_codes WHERE owner_email = ?').bind(email).first();
   const code = codeRow ? codeRow.code : null;
 
-  let referredCount = 0, pendingCount = 0, totalEarned = 0, withdrawals = [], availableKrw = 0;
+  let referredCount = 0, pendingCount = 0, totalEarned = 0, withdrawals = [], availableKrw = 0, signups = [];
   if (code) {
     const countRow = await env.DB.prepare(
       'SELECT COUNT(*) AS c, COALESCE(SUM(reward_krw),0) AS total FROM referral_signups WHERE owner_email = ? AND qualified = 1'
@@ -1003,6 +1029,25 @@ async function handleReferralMe(request, env) {
       'SELECT COUNT(*) AS c FROM referral_signups WHERE owner_email = ? AND qualified = 0'
     ).bind(email).first();
     pendingCount = pendingRow ? pendingRow.c : 0;
+
+    // 코드로 가입한 회원 한 명씩 — 확정(qualified) 여부와, 아직이면 $100k까지 얼마나 남았는지
+    const signupRows = await env.DB.prepare(
+      `SELECT referral_signups.referred_email, referral_signups.qualified, referral_signups.created_at,
+              members.nickname, members.trading_volume
+       FROM referral_signups LEFT JOIN members ON members.email = referral_signups.referred_email
+       WHERE referral_signups.owner_email = ?
+       ORDER BY referral_signups.qualified ASC, referral_signups.created_at DESC LIMIT 300`
+    ).bind(email).all();
+    signups = (signupRows.results || []).map((r) => {
+      const volume = r.trading_volume || 0;
+      return {
+        label: r.nickname || maskEmail(r.referred_email),
+        qualified: !!r.qualified,
+        trading_volume: volume,
+        remaining_usd: Math.max(0, REFERRAL_QUALIFY_VOLUME_USD - volume),
+        joined_at: r.created_at,
+      };
+    });
 
     const wRows = await env.DB.prepare(
       'SELECT id, telegram_id, wallet_address, amount_krw, status, created_at FROM referral_withdrawals WHERE owner_email = ? ORDER BY id DESC'
@@ -1026,6 +1071,7 @@ async function handleReferralMe(request, env) {
     min_referrals_to_withdraw: REFERRAL_MIN_REFERRALS_TO_WITHDRAW,
     min_withdraw_krw: REFERRAL_MIN_WITHDRAW_KRW,
     withdrawals,
+    signups,
   });
 }
 
