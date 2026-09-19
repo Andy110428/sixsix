@@ -9,7 +9,7 @@
 - 협력 거래소(Gate.io) 전용 링크로 가입 + 최소 시드 $700 이상 예치한 사람만 스터디방 입장 가능
 - 입장 확인은 Gate.io API로 자동화(레퍼럴 관계 확인), 예치 금액은 스크린샷으로 수동 확인 (텔레그램에서 운영자가 개별 확인 후 비공개 채널 초대)
 - 텔레그램 비공개 채널(실시간 브리핑)과 웹사이트(공지/강의/질문/수익인증)를 병행 운영
-- ⚠️ **계정이 완전히 분리된 두 종류로 존재**(2026-09-19 4단계): 스터디룸 계정(Gate UID 인증 필요)과 일반/추천인 계정(이메일, Gate UID 무관). 자세한 내용은 아래 "인증 구조" 참고
+- ⚠️ **계정은 단일 시스템**(2026-09-19 5단계에서 4단계의 계정 분리를 되돌리고 통합). 이메일+비밀번호로 누구나 동일하게 가입하고, 스터디룸 접근(UID 등록)·추천인 파트너 자격(관리자 승인)은 가입 이후 계정 안에서 별도로 얻는 권한. 자세한 내용은 아래 "인증 구조" 참고
 
 ## 배포 환경
 
@@ -30,9 +30,9 @@ src/worker.js           서버 코드 전체 (라우팅 + API)
 public/index.html       메인 랜딩페이지
 public/requirements.html  입장 조건 상세
 public/join.html        입장 절차 3단계 + UID 사전 확인 모달
-public/portal.html      스터디룸 (UID 로그인/회원가입, 공지·브리핑·강의·질문·수익인증 게시판, 경제 캘린더 — Gate UID 인증 계정 전용)
-public/referral.html    일반/추천인 계정 전용 페이지 (이메일 로그인/회원가입, 코드 발급+대시보드, Gate Read-Only API 연동, 랭킹 참여, 공개 랭킹/실시간 출금 피드 — 비회원도 열람 가능)
-public/admin.html       관리자 전용 (게시판 글쓰기/수정/삭제, 스터디룸 회원 비밀번호 재설정, 일반 계정 거래량 설정, 추천인 발급자 현황, 출금 신청 심사, 통계)
+public/portal.html      스터디룸 (이메일 로그인/회원가입 공통, "내 정보"에서 UID 등록해야 게시판 열람 가능, 공지·브리핑·강의·질문·수익인증 게시판, 직접 입력한 경제 캘린더, 청산맵 링크, 거래량 랭킹 사이드 위젯)
+public/referral.html    추천인 파트너 프로그램 페이지 (portal.html과 동일한 계정으로 로그인, 파트너 신청→관리자 승인 후 코드 발급/대시보드, 공개 실시간 출금 피드)
+public/admin.html       관리자 전용 (게시판 글쓰기/수정/삭제, 회원 검색/비밀번호 재설정/거래량 설정, 추천인 파트너 신청 승인, 발급자 현황, 출금 심사, 경제 캘린더 관리, 통계)
 ```
 
 ## 디자인 톤
@@ -45,29 +45,25 @@ public/admin.html       관리자 전용 (게시판 글쓰기/수정/삭제, 스
 - index.html은 스크롤 시 섹션이 `.reveal` 클래스 + IntersectionObserver로 페이드인되고, 히어로는 로드 시 순차적으로 fadeInUp 애니메이션 적용됨
 - 페이지 이동은 실제 별도 파일(index.html, join.html 등)로 구성 — 초반에 해시(#) 기반 SPA로 시도했다가 미리보기 환경 제약으로 실패해서 다시 별도 파일 구조로 되돌림
 
-## 인증 구조 (중요 — 계정이 3종류, 그중 2개는 완전히 분리됨)
+## 인증 구조 (중요 — 계정은 단일 시스템, 권한만 계정 안에서 별도로 획득)
 
-**⚠️ 스터디룸 계정과 일반(추천인) 계정은 하나로 합치지 않고 완전히 분리한다** (2026-09-19 4단계 확정 — 3단계에서 시도했던 "계정 하나 + 승인 플래그" 방식은 되돌림). 같은 사람이 스터디룸에 들어가려면 스터디룸 계정을 "하나 더" 만들어야 한다.
+**⚠️ 계정은 하나(`members` 테이블, 이메일+비밀번호)로 통합됨** (2026-09-19 5단계 확정 — 4단계에서 만든 "스터디룸 계정 / 일반 계정 완전 분리" 설계는 사용자가 반려하고 되돌림: "회원가입을 다 똑같이 하는데, 스터디룸이나 일반 회원이나"). 회원가입은 누구나 동일하게 이메일+비밀번호로 하고, 그 계정 안에서 두 가지 권한을 별도로 얻는다:
 
-**1) 스터디룸 계정 (`users` 테이블, UID+비밀번호, `session` 쿠키)**
-- 회원가입: UID + 비밀번호 입력 → 서버가 Gate.io API로 "전용 링크 직속 가입자(type=3)"인지 확인 → 통과해야 계정 생성
-- 가입 확인이 곧 입장 조건 — 별도 관리자 승인 절차 없음 (예치 확인은 지금처럼 텔레그램에서 운영자가 개별 처리)
-- UID는 `users.uid`에 `UNIQUE` 제약 — 계정당 UID 1개만 허용
+1. **스터디룸 접근** — "내 정보"에서 Gate UID를 언제든 입력하면, 서버가 그 자리에서 Gate.io API로 "전용 링크 직속 가입자(type=3)"인지 확인 → 통과하면 즉시 스터디룸 접근 가능. 별도 관리자 승인 절차 없음(예치 확인은 지금처럼 텔레그램에서 운영자가 개별 처리). UID는 `members.uid`에 `UNIQUE` 제약 — 계정당 1개, 그리고 한 UID는 한 계정에만 등록 가능.
+2. **추천인 파트너 자격** — referral.html에서 "파트너 신청하기"(지갑주소·텔레그램·활동계획·기타사항 제출) → 관리자가 admin.html에서 승인해야 `members.referral_partner_status`가 `approved`로 바뀌고 코드 발급/대시보드 이용 가능. 아래 "5단계" 섹션 참고.
+
+**계정 (`members` 테이블, `session` 쿠키)**
+- 회원가입: 이메일 + 비밀번호(8자 이상)만으로 생성, Gate UID나 다른 조건 전혀 없음
 - 비밀번호는 PBKDF2-SHA256(100,000회 반복)으로 해시 저장, 세션은 `sessions` 테이블 + `session` 쿠키(httpOnly, 7일)
 - 로그인 실패 횟수 제한/잠금 없음
-- 게시판(공지/브리핑/강의/질문/수익인증) 전용 — 추천인 코드/랭킹과는 완전히 무관
+- portal.html과 referral.html은 완전히 같은 계정/세션을 공유 — 한쪽에서 로그인하면 다른 쪽도 로그인 상태
 
-**2) 일반(추천인) 계정 (`general_members` 테이블, 이메일+비밀번호, `general_session` 쿠키)**
-- 회원가입: 이메일 + 비밀번호만으로 가입, Gate UID나 스터디룸 가입 여부와 전혀 무관 — 아무나 가입 가능
-- 추천인 코드 발급/사용, 랭킹 참여(선택), Gate.io Read-Only API 연동 전용 — 스터디룸 게시판과는 전혀 연결 안 됨
-- `general_members.gate_uid`는 API 연동 시에만 채워지고 `UNIQUE` 제약 (한 UID로 여러 일반 계정에 중복 연동 불가)
-
-**3) 관리자(admin) 인증** — 위 두 회원 인증과 완전히 분리
+**관리자(admin) 인증** — 회원 인증과 완전히 분리
 - `admin.html`에서 로그인, 아이디/비번은 환경변수(`ADMIN_USERNAME`, `ADMIN_PASSWORD`)로 관리 (DB에 관리자 계정 테이블 없음, 1인 운영 가정)
-- `portal.html`(스터디룸) 로그인 칸에서도 관리자 계정으로 로그인 가능 — 먼저 스터디룸 로그인(`/api/login`)을 시도하고 실패하면 같은 입력값으로 `/api/admin/login`을 한 번 더 시도해서, 성공하면 `admin.html`로 리다이렉트함
+- `portal.html`(스터디룸) 로그인 칸에서도 관리자 계정으로 로그인 가능 — 먼저 회원 로그인(`/api/login`)을 시도하고 실패하면 같은 입력값으로 `/api/admin/login`을 한 번 더 시도해서, 성공하면 `admin.html`로 리다이렉트함
 - IP 제한은 도입했다가 제거함 — 운영자 IP가 계속 바뀌어서 적용이 번거로워 아이디/비번 확인만으로 전환
 - 세션은 `admin_sessions` 테이블 + `admin_session` 쿠키, 12시간 유지
-- 스터디룸 회원 비밀번호 재설정(관리자 대행): admin.html에서 UID로 먼저 "조회"(`/api/admin/find-user`) → 계정 존재 확인되면 "비밀번호 초기화" 버튼 1번 클릭 → 서버가 임시 비밀번호를 자동 생성해서 화면에 보여줌(`/api/admin/reset-password`, newPassword 생략 시 자동 생성) → 운영자가 그 값을 회원에게 텔레그램으로 전달
+- 회원 비밀번호 재설정(관리자 대행): admin.html "회원 관리"에서 이메일 또는 UID로 먼저 "조회"(`/api/admin/find-member`) → 계정 존재 확인되면 "비밀번호 초기화" 버튼 1번 클릭 → 서버가 임시 비밀번호를 자동 생성해서 화면에 보여줌(`/api/admin/reset-password`, 이메일 기준, newPassword 생략 시 자동 생성) → 운영자가 그 값을 회원에게 텔레그램으로 전달
 
 ## Gate.io API 연동
 
@@ -85,8 +81,8 @@ public/admin.html       관리자 전용 (게시판 글쓰기/수정/삭제, 스
 - 이미지 첨부 가능 — 별도 스토리지(R2) 없이 base64로 인코딩해서 `posts.image_data`에 텍스트로 직접 저장 (간단하지만 대용량 이미지엔 안 맞음, 업로드시 약 1.5MB 제한 걸어둠)
 - 게시글 목록(`GET /api/posts`)에는 `posts.thumb_data`도 같이 내려감 — 업로드 시 브라우저에서 canvas로 가로 320px, JPEG 0.6 품질로 축소해서 별도 저장한 작은 미리보기 이미지. 목록 카드에서 썸네일로 바로 보여주기 위한 용도 (`makeThumbnail()` 헬퍼, portal.html/admin.html 양쪽에 있음). 원본은 상세 모달에서 `image_data`로 보여줌. PDF는 썸네일 생성 안 하고(`image/`로 시작 안 하면 null), 상세 모달에서 "PDF 열기" 링크로 표시
 - 관리자는 게시글 수정/삭제 가능, 댓글 삭제 가능
-- 게시글/댓글 조회 API는 `users` 테이블과 LEFT JOIN해서 `author_nickname`을 같이 내려줌 — 프론트에서 닉네임 있으면 닉네임, 없으면 "UID xxxx"로 표시 (`authorLabel()` 헬퍼, portal.html/admin.html 양쪽에 있음). 닉네임은 `/api/account/nickname`에서 중복 체크함 (앱 레벨 검증, DB 유니크 제약은 아님)
-- `portal.html`에 "경제 캘린더" 탭 있음 — investing.com의 공식 무료 iframe 위젯(`sslecal2.investing.com`) 임베드. 게시판 API 연동 아니고 그냥 외부 위젯 삽입이라 서버 코드 없음
+- 게시글/댓글 조회 API는 `members` 테이블과 `members.uid = posts.author_id`로 LEFT JOIN해서 `author_nickname`을 같이 내려줌 — 프론트에서 닉네임 있으면 닉네임, 없으면 "UID xxxx"로 표시 (`authorLabel()` 헬퍼, portal.html/admin.html 양쪽에 있음). 닉네임은 `/api/account/nickname`에서 중복 체크함 (앱 레벨 검증, DB 유니크 제약은 아님)
+- ⚠️ `portal.html`의 "경제 캘린더" 탭은 5단계에서 investing.com iframe 위젯을 뺐음 — 지금은 `economic_events` 테이블에 관리자가 직접 입력한 일정을 `GET /api/economic-events`로 가져와서 별 개수(중요도)와 함께 목록으로 보여줌. 아래 5단계 섹션 참고
 
 ## 아직 안 만든 것 / 다음에 할 일
 
@@ -133,6 +129,8 @@ public/admin.html       관리자 전용 (게시판 글쓰기/수정/삭제, 스
 
 ## 4단계: 스터디룸 계정과 일반(추천인) 계정 완전 분리 + Gate Read-Only API 연동 (2026-09-19)
 
+⚠️ **이 4단계의 "계정 완전 분리(users vs general_members)" 설계는 아래 5단계에서 사용자가 반려하고 되돌림** — "회원가입을 다 똑같이 하는데, 스터디룸이나 일반 회원이나." 계정은 다시 하나(`members`)로 합쳐지고, 스터디룸 접근은 "내 정보"에서 UID를 등록하는 방식으로 바뀜. Gate Read-Only API 연동(랭킹용) 개념 자체는 5단계에서도 그대로 유지됨(테이블만 `members`로 흡수). 이 섹션은 그 과정을 남겨두는 기록용이고, 현재 동작하는 설계는 "5단계" 섹션 기준.
+
 3단계에서 만든 "계정 하나 + `study_room_approved` 승인 플래그" 방식을 사용자가 명시적으로 반려함 — "두 개로 분리하는거야. 합치지 말고." 그리고 세 가지를 추가 요청:
 1. 추천인 코드 발급자들 정보/초대현황을 한 번에 관리하는 관리자 창
 2. 거래량 확인을 회원이 직접 발급하는 **Read-Only 권한 Gate.io API 키**로 받아오기 (파트너 API는 3단계에서 합산만 나온다고 확정됐으므로, 대안으로 회원 개인 키를 쓰는 방식)
@@ -165,10 +163,54 @@ public/admin.html       관리자 전용 (게시판 글쓰기/수정/삭제, 스
 - `referral_withdrawals.paid_at` 컬럼 신설(관리자가 상태를 `paid`로 바꾸는 순간 서버가 자동 기록) — 정렬 기준으로 사용
 - 프론트에서 20초 간격 폴링으로 "실시간"처럼 보이게 함 (웹소켓 아님, 단순 polling)
 
+### 다음에 볼 것 (4단계 시점 — 5단계에서 일부 내용이 바뀜, 아래 5단계 섹션 참고)
+- Gate.io Read-Only 개인 키로 "누적 거래량"을 정확히 뽑아내는 엔드포인트/계산 방식 확정 — 실제 키로 테스트 후 계좌 정보 원본 응답 스키마 보고 붙이기 (5단계에서도 여전히 미해결)
+
+## 5단계: 계정 재통합 + 추천인 파트너 승인제 + 경제 캘린더 직접 입력 + 청산맵/모바일 내비 (2026-09-19)
+
+사용자가 4단계의 계정 분리 설계를 반려하고 다음을 요청함(요약):
+1. 회원가입은 스터디룸이든 추천인이든 다 똑같이 — 스터디룸 접근은 "내 정보"에서 UID 등록 → 즉시 검증 → 통과 시 자동 허용. UID는 계정당 1개만.
+2. 추천인 프로그램은 승인받은 사람만 접근 — "파트너 신청하기"(지갑주소/텔레그램/활동계획/기타사항) → 관리자 승인 필요. 신청 오면 admin.html + 텔레그램 알림.
+3. 거래량 랭킹 탭은 추천인 페이지에서 빼고, 스터디룸/메인 페이지에 작은 사이드 위젯으로.
+4. 경제 캘린더는 외부 위젯 대신 직접 정리 — 중요도는 별 개수, 오늘 일정뿐 아니라 다음 일정도.
+5. 비트코인 청산맵 기능을 새 메뉴로 추가.
+6. 게시판/메뉴가 늘어나서 모바일에서 보기 힘들어질 수 있으니 대응.
+
+**계정 재통합**:
+- `users`(스터디룸)와 `general_members`(추천인)를 `members` 테이블 하나로 합침 — `email`(로그인 식별자, UNIQUE) + `uid`(선택, UNIQUE, 스터디룸 접근용) + `gate_uid`/`gate_api_key`/`gate_api_secret`(선택, Read-Only API 연동용, 4단계 그대로 유지) + `trading_volume` + `ranking_opt_in` + `referral_partner_status`.
+- `POST /api/account/register-uid` — "내 정보"(portal.html) 또는 로그인 직후 UID 미등록 게이트 화면에서 UID 입력 → `checkGateReferral()`로 direct_referral 확인 → 통과하면 `members.uid`에 저장하고 그 자리에서 스터디룸 열림. UID가 이미 다른 계정에 등록돼 있으면 409.
+- `getMemberUid()`가 이제 "세션 → 이메일 → 등록된 uid" 순으로 조회 (이메일과 UID를 잇는 다리 역할). 게시판(`handleListPosts`/`handleCreatePost`/`handleCreateComment` 등)은 이 uid가 없으면 401.
+- portal.html: 로그인/회원가입 폼이 이메일+비밀번호로 바뀜 (referral.html과 완전히 같은 계정/세션 공유). 로그인은 됐는데 UID 미등록이면 `#uid-gate` 화면(전용 UID 입력 폼)을 보여주고, 등록되면 바로 `unlock()`. "내 정보" 모달에 UID 등록/표시 + Gate API 연동(4단계 UI를 그대로 이쪽으로 옮김) + 랭킹 참여 토글이 다 들어감 — referral.html에는 더 이상 API 연동/랭킹 UI가 없음(스터디룸 쪽으로 통합).
+- **기존 실적 초기화**: `users`/`general_members`에 있던 계정은 `ensureSchema()`가 감지해서 `members`로 마이그레이션 시도함(비밀번호 해시는 승계, `users` 쪽은 이메일이 없어서 `uid-<UID>@legacy.local` 임시 이메일로 옮겨짐 — 실사용자는 비밀번호 재설정을 통해 실제 이메일 계정을 새로 만드는 게 맞음). 추천인 코드/실적(`referral_codes` 등)은 소유자 개념이 또 바뀌어서(UID/이메일 혼재 → 통일된 이메일) 이번에도 초기화됨.
+
+**추천인 파트너 승인제**:
+- `members.referral_partner_status`: `none` → `pending`(신청함) → `approved`/`rejected`. `POST /api/referral/apply`(로그인 필요, wallet_address/telegram_id/activity_plan 필수, notes 선택)로 신청 — `referral_applications` 테이블에 기록되고 텔레그램 알림(`notifyAdminTelegram`) 발송, `members.referral_partner_status`도 같이 `pending`으로 바뀜.
+- `GET /api/admin/referral/applications` + `POST /api/admin/referral/applications/update`(id, status: approved|rejected) — admin.html "추천인 파트너 신청 관리" 패널에서 승인/거절. 승인해야 `requirePartner()`를 통과해서 `handleReferralIssueCode`/`handleReferralMe`/`handleReferralWithdraw`를 쓸 수 있음(그 전엔 403).
+- referral.html: 로그인 후 `members.referral_partner_status`에 따라 신청 폼 / "심사중" 안내 / 코드 발급 버튼(승인됐는데 코드 미발급) / 대시보드 중 하나를 보여줌. 거절된 경우 다시 신청 폼이 뜸(재신청 가능).
+
+**랭킹 위젯 이동**:
+- 추천인 페이지(referral.html)에서 랭킹 리더보드 섹션을 완전히 제거.
+- portal.html에 작은 "🏆 거래량 랭킹 TOP 5" 사이드 위젯 추가(게시판 아래, promo-card 위) — `GET /api/rankings`(공개, 참여 동의자만) 상위 5명만 표시.
+- index.html의 추천인 티저 섹션 아래에도 같은 스타일의 TOP 5 위젯 추가 — 로그인 없이도 보임.
+
+**경제 캘린더 — 위젯 → 직접 입력**:
+- `economic_events` 테이블 신설(`event_time`, `country`, `title`, `importance` 1~3, `forecast`/`previous`/`actual`). admin.html "경제 캘린더 관리" 패널에서 CRUD(`GET/POST /api/admin/economic-events`, `.../create`, `.../update`, `.../delete`).
+- `GET /api/economic-events`(공개) — 최근 3일 전부터 앞으로의 일정까지 최대 100건, 시간순. portal.html 캘린더 탭이 이걸 목록으로 렌더링, 중요도는 `★★★`/`★★☆` 식으로 표시.
+- investing.com iframe 위젯(`sslecal2.investing.com`)은 완전히 제거됨.
+- **시드 데이터**: `ensureSchema()`가 `economic_events`가 비어있으면 실제로 조사한 근시일 일정 4건을 자동으로 넣어둠(2026-09-19 기준, WebSearch로 확인) — 9월 비농업고용지수(NFP, 10/2), 9월 CPI(10/14), 9월 PPI(10/15), FOMC 정례회의(10/28). 전부 미국 동부시간(EDT, UTC-4) 발표 시각을 UTC epoch ms로 미리 환산해서 넣음. 관리자가 이후 자유롭게 추가/수정/삭제 가능 — 이 시드는 "완전 자동 수집"이 아니라 최초 1회성 예시 데이터.
+
+**청산맵 (새 메뉴)**:
+- portal.html에 "청산맵" 탭 추가. **iframe 임베드는 하지 않음** — CoinGlass 등 청산 히트맵 서비스가 공식 무료 embed/iframe 위젯을 제공하는지 조사했지만(WebSearch) 확인 못 했고, 이 샌드박스에서 실제로 iframe이 뜨는지 테스트도 불가능해서(`X-Frame-Options`로 막혀 있으면 빈 화면만 보임) 안정성을 위해 **새 창에서 여는 링크 카드**로 구현함(`coinglass.com/pro/futures/LiquidationHeatMap?coin=BTC&type=symbol`). 나중에 실제로 iframe이 되는 게 확인되면 economic-calendar 때처럼 바꿀 수 있음.
+
+**모바일 내비 대응**:
+- portal.html 상단 탭(`#tabs`)이 게시판 5개 + 캘린더 + 청산맵 + 추천인 링크 + 내정보 + 로그아웃까지 늘어나서, `@media (max-width:860px)`에서 `#tabs`를 index.html의 햄버거 드롭다운과 같은 패턴(절대 위치 드롭다운 패널)으로 바꿈. 새 햄버거 버튼(`#tabs-menu-btn`)이 모바일에서만 보이고 클릭하면 `#tabs`에 `.open` 클래스 토글. 데스크톱에서는 기존처럼 가로 탭바 그대로.
+- index.html은 원래부터 모든 화면 크기에서 햄버거 메뉴(`#menu-dropdown`)를 쓰고 있어서 추가 대응 불필요.
+
 ### 다음에 볼 것
-- Gate.io Read-Only 개인 키로 "누적 거래량"을 정확히 뽑아내는 엔드포인트/계산 방식 확정 — 실제 키로 테스트 후 `/api/general/gate-account-raw` 응답 스키마 보고 붙이기
-- 그게 되면 거래량 자동 동기화(주기적 배치 또는 로그인 시 갱신)로 업그레이드하고, 지금의 관리자 수동 입력은 폴백으로 남기기
-- 스터디룸 계정과 일반 계정이 같은 사람이어도 서버가 서로 연결할 방법이 없음(의도된 설계) — 나중에 "내 스터디룸 UID와 연결" 같은 선택적 연동이 필요해지면 별도 요청으로 진행
+- Gate.io Read-Only 개인 키로 "누적 거래량"을 정확히 뽑아내는 엔드포인트/계산 방식 확정 — 여전히 미해결, 실제 키로 테스트 후 계좌 정보 원본 조회(베타) 응답을 보고 이어갈 것
+- CoinGlass(또는 다른 서비스)의 청산 히트맵이 실제로 iframe 임베드 가능한지 확인되면 portal.html 청산맵 탭을 링크 카드 → 임베드로 교체
+- 경제 캘린더는 지금 관리자가 수동으로 계속 채워야 함 — 나중에 BLS/Fed 등 공식 일정 API를 서버에서 주기적으로 당겨오는 자동화로 업그레이드할 수도 있음 (지금은 범위 밖)
+- `uid-<UID>@legacy.local` 형태로 마이그레이션된 예전 스터디룸 계정들은 실사용자가 실제 이메일로 다시 가입하거나, 관리자가 비밀번호를 재설정해서 그 임시 이메일로 로그인 후 진짜 이메일을 쓰도록 안내가 필요할 수 있음 (지금은 이메일 변경 기능 자체가 없음)
 
 ## 환경변수 목록 (Cloudflare 대시보드 Settings > Variables and Secrets)
 
