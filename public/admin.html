@@ -171,6 +171,13 @@
     </div>
     <div id="reset-rankings-result" class="result-box" hidden></div>
     <pre id="gate-raw-result" class="result-box" hidden style="white-space:pre-wrap; word-break:break-all; max-height:260px; overflow:auto;"></pre>
+
+    <div style="margin-top:22px; padding:14px; border:1px solid rgba(239,68,68,0.4); border-radius:10px; background:rgba(239,68,68,0.06);">
+      <div style="font-weight:700; color:#f87171; margin-bottom:6px;">⚠️ 위험 구역</div>
+      <p class="panel-note" style="margin-bottom:10px;">전체 회원 계정(로그인/UID/API 연동)을 삭제합니다. 게시글·댓글·추천인 실적 데이터는 남지만 작성자 연결이 끊겨요. 되돌릴 수 없습니다.</p>
+      <button type="button" class="btn" id="reset-members-btn" style="width:auto; background:#ef4444; color:#fff;">전체 회원 계정 초기화</button>
+      <div id="reset-members-result" class="result-box" hidden></div>
+    </div>
   </div>
 
   <div class="panel">
@@ -412,6 +419,22 @@
       else showResult(resetRankingsResult, data.error || '초기화에 실패했습니다.', 'warn');
     } catch(e){ showResult(resetRankingsResult, '오류가 발생했습니다.', 'warn'); }
     finally{ resetRankingsBtn.disabled = false; }
+  });
+
+  var resetMembersBtn = document.getElementById('reset-members-btn');
+  var resetMembersResult = document.getElementById('reset-members-result');
+  resetMembersBtn.addEventListener('click', async function(){
+    if(!confirm('전체 회원 계정을 정말 삭제할까요?\n로그인 정보, 등록된 UID, API 연동이 전부 사라지고 모두 재가입해야 합니다.\n되돌릴 수 없습니다.')) return;
+    var typed = prompt('계속하려면 아래에 RESET 이라고 입력하세요.');
+    if(typed !== 'RESET'){ showResult(resetMembersResult, '입력이 일치하지 않아 취소되었습니다.', 'warn'); return; }
+    resetMembersBtn.disabled = true;
+    try{
+      var res = await fetch('/api/admin/reset-members', { method:'POST', credentials:'same-origin', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ confirm: 'RESET' }) });
+      var data = await res.json();
+      if(data.ok){ showResult(resetMembersResult, '회원 계정 ' + data.deleted + '개를 전부 삭제했습니다.', 'good'); }
+      else showResult(resetMembersResult, data.error || '초기화에 실패했습니다.', 'warn');
+    } catch(e){ showResult(resetMembersResult, '오류가 발생했습니다.', 'warn'); }
+    finally{ resetMembersBtn.disabled = false; }
   });
 
   var gateRawBtn = document.getElementById('gate-raw-btn');
