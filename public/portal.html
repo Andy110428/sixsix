@@ -368,8 +368,9 @@
         <ol>
           <li>Gate.io 웹사이트에 로그인 → 우측 상단 프로필 아이콘 → "API 관리(API Management)" 이동</li>
           <li>"API 키 생성" 버튼 클릭</li>
-          <li>권한(Permissions) 목록에 지갑(Wallet)·현물거래(Spot Trade)·선물거래(Futures) 등 항목이 여러 개 나와요. 각 항목마다 <b>"읽기 전용(Read Only)"</b>으로만 설정하고, 어떤 항목이든 <b>"읽기+쓰기(Read & Write)"/거래/출금 권한은 절대 켜지 마세요</b>. 잘 모르겠으면 전부 "읽기 전용"으로만 켜도 괜찮아요 — 중요한 건 쓰기/거래/출금 권한이 하나도 켜져있지 않은지 확인하는 거예요</li>
-          <li>특히 "출금(Withdraw)" 권한은 꼭 꺼져있는지 다시 한번 확인해주세요</li>
+          <li>권한(Permissions) 목록에 지갑(Wallet)·현물거래(Spot Trade)·마진·선물거래(Futures) 등 여러 항목이 나오는데, 저희는 계정 소유 확인용으로 <b>"지갑(Wallet)" 항목만 "읽기 전용(Read Only)"으로 켜면 충분</b>해요. 나머지 현물거래/마진/선물거래/옵션 등은 전부 꺼진 상태(비활성) 그대로 두세요</li>
+          <li>혹시 지갑만 켰는데 연동이 안 된다고 나오면, "현물거래(Spot Trade)"도 읽기 전용으로 추가로 켜보세요</li>
+          <li>어떤 항목이든 "읽기+쓰기(Read & Write)"나 "출금(Withdraw)" 권한은 절대 켜지 마세요 — 켜져 있다면 반드시 꺼주세요</li>
           <li>IP 화이트리스트는 비워둬도 괜찮아요</li>
           <li>생성 완료 후 나오는 API Key와 Secret Key를 복사해서 아래에 붙여넣으세요 (Secret은 그때 한 번만 보여지니 꼭 복사해두세요)</li>
         </ol>
@@ -876,7 +877,8 @@
       if(!data.ok) return;
       el.innerHTML =
         '<div class="stat-box"><div class="num">' + (data.grade_label || '-') + '</div><div class="label">등급</div></div>' +
-        '<div class="stat-box"><div class="num">' + (data.activity || 0) + '</div><div class="label">활동량(댓글+글)</div></div>';
+        '<div class="stat-box"><div class="num">' + (data.activity || 0) + '</div><div class="label">활동량(댓글+글)</div></div>' +
+        '<div class="stat-box" style="grid-column:span 2;"><div class="num">$' + Number(data.trading_volume || 0).toLocaleString() + '</div><div class="label">내 거래량 (관리자가 확인 후 반영, 실시간 아님)</div></div>';
 
       if(data.uid){
         uidRegisteredBox.hidden = false;
