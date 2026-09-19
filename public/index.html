@@ -99,19 +99,18 @@
     background: linear-gradient(135deg, var(--cyan), #ffb056);
     color: #170d03;
     border: none;
-    box-shadow: 0 0 0 1px rgba(255,122,41,0.2), 0 8px 24px -8px rgba(255,122,41,0.55);
+    box-shadow: 0 4px 14px -6px rgba(255,122,41,0.35);
   }
-  .btn-primary:hover{ box-shadow: 0 0 0 1px rgba(255,122,41,0.35), 0 10px 30px -6px rgba(255,122,41,0.75); }
+  .btn-primary:hover{ box-shadow: 0 6px 18px -6px rgba(255,122,41,0.45); }
   .btn-ghost{
     background: rgba(255,255,255,0.03);
     color: var(--text);
   }
   .btn-ghost:hover{ border-color: rgba(255,255,255,0.25); }
   .btn-violet{
-    background: linear-gradient(135deg, #1c1c1c, #0d0d0d);
+    background: rgba(255,255,255,0.03);
     color: var(--cyan);
-    border: 1px solid rgba(255,122,41,0.4);
-    box-shadow: 0 0 0 1px rgba(255,122,41,0.12), 0 8px 24px -8px rgba(0,0,0,0.6);
+    border: 1px solid rgba(255,122,41,0.3);
   }
   .btn-block{ width:100%; padding: 14px 18px; font-size: 1rem; }
 
@@ -159,6 +158,22 @@
   .already-member a{ color: var(--cyan); font-weight: 600; }
   .already-member a:hover{ text-decoration: underline; }
 
+  /* 첫 화면 부드럽게 등장 */
+  @keyframes fadeInUp{ from{ opacity:0; transform:translateY(16px);} to{ opacity:1; transform:translateY(0);} }
+  .hero .eyebrow{ animation: fadeInUp .7s ease both; }
+  .hero h1{ animation: fadeInUp .7s ease .08s both; }
+  .hero p.sub{ animation: fadeInUp .7s ease .16s both; }
+  .hero .hero-actions{ animation: fadeInUp .7s ease .24s both; }
+  .hero .already-member{ animation: fadeInUp .7s ease .32s both; }
+
+  /* 스크롤하면 부드럽게 나타나는 요소 */
+  .reveal{ opacity:0; transform: translateY(26px); transition: opacity .8s cubic-bezier(.16,.84,.44,1), transform .8s cubic-bezier(.16,.84,.44,1); }
+  .reveal.is-visible{ opacity:1; transform: translateY(0); }
+  .req-grid .req-card:nth-child(2){ transition-delay:.1s; }
+  .contact-grid .contact-card:nth-child(2){ transition-delay:.1s; }
+  .steps .step:nth-child(2){ transition-delay:.08s; }
+  .steps .step:nth-child(3){ transition-delay:.16s; }
+
   /* section shared */
   section{ padding: 88px 0; scroll-margin-top: 90px; }
   .section-head{ max-width: 620px; margin-bottom: 48px; }
@@ -180,18 +195,22 @@
     display:grid; grid-template-columns: 1fr 1fr; gap: 24px;
   }
   .req-card{
-    background: var(--panel);
-    border: 1px solid var(--line);
+    background: rgba(255,255,255,0.035);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255,255,255,0.08);
     border-radius: 16px;
     padding: 32px;
     position: relative;
     overflow: hidden;
+    transition: border-color .2s ease, transform .2s ease;
   }
+  .req-card:hover{ border-color: rgba(255,255,255,0.16); transform: translateY(-2px); }
   .req-card::before{
     content:'';
     position:absolute; top:-40%; right:-30%;
     width: 220px; height: 220px;
-    background: radial-gradient(circle, rgba(255,122,41,0.14), transparent 70%);
+    background: radial-gradient(circle, rgba(255,122,41,0.08), transparent 70%);
   }
   .req-card .num{
     font-family: 'IBM Plex Mono', monospace;
@@ -239,11 +258,15 @@
     display:grid; grid-template-columns: 1fr 1fr; gap: 24px;
   }
   .contact-card{
-    background: var(--panel);
-    border: 1px solid var(--line);
+    background: rgba(255,255,255,0.035);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255,255,255,0.08);
     border-radius: 16px;
     padding: 32px;
+    transition: border-color .2s ease, transform .2s ease;
   }
+  .contact-card:hover{ border-color: rgba(255,255,255,0.16); transform: translateY(-2px); }
   .contact-card .icon{
     width: 44px; height: 44px;
     border-radius: 10px;
@@ -388,16 +411,16 @@
 
 <section id="req-teaser">
   <div class="wrap">
-    <div class="section-head">
+    <div class="section-head reveal">
       <span class="kicker">ENTRY REQUIREMENTS</span>
       <h2>입장 조건</h2>
     </div>
     <div class="req-grid">
-      <div class="req-card">
+      <div class="req-card reveal">
         <span class="num">조건 01</span>
         <h3>Gate.io 전용 링크로 가입</h3>
       </div>
-      <div class="req-card">
+      <div class="req-card reveal">
         <span class="num">조건 02</span>
         <h3>최소 시드 보유</h3>
         <div class="value">$700<small>+</small></div>
@@ -411,20 +434,20 @@
 
 <section id="join-teaser">
   <div class="wrap">
-    <div class="section-head">
+    <div class="section-head reveal">
       <span class="kicker">HOW TO JOIN</span>
       <h2>입장까지 3단계</h2>
     </div>
     <div class="steps steps-compact">
-      <div class="step">
+      <div class="step reveal">
         <div class="idx mono">01</div>
         <div><h3>전용 링크로 Gate.io 가입</h3></div>
       </div>
-      <div class="step">
+      <div class="step reveal">
         <div class="idx mono">02</div>
         <div><h3>최소 시드 $700 이상 예치</h3></div>
       </div>
-      <div class="step">
+      <div class="step reveal">
         <div class="idx mono">03</div>
         <div><h3>UID + 예치 스크린샷을 @team_sixx 에게 전송</h3></div>
       </div>
@@ -437,17 +460,17 @@
 
 <section id="contact">
   <div class="wrap">
-    <div class="section-head">
+    <div class="section-head reveal">
       <span class="kicker">GET IN TOUCH</span>
       <h2>채널 / 문의</h2>
     </div>
     <div class="contact-grid">
-      <div class="contact-card channel">
+      <div class="contact-card channel reveal">
         <div class="icon">✈</div>
         <h3>텔레그램 채널</h3>
         <a class="btn btn-primary btn-block" href="https://t.me/+qUg3b7kZ24hjNWZl" target="_blank" rel="noopener">채널 입장하기 ↗</a>
       </div>
-      <div class="contact-card support">
+      <div class="contact-card support reveal">
         <div class="icon">💬</div>
         <h3>고객센터 / 입장 문의</h3>
         <a class="btn btn-violet btn-block" href="https://t.me/team_sixx" target="_blank" rel="noopener">@team_sixx 문의하기 ↗</a>
@@ -493,6 +516,24 @@
     dropdown.querySelectorAll('a').forEach(function(a){
       a.addEventListener('click', closeMenu);
     });
+  })();
+
+  (function(){
+    var items = document.querySelectorAll('.reveal');
+    if(!items.length) return;
+    if(!('IntersectionObserver' in window)){
+      items.forEach(function(el){ el.classList.add('is-visible'); });
+      return;
+    }
+    var observer = new IntersectionObserver(function(entries){
+      entries.forEach(function(entry){
+        if(entry.isIntersecting){
+          entry.target.classList.add('is-visible');
+          observer.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.15, rootMargin: '0px 0px -40px 0px' });
+    items.forEach(function(el){ observer.observe(el); });
   })();
 </script>
 </body>
