@@ -105,6 +105,9 @@
 
   .liq-card{ background:var(--panel); border:1px solid var(--line); border-radius:16px; padding:32px; text-align:center; }
   .liq-card p{ color:var(--text-dim); font-size:0.9rem; max-width:480px; margin:10px auto 20px; }
+  .liq-embed-wrap{ position:relative; width:100%; padding-top:70%; border-radius:12px; overflow:hidden; border:1px solid var(--line); background:var(--bg-soft); }
+  .liq-embed-wrap iframe{ position:absolute; inset:0; width:100%; height:100%; border:none; }
+  @media (max-width:640px){ .liq-embed-wrap{ padding-top:120%; } }
 
   .rank-widget{ background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:18px 20px; max-width:340px; margin:0 auto 40px; }
   .rank-widget h3{ font-size:0.86rem; color:var(--text-dim); font-weight:600; margin-bottom:10px; display:flex; align-items:center; gap:6px; }
@@ -287,8 +290,11 @@
       </div>
       <div class="liq-card">
         <h3>실시간 청산 히트맵 (CoinGlass)</h3>
-        <p>임베드로 넣기엔 외부 사이트 보안 정책상 화면 안에 깨져 보일 수 있어서, 새 창에서 정상적으로 열리는 링크로 안내해요.</p>
-        <a class="btn btn-primary" style="width:auto; display:inline-flex; padding-left:28px; padding-right:28px;" href="https://www.coinglass.com/pro/futures/LiquidationHeatMap?coin=BTC&type=symbol" target="_blank" rel="noopener">청산맵 새 창에서 열기 ↗</a>
+        <p style="margin-bottom:14px;">외부 사이트라 보안 정책에 따라 화면이 비어 보이거나 깨질 수 있어요. 그럴 땐 아래 "새 창에서 크게 열기"를 눌러주세요.</p>
+        <div class="liq-embed-wrap">
+          <iframe src="https://www.coinglass.com/pro/futures/LiquidationHeatMap?coin=BTC&type=symbol" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+        </div>
+        <a class="btn btn-ghost" style="width:auto; display:inline-flex; margin-top:14px; padding-left:28px; padding-right:28px;" href="https://www.coinglass.com/pro/futures/LiquidationHeatMap?coin=BTC&type=symbol" target="_blank" rel="noopener">새 창에서 크게 열기 ↗</a>
       </div>
     </div>
   </section>
@@ -339,76 +345,89 @@
     <button type="button" class="modal-close" id="profile-modal-close">✕</button>
     <h2>내 정보</h2>
 
-    <div id="my-stats" class="stats-grid" style="display:grid; grid-template-columns:repeat(2,1fr); gap:10px; margin-top:16px;"></div>
-    <button type="button" class="btn btn-ghost btn-block" id="sync-volume-btn" hidden style="margin-top:10px;">🔄 내 거래량 동기화 (베타)</button>
-    <div id="sync-volume-result" class="result-box" hidden></div>
-
-    <h3 style="font-size:0.95rem; margin-top:22px; margin-bottom:10px; color:var(--text-dim);">스터디룸 UID</h3>
-    <div id="uid-registered-box" class="uid-box" hidden>등록된 UID: <b class="mono" id="uid-registered-value"></b></div>
-    <details class="help-guide" id="uid-help-guide" hidden>
-      <summary>내 UID 어디서 확인하나요?</summary>
-      <div class="guide-body">
-        <ol>
-          <li>Gate.io 앱 또는 웹사이트에 로그인</li>
-          <li>우측 상단 프로필(계정) 아이콘 클릭 → "계정 관리" 또는 "개인센터" 이동</li>
-          <li>계정 정보 화면 상단에 숫자로 된 UID가 표시돼요 (예: 12345678)</li>
-          <li>그 숫자를 그대로 복사해서 아래 입력란에 붙여넣으면 돼요</li>
-        </ol>
-      </div>
-    </details>
-    <form id="uid-form" class="auth-form" hidden>
-      <input type="text" id="uid-input" placeholder="Gate.io UID" inputmode="numeric">
-      <button type="submit" class="btn btn-primary">UID 등록하기</button>
-    </form>
-    <div id="uid-result" class="result-box" hidden></div>
-
-    <h3 style="font-size:0.95rem; margin-top:22px; margin-bottom:6px; color:var(--text-dim);">Gate.io API 연동 (거래량 확인·랭킹용, 선택)</h3>
-    <div class="api-note">Read-Only(읽기 전용) 권한의 키만 사용하세요. 출금·거래 권한은 요구하지 않아요.</div>
-    <details class="help-guide">
-      <summary>API 키는 어떻게 발급하나요?</summary>
-      <div class="guide-body">
-        <ol>
-          <li>Gate.io 웹사이트에 로그인 → 우측 상단 프로필 아이콘 → "API 관리(API Management)" 이동</li>
-          <li>"API 키 생성" 버튼 클릭</li>
-          <li>권한(Permissions) 목록에 지갑(Wallet)·현물거래(Spot Trade)·마진·선물거래(Futures) 등 여러 항목이 나와요. 이 중 <b>딱 2개만 "읽기 전용(Read Only)"으로 켜주세요</b>: ① <b>지갑(Wallet)</b> — 계정 소유 확인용, ② <b>선물거래(Futures Trade)</b> — 아래 "내 거래량 동기화" 버튼이 선물 체결 내역을 읽어서 거래량을 계산하는 데 필요해요</li>
-          <li>나머지 현물거래(Spot)/마진/옵션 등은 전부 꺼진 상태(비활성) 그대로 두세요 — 거래량 확인에 필요 없어요</li>
-          <li>어떤 항목이든 "읽기+쓰기(Read & Write)"나 "출금(Withdraw)" 권한은 절대 켜지 마세요 — 켜져 있다면 반드시 꺼주세요</li>
-          <li>IP 화이트리스트는 비워둬도 괜찮아요</li>
-          <li>생성 완료 후 나오는 API Key와 Secret Key를 복사해서 아래에 붙여넣으세요 (Secret은 그때 한 번만 보여지니 꼭 복사해두세요)</li>
-        </ol>
-      </div>
-    </details>
-    <div id="api-connected-box" class="connected-box" hidden>
-      <span>연동된 UID: <b class="mono" id="connected-uid"></b></span>
-      <button type="button" class="btn btn-ghost" id="disconnect-api-btn" style="width:auto;">해제</button>
+    <div class="auth-tabs" id="profile-tabs">
+      <button type="button" class="auth-tab active" data-ptab="summary">요약</button>
+      <button type="button" class="auth-tab" data-ptab="connect">UID·API 연동</button>
+      <button type="button" class="auth-tab" data-ptab="account">계정 설정</button>
     </div>
-    <form id="api-connect-form" class="auth-form">
-      <input type="text" id="api-key-input" placeholder="Gate.io API Key (Read-Only)">
-      <input type="text" id="api-secret-input" placeholder="Gate.io API Secret">
-      <button type="submit" class="btn btn-primary">연동하기</button>
-    </form>
-    <div id="api-connect-result" class="result-box" hidden></div>
-    <label class="toggle-row">
-      <input type="checkbox" id="ranking-opt-checkbox">
-      <span>거래량 랭킹에 참여합니다 (API 연동 필요)</span>
-    </label>
-    <div id="ranking-opt-result" class="result-box" hidden></div>
 
-    <h3 style="font-size:0.95rem; margin-top:24px; margin-bottom:10px; color:var(--text-dim);">닉네임</h3>
-    <form id="nickname-form" class="auth-form">
-      <input type="text" id="nickname-input" placeholder="닉네임 (1~20자)" maxlength="20">
-      <button type="submit" class="btn btn-primary">닉네임 저장</button>
-    </form>
-    <div id="nickname-result" class="result-box" hidden></div>
+    <div data-profile-panel="summary">
+      <div id="my-stats" class="stats-grid" style="display:grid; grid-template-columns:repeat(2,1fr); gap:10px;"></div>
+      <button type="button" class="btn btn-ghost btn-block" id="sync-volume-btn" hidden style="margin-top:10px;">🔄 내 거래량 동기화 (베타)</button>
+      <div id="sync-volume-result" class="result-box" hidden></div>
+      <div id="referred-by-box" class="uid-box" hidden style="margin-top:14px;">추천인 코드 <b class="mono" id="referred-by-code"></b>로 가입했어요 (<span id="referred-by-label"></span>)</div>
+    </div>
 
-    <h3 style="font-size:0.95rem; margin-top:24px; margin-bottom:10px; color:var(--text-dim);">비밀번호 변경</h3>
-    <form id="password-form" class="auth-form">
-      <input type="password" id="current-pw" placeholder="현재 비밀번호" autocomplete="current-password">
-      <input type="password" id="new-pw" placeholder="새 비밀번호 (8자 이상)" autocomplete="new-password">
-      <input type="password" id="new-pw2" placeholder="새 비밀번호 확인" autocomplete="new-password">
-      <button type="submit" class="btn btn-primary">변경하기</button>
-    </form>
-    <div id="profile-result" class="result-box" hidden></div>
+    <div data-profile-panel="connect" hidden>
+      <h3 style="font-size:0.95rem; margin-top:0; margin-bottom:10px; color:var(--text-dim);">스터디룸 UID</h3>
+      <div id="uid-registered-box" class="uid-box" hidden>등록된 UID: <b class="mono" id="uid-registered-value"></b></div>
+      <details class="help-guide" id="uid-help-guide" hidden>
+        <summary>내 UID 어디서 확인하나요?</summary>
+        <div class="guide-body">
+          <ol>
+            <li>Gate.io 앱 또는 웹사이트에 로그인</li>
+            <li>우측 상단 프로필(계정) 아이콘 클릭 → "계정 관리" 또는 "개인센터" 이동</li>
+            <li>계정 정보 화면 상단에 숫자로 된 UID가 표시돼요 (예: 12345678)</li>
+            <li>그 숫자를 그대로 복사해서 아래 입력란에 붙여넣으면 돼요</li>
+          </ol>
+        </div>
+      </details>
+      <form id="uid-form" class="auth-form" hidden>
+        <input type="text" id="uid-input" placeholder="Gate.io UID" inputmode="numeric">
+        <button type="submit" class="btn btn-primary">UID 등록하기</button>
+      </form>
+      <div id="uid-result" class="result-box" hidden></div>
+
+      <h3 style="font-size:0.95rem; margin-top:24px; margin-bottom:6px; color:var(--text-dim);">Gate.io API 연동 (거래량 확인·랭킹용, 선택)</h3>
+      <div class="api-note">Read-Only(읽기 전용) 권한의 키만 사용하세요. 출금·거래 권한은 요구하지 않아요.</div>
+      <details class="help-guide">
+        <summary>API 키는 어떻게 발급하나요?</summary>
+        <div class="guide-body">
+          <ol>
+            <li>Gate.io 웹사이트에 로그인 → 우측 상단 프로필 아이콘 → "API 관리(API Management)" 이동</li>
+            <li>"API 키 생성" 버튼 클릭</li>
+            <li>권한(Permissions) 목록에 지갑(Wallet)·현물거래(Spot Trade)·마진·선물거래(Futures) 등 여러 항목이 나와요. 이 중 <b>딱 2개만 "읽기 전용(Read Only)"으로 켜주세요</b>: ① <b>지갑(Wallet)</b> — 계정 소유 확인용, ② <b>선물거래(Futures Trade)</b> — 아래 "내 거래량 동기화" 버튼이 선물 체결 내역을 읽어서 거래량을 계산하는 데 필요해요</li>
+            <li>나머지 현물거래(Spot)/마진/옵션 등은 전부 꺼진 상태(비활성) 그대로 두세요 — 거래량 확인에 필요 없어요</li>
+            <li>어떤 항목이든 "읽기+쓰기(Read & Write)"나 "출금(Withdraw)" 권한은 절대 켜지 마세요 — 켜져 있다면 반드시 꺼주세요</li>
+            <li>IP 화이트리스트는 비워둬도 괜찮아요</li>
+            <li>생성 완료 후 나오는 API Key와 Secret Key를 복사해서 아래에 붙여넣으세요 (Secret은 그때 한 번만 보여지니 꼭 복사해두세요)</li>
+          </ol>
+        </div>
+      </details>
+      <div id="api-connected-box" class="connected-box" hidden>
+        <span>연동된 UID: <b class="mono" id="connected-uid"></b></span>
+        <button type="button" class="btn btn-ghost" id="disconnect-api-btn" style="width:auto;">해제</button>
+      </div>
+      <form id="api-connect-form" class="auth-form">
+        <input type="text" id="api-key-input" placeholder="Gate.io API Key (Read-Only)">
+        <input type="text" id="api-secret-input" placeholder="Gate.io API Secret">
+        <button type="submit" class="btn btn-primary">연동하기</button>
+      </form>
+      <div id="api-connect-result" class="result-box" hidden></div>
+      <label class="toggle-row">
+        <input type="checkbox" id="ranking-opt-checkbox">
+        <span>거래량 랭킹에 참여합니다 (API 연동 필요)</span>
+      </label>
+      <div id="ranking-opt-result" class="result-box" hidden></div>
+    </div>
+
+    <div data-profile-panel="account" hidden>
+      <h3 style="font-size:0.95rem; margin-top:0; margin-bottom:10px; color:var(--text-dim);">닉네임</h3>
+      <form id="nickname-form" class="auth-form">
+        <input type="text" id="nickname-input" placeholder="닉네임 (1~20자)" maxlength="20">
+        <button type="submit" class="btn btn-primary">닉네임 저장</button>
+      </form>
+      <div id="nickname-result" class="result-box" hidden></div>
+
+      <h3 style="font-size:0.95rem; margin-top:24px; margin-bottom:10px; color:var(--text-dim);">비밀번호 변경</h3>
+      <form id="password-form" class="auth-form">
+        <input type="password" id="current-pw" placeholder="현재 비밀번호" autocomplete="current-password">
+        <input type="password" id="new-pw" placeholder="새 비밀번호 (8자 이상)" autocomplete="new-password">
+        <input type="password" id="new-pw2" placeholder="새 비밀번호 확인" autocomplete="new-password">
+        <button type="submit" class="btn btn-primary">변경하기</button>
+      </form>
+      <div id="profile-result" class="result-box" hidden></div>
+    </div>
   </div>
 </div>
 
@@ -878,12 +897,26 @@
     finally{ syncVolumeBtn.disabled = false; }
   });
 
+  var profileTabBtns = document.querySelectorAll('#profile-tabs .auth-tab');
+  var profilePanels = document.querySelectorAll('[data-profile-panel]');
+  profileTabBtns.forEach(function(btn){
+    btn.addEventListener('click', function(){
+      profileTabBtns.forEach(function(b){ b.classList.remove('active'); });
+      btn.classList.add('active');
+      var target = btn.dataset.ptab;
+      profilePanels.forEach(function(p){ p.hidden = p.dataset.profilePanel !== target; });
+    });
+  });
+
   profileBtn.addEventListener('click', function(){
     clearResult(profileResult);
     clearResult(nicknameResult);
     clearResult(uidResult);
     passwordForm.reset();
     nicknameInput.value = currentNickname || '';
+    profileTabBtns.forEach(function(b){ b.classList.remove('active'); });
+    profileTabBtns[0].classList.add('active');
+    profilePanels.forEach(function(p){ p.hidden = p.dataset.profilePanel !== 'summary'; });
     profileModal.classList.add('open');
     loadMyStats();
   });
@@ -901,6 +934,15 @@
         '<div class="stat-box" style="grid-column:span 2;"><div class="num">$' + Number(data.trading_volume || 0).toLocaleString() + '</div><div class="label">내 거래량 (관리자 입력 또는 아래 동기화 버튼으로 갱신)</div></div>';
 
       syncVolumeBtn.hidden = !data.has_gate_api;
+
+      var referredByBox = document.getElementById('referred-by-box');
+      if(data.referred_by_code){
+        referredByBox.hidden = false;
+        document.getElementById('referred-by-code').textContent = data.referred_by_code;
+        document.getElementById('referred-by-label').textContent = data.referred_by_label || '';
+      } else {
+        referredByBox.hidden = true;
+      }
 
       if(data.uid){
         uidRegisteredBox.hidden = false;

@@ -227,9 +227,12 @@
   <div data-tab-panel="calendar" hidden>
   <div class="panel">
     <h2>경제 캘린더 관리</h2>
-    <p class="panel-note">위젯이 아니라 직접 입력하는 일정이에요. 중요도는 별 1~3개로 표시돼요.</p>
+    <p class="panel-note">위젯이 아니라 직접 입력하는 일정이에요. 중요도는 별 1~3개로 표시돼요. 큰 일정뿐 아니라 매일매일 나오는 자잘한 지표도 "빠른 등록"으로 제목만 눌러서 빠르게 채워보세요 — 날짜/시간만 직접 입력하면 돼요.</p>
     <form id="event-form" class="auth-form">
       <input type="hidden" id="event-editing-id" value="">
+      <select id="event-preset">
+        <option value="">⚡ 빠른 등록 (선택하면 제목/국가/중요도 자동입력)</option>
+      </select>
       <div style="display:flex; gap:8px;">
         <input type="datetime-local" id="event-time" style="flex:1;">
         <select id="event-importance" style="max-width:140px;">
@@ -601,6 +604,57 @@
   var eventForm = document.getElementById('event-form');
   var eventResult = document.getElementById('event-result');
   var eventCancelBtn = document.getElementById('event-cancel-btn');
+  var eventPreset = document.getElementById('event-preset');
+
+  // 매일/매주 반복해서 나오는 지표들 — 날짜만 채우면 되도록 제목/국가/중요도를 미리 넣어줌
+  var EVENT_PRESETS = [
+    ['미국 신규 실업수당 청구건수(Initial Jobless Claims)', 'US', 1],
+    ['미국 ISM 제조업 PMI', 'US', 2],
+    ['미국 ISM 서비스업 PMI', 'US', 2],
+    ['미국 S&P 글로벌 제조업 PMI (Flash)', 'US', 1],
+    ['미국 소매판매(Retail Sales)', 'US', 2],
+    ['미국 소비자물가지수(CPI)', 'US', 3],
+    ['미국 근원 소비자물가지수(Core CPI)', 'US', 3],
+    ['미국 생산자물가지수(PPI)', 'US', 2],
+    ['미국 비농업고용지수(NFP)', 'US', 3],
+    ['미국 실업률(Unemployment Rate)', 'US', 2],
+    ['미국 ADP 민간고용', 'US', 2],
+    ['미국 소비자심리지수(Consumer Confidence)', 'US', 1],
+    ['미국 미시간대 소비자심리지수', 'US', 1],
+    ['미국 내구재 주문(Durable Goods Orders)', 'US', 1],
+    ['미국 신규 주택착공(Housing Starts)', 'US', 1],
+    ['미국 기존주택 판매(Existing Home Sales)', 'US', 1],
+    ['미국 신규주택 판매(New Home Sales)', 'US', 1],
+    ['미국 산업생산(Industrial Production)', 'US', 1],
+    ['미국 GDP 성장률', 'US', 3],
+    ['미국 개인소비지출(PCE) 물가지수', 'US', 3],
+    ['미국 무역수지(Trade Balance)', 'US', 1],
+    ['FOMC 정례회의 결과 발표', 'US', 3],
+    ['FOMC 의사록(Minutes) 공개', 'US', 2],
+    ['연준 베이지북(Beige Book) 발표', 'US', 1],
+    ['연준 의장 연설/증언', 'US', 2],
+    ['미국 원유재고(EIA Crude Oil Inventories)', 'US', 1],
+    ['한국 소비자물가지수(CPI)', 'KR', 2],
+    ['한국은행 기준금리 결정', 'KR', 3],
+    ['중국 제조업 PMI', 'CN', 2],
+    ['유로존 소비자물가지수(CPI)', 'EU', 2],
+    ['ECB 기준금리 결정', 'EU', 3],
+  ];
+  EVENT_PRESETS.forEach(function(p, i){
+    var opt = document.createElement('option');
+    opt.value = String(i);
+    opt.textContent = p[0];
+    eventPreset.appendChild(opt);
+  });
+  eventPreset.addEventListener('change', function(){
+    if(eventPreset.value === '') return;
+    var p = EVENT_PRESETS[Number(eventPreset.value)];
+    document.getElementById('event-title').value = p[0];
+    document.getElementById('event-country').value = p[1];
+    document.getElementById('event-importance').value = String(p[2]);
+    eventPreset.value = '';
+    document.getElementById('event-time').focus();
+  });
 
   function toLocalInputValue(ts){
     var d = new Date(ts);
