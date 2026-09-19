@@ -340,6 +340,8 @@
     <h2>내 정보</h2>
 
     <div id="my-stats" class="stats-grid" style="display:grid; grid-template-columns:repeat(2,1fr); gap:10px; margin-top:16px;"></div>
+    <button type="button" class="btn btn-ghost btn-block" id="sync-volume-btn" hidden style="margin-top:10px;">🔄 내 거래량 동기화 (베타)</button>
+    <div id="sync-volume-result" class="result-box" hidden></div>
 
     <h3 style="font-size:0.95rem; margin-top:22px; margin-bottom:10px; color:var(--text-dim);">스터디룸 UID</h3>
     <div id="uid-registered-box" class="uid-box" hidden>등록된 UID: <b class="mono" id="uid-registered-value"></b></div>
@@ -360,7 +362,7 @@
     </form>
     <div id="uid-result" class="result-box" hidden></div>
 
-    <h3 style="font-size:0.95rem; margin-top:22px; margin-bottom:6px; color:var(--text-dim);">Gate.io API 연동 (랭킹용, 선택)</h3>
+    <h3 style="font-size:0.95rem; margin-top:22px; margin-bottom:6px; color:var(--text-dim);">Gate.io API 연동 (거래량 확인·랭킹용, 선택)</h3>
     <div class="api-note">Read-Only(읽기 전용) 권한의 키만 사용하세요. 출금·거래 권한은 요구하지 않아요.</div>
     <details class="help-guide">
       <summary>API 키는 어떻게 발급하나요?</summary>
@@ -368,8 +370,8 @@
         <ol>
           <li>Gate.io 웹사이트에 로그인 → 우측 상단 프로필 아이콘 → "API 관리(API Management)" 이동</li>
           <li>"API 키 생성" 버튼 클릭</li>
-          <li>권한(Permissions) 목록에 지갑(Wallet)·현물거래(Spot Trade)·마진·선물거래(Futures) 등 여러 항목이 나오는데, 저희는 계정 소유 확인용으로 <b>"지갑(Wallet)" 항목만 "읽기 전용(Read Only)"으로 켜면 충분</b>해요. 나머지 현물거래/마진/선물거래/옵션 등은 전부 꺼진 상태(비활성) 그대로 두세요</li>
-          <li>혹시 지갑만 켰는데 연동이 안 된다고 나오면, "현물거래(Spot Trade)"도 읽기 전용으로 추가로 켜보세요</li>
+          <li>권한(Permissions) 목록에 지갑(Wallet)·현물거래(Spot Trade)·마진·선물거래(Futures) 등 여러 항목이 나와요. 이 중 <b>딱 2개만 "읽기 전용(Read Only)"으로 켜주세요</b>: ① <b>지갑(Wallet)</b> — 계정 소유 확인용, ② <b>선물거래(Futures Trade)</b> — 아래 "내 거래량 동기화" 버튼이 선물 체결 내역을 읽어서 거래량을 계산하는 데 필요해요</li>
+          <li>나머지 현물거래(Spot)/마진/옵션 등은 전부 꺼진 상태(비활성) 그대로 두세요 — 거래량 확인에 필요 없어요</li>
           <li>어떤 항목이든 "읽기+쓰기(Read & Write)"나 "출금(Withdraw)" 권한은 절대 켜지 마세요 — 켜져 있다면 반드시 꺼주세요</li>
           <li>IP 화이트리스트는 비워둬도 괜찮아요</li>
           <li>생성 완료 후 나오는 API Key와 Secret Key를 복사해서 아래에 붙여넣으세요 (Secret은 그때 한 번만 보여지니 꼭 복사해두세요)</li>
@@ -857,6 +859,24 @@
   var uidResult = document.getElementById('uid-result');
   var uidRegisteredBox = document.getElementById('uid-registered-box');
   var uidHelpGuide = document.getElementById('uid-help-guide');
+  var syncVolumeBtn = document.getElementById('sync-volume-btn');
+  var syncVolumeResult = document.getElementById('sync-volume-result');
+
+  syncVolumeBtn.addEventListener('click', async function(){
+    syncVolumeBtn.disabled = true;
+    showResult(syncVolumeResult, '거래내역을 불러오는 중입니다... (거래량이 많으면 몇 초 걸릴 수 있어요)', 'pending');
+    try{
+      var res = await fetch('/api/account/sync-volume', { method:'POST', credentials:'same-origin' });
+      var data = await res.json();
+      if(data.ok){
+        showResult(syncVolumeResult, '$' + Number(data.trading_volume).toLocaleString() + '로 갱신했어요. (최근 체결 ' + data.trades_seen + '건 기준, 조회 가능한 범위 내 집계)', 'good');
+        loadMyStats();
+      } else {
+        showResult(syncVolumeResult, data.error || '동기화에 실패했습니다.', 'warn');
+      }
+    } catch(e){ showResult(syncVolumeResult, '오류가 발생했습니다.', 'warn'); }
+    finally{ syncVolumeBtn.disabled = false; }
+  });
 
   profileBtn.addEventListener('click', function(){
     clearResult(profileResult);
@@ -878,7 +898,9 @@
       el.innerHTML =
         '<div class="stat-box"><div class="num">' + (data.grade_label || '-') + '</div><div class="label">등급</div></div>' +
         '<div class="stat-box"><div class="num">' + (data.activity || 0) + '</div><div class="label">활동량(댓글+글)</div></div>' +
-        '<div class="stat-box" style="grid-column:span 2;"><div class="num">$' + Number(data.trading_volume || 0).toLocaleString() + '</div><div class="label">내 거래량 (관리자가 확인 후 반영, 실시간 아님)</div></div>';
+        '<div class="stat-box" style="grid-column:span 2;"><div class="num">$' + Number(data.trading_volume || 0).toLocaleString() + '</div><div class="label">내 거래량 (관리자 입력 또는 아래 동기화 버튼으로 갱신)</div></div>';
+
+      syncVolumeBtn.hidden = !data.has_gate_api;
 
       if(data.uid){
         uidRegisteredBox.hidden = false;

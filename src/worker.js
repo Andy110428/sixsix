@@ -21,6 +21,7 @@
 //   POST /api/account/disconnect-gate-api
 //   GET  /api/account/gate-account-raw   연동된 키로 계좌 정보 원본 조회 (베타, 진단용)
 //   POST /api/account/ranking-opt-in     랭킹 시스템 참여/탈퇴 (참여하려면 API 연동 필요)
+//   POST /api/account/sync-volume        연동된 키로 선물 거래내역을 조회해 거래량을 직접 계산/갱신 (베타, 선물거래 읽기 권한 필요)
 //
 // 게시판 API (Gate UID가 등록된 회원 또는 관리자만 글쓰기/댓글, 목록/상세는 공개):
 //   GET  /api/posts?category=notice|briefing|lecture|question|profit
@@ -86,6 +87,7 @@ export default {
       if (path === '/api/account/disconnect-gate-api' && method === 'POST') return await handleDisconnectGateApi(request, env);
       if (path === '/api/account/gate-account-raw' && method === 'GET') return await handleGateAccountRaw(request, env);
       if (path === '/api/account/ranking-opt-in' && method === 'POST') return await handleRankingOptIn(request, env);
+      if (path === '/api/account/sync-volume' && method === 'POST') return await handleSyncVolume(request, env);
 
       if (path === '/api/posts' && method === 'GET') return await handleListPosts(request, env);
       if (path === '/api/posts/detail' && method === 'GET') return await handlePostDetail(request, env);
@@ -673,6 +675,102 @@ async function gateAccountDetail(apiKey, apiSecret) {
     throw err;
   }
   return data;
+}
+
+// Gate.io API v4 서명 GET 요청 공통 헬퍼 (path는 /api/v4 뒤 부분, query는 이미 인코딩된 문자열)
+async function gateApiGet(apiKey, apiSecret, path, queryString) {
+  const host = 'https://api.gateio.ws';
+  const prefix = '/api/v4';
+  const method = 'GET';
+  const query = queryString || '';
+  const timestamp = Math.floor(Date.now() / 1000).toString();
+  const bodyHash = await sha512Hex('');
+  const signStr = `${method}\n${prefix}${path}\n${query}\n${bodyHash}\n${timestamp}`;
+  const sign = await hmacSha512Hex(apiSecret, signStr);
+
+  const url = `${host}${prefix}${path}${query ? '?' + query : ''}`;
+  const res = await fetch(url, {
+    method,
+    headers: { Accept: 'application/json', KEY: apiKey, SIGN: sign, Timestamp: timestamp },
+  });
+  const data = await res.json();
+  if (!res.ok) {
+    const err = new Error((data && data.message) || 'Gate.io API 오류');
+    err.status = res.status;
+    err.detail = data;
+    throw err;
+  }
+  return data;
+}
+
+// 연동된 키로 USDT 무기한 선물 체결 내역을 조회해 명목 거래량(USD)을 계산.
+// 계약별 quanto_multiplier(공개 정보)를 곱해서 실제 달러 규모로 환산함.
+// ⚠️ 베타 — 실제 API 키로 검증되지 않음. 거래소 정책상 조회 가능한 과거 내역 범위 안에서만 집계됨(전체 누적이 아닐 수 있음).
+async function computeFuturesVolumeUsd(apiKey, apiSecret) {
+  const settle = 'usdt';
+  const limit = 1000;
+  const maxPages = 5;
+  const maxContracts = 30;
+  const multiplierCache = {};
+  let totalUsd = 0;
+  let tradesSeen = 0;
+  let lastId = '';
+
+  for (let page = 0; page < maxPages; page++) {
+    let query = `settle=${settle}&limit=${limit}`;
+    if (lastId) query += `&last_id=${encodeURIComponent(lastId)}`;
+    const trades = await gateApiGet(apiKey, apiSecret, `/futures/${settle}/my_trades`, query);
+    if (!Array.isArray(trades) || trades.length === 0) break;
+
+    for (const t of trades) {
+      const contract = t.contract;
+      if (!(contract in multiplierCache)) {
+        if (Object.keys(multiplierCache).length >= maxContracts) {
+          multiplierCache[contract] = 1;
+        } else {
+          try {
+            const spec = await gateApiGet(apiKey, apiSecret, `/futures/${settle}/contracts/${encodeURIComponent(contract)}`, '');
+            multiplierCache[contract] = Number(spec.quanto_multiplier || 1) || 1;
+          } catch (e) {
+            multiplierCache[contract] = 1;
+          }
+        }
+      }
+      const size = Math.abs(Number(t.size || 0));
+      const price = Number(t.price || 0);
+      totalUsd += size * price * multiplierCache[contract];
+    }
+
+    tradesSeen += trades.length;
+    const newLastId = trades[trades.length - 1].id;
+    if (!newLastId || newLastId === lastId) break;
+    lastId = newLastId;
+    if (trades.length < limit) break;
+  }
+
+  return { totalUsd, tradesSeen };
+}
+
+async function handleSyncVolume(request, env) {
+  const email = await getMemberEmail(request, env);
+  if (!email) return json({ ok: false, error: '로그인이 필요합니다.' }, 401);
+
+  const member = await env.DB.prepare('SELECT gate_api_key, gate_api_secret FROM members WHERE email = ?').bind(email).first();
+  if (!member || !member.gate_api_key) {
+    return json({ ok: false, error: 'Gate.io API가 연동되어 있지 않습니다. 먼저 API 키를 연동해주세요.' }, 400);
+  }
+
+  try {
+    const { totalUsd, tradesSeen } = await computeFuturesVolumeUsd(member.gate_api_key, member.gate_api_secret);
+    await env.DB.prepare('UPDATE members SET trading_volume = ? WHERE email = ?').bind(totalUsd, email).run();
+    await checkAndQualifyReferral(env, email, totalUsd);
+    return json({ ok: true, trading_volume: totalUsd, trades_seen: tradesSeen });
+  } catch (err) {
+    const msg = err.status === 403 || err.status === 401
+      ? 'API 키 권한이 부족합니다. Gate.io에서 "선물거래(Futures Trade)" 읽기 전용 권한이 켜져 있는지 확인해주세요.'
+      : (err.message || 'Gate.io 거래내역 조회 중 오류가 발생했습니다.');
+    return json({ ok: false, error: msg, detail: err.detail }, err.status || 500);
+  }
 }
 
 // ───────────────────────── 랭킹 (선택 참여) ─────────────────────────
