@@ -65,7 +65,8 @@
   @keyframes welcomeSplashOut{ to{ opacity:0; visibility:hidden; pointer-events:none; } }
   @media (prefers-reduced-motion: reduce){ .welcome-splash{ animation:none; opacity:0; visibility:hidden; } }
 
-  header{ position:sticky; top:0; z-index:50; backdrop-filter:blur(14px); background:rgba(10,9,8,0.75); border-bottom:1px solid var(--line); }
+  header{ position:sticky; top:0; z-index:50; }
+  header::before{ content:''; position:absolute; inset:0; z-index:-1; backdrop-filter:blur(14px); background:rgba(10,9,8,0.75); border-bottom:1px solid var(--line); }
   .nav{ display:flex; align-items:center; justify-content:space-between; padding:16px 24px; max-width:920px; margin:0 auto; gap: 10px; position:relative; }
   .brand{ display:flex; align-items:center; gap:10px; font-weight:700; font-size:1.05rem; flex-shrink:0; }
   .brand .dot{ width:9px; height:9px; border-radius:50%; background:var(--cyan); box-shadow:0 0 10px var(--cyan),0 0 22px var(--cyan); }
@@ -76,7 +77,7 @@
   .qa-status{ font-family:'JetBrains Mono',monospace; font-size:0.7rem; padding:2px 8px; border-radius:999px; border:1px solid var(--line); color:var(--text-dim); margin-left:8px; white-space:nowrap; }
   .qa-status.answered{ color:var(--good); border-color:rgba(74,222,128,0.35); }
   .tab-link:hover{ color:var(--text); background:rgba(255,255,255,0.04); }
-  .tab-link.active{ color:var(--cyan); background:rgba(45,212,245,0.08); }
+  .tab-link.active{ color:var(--text); background:rgba(255,255,255,0.1); box-shadow:inset 2px 0 0 0 rgba(255,255,255,0.4); }
   .icon-btn{ padding:7px 12px; border-radius:8px; font-size:0.82rem; color:var(--text-dim); border:1px solid var(--line); background:none; cursor:pointer; white-space:nowrap; }
   .icon-btn:hover{ color:var(--text); border-color:rgba(255,255,255,0.25); }
 
@@ -137,10 +138,12 @@
   .gate-help{ margin-top:18px; font-size:0.82rem; color:var(--text-dim); text-align:center; }
   .gate-help a{ color:var(--cyan); font-weight:600; }
 
+  .grad-label{ background-image:linear-gradient(135deg,#f4f3f1,#8b8d93); -webkit-background-clip:text; background-clip:text; color:transparent; }
+
   section{ padding:40px 0; scroll-margin-top:90px; }
   .section-head{ margin-bottom:20px; display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap: wrap; }
   .section-head h2{ font-size:1.3rem; }
-  .section-head .kicker{ font-family:'JetBrains Mono',monospace; font-size:0.78rem; color:var(--violet); display:block; margin-bottom:4px; }
+  .section-head .kicker{ font-family:'JetBrains Mono',monospace; font-size:0.86rem; letter-spacing:0.03em; display:block; margin-bottom:6px; background-image:linear-gradient(135deg,#f4f3f1,#8b8d93); -webkit-background-clip:text; background-clip:text; color:transparent; }
   .section-note{ color:var(--text-dim); font-size:0.85rem; margin-top:4px; }
 
   .post-list{ display:flex; flex-direction:column; gap:10px; }
@@ -220,13 +223,34 @@
   .dash-card{ background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:18px 20px; }
   .dash-card-head{ display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; gap:8px; }
   .dash-card-head h3{ font-size:0.9rem; }
-  .dash-more{ background:none; border:none; color:var(--cyan); font-size:0.76rem; cursor:pointer; font-weight:600; padding:0; white-space:nowrap; }
+  .dash-more{ border:none; background-color:transparent; background-image:linear-gradient(135deg,#f4f3f1,#8b8d93); -webkit-background-clip:text; background-clip:text; color:transparent; font-size:0.84rem; cursor:pointer; font-weight:700; padding:0; white-space:nowrap; }
   .dash-mini-row{ display:flex; justify-content:space-between; align-items:center; gap:10px; font-size:0.82rem; padding:7px 0; border-top:1px solid var(--line-soft); }
   .dash-mini-row:first-child{ border-top:none; }
   .dash-mini-row .t{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .dash-mini-empty{ color:var(--text-dim); font-size:0.82rem; padding:6px 0; }
-  .dash-pnl-stats{ display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
   @media (max-width:720px){ .dash-grid{ grid-template-columns:1fr; } }
+
+  .dash-hero-card{ background:var(--panel); border:1px solid var(--line); border-radius:16px; padding:22px 24px; margin-bottom:18px; }
+  .dash-hero-card .dash-card-head{ margin-bottom:18px; }
+  .dash-hero-card .dash-card-head h3{ font-size:1.05rem; }
+  .dash-pnl-stats-big{ display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-bottom:20px; }
+  .dash-pnl-stats-big .stat-box{ padding:16px 14px 16px 18px; text-align:left; border-left-width:3px; }
+  .dash-pnl-stats-big .stat-box .num{ font-size:1.55rem; }
+  .dash-pnl-stats-big .stat-box .label{ text-transform:uppercase; letter-spacing:0.03em; }
+  .dash-pnl-stats-big .stat-box.accent-good{ border-left-color:var(--good); }
+  .dash-pnl-stats-big .stat-box.accent-bad{ border-left-color:var(--danger); }
+  @media (max-width:640px){ .dash-pnl-stats-big{ grid-template-columns:1fr 1fr; } .dash-pnl-stats-big .stat-box:last-child{ grid-column:span 2; } }
+  .dash-mini-cal-title{ font-size:0.78rem; color:var(--text-dim); font-family:'JetBrains Mono',monospace; margin-bottom:10px; }
+  .dash-mini-cal-grid{ display:grid; grid-template-columns:repeat(7,1fr); gap:5px; }
+  .dash-mini-cal-grid .cell{ aspect-ratio:1; border-radius:6px; border:1px solid var(--line); background:var(--bg-soft); }
+  .dash-mini-cal-grid .cell.empty{ visibility:hidden; }
+
+  .dash-grid-secondary{ grid-template-columns:repeat(3,1fr); }
+  .dash-grid-secondary .dash-card{ padding:14px 16px; }
+  .dash-grid-secondary .dash-card-head{ margin-bottom:8px; }
+  .dash-grid-secondary .dash-card-head h3{ font-size:0.82rem; }
+  .dash-grid-secondary .dash-more{ font-size:0.76rem; }
+  @media (max-width:900px){ .dash-grid-secondary{ grid-template-columns:1fr; } }
   .empty-note{ text-align:center; padding:36px 20px; color:var(--text-dim); font-size:0.88rem; border:1px dashed var(--line); border-radius:12px; }
 
   .new-post-form{ background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:20px; margin-bottom:20px; display:flex; flex-direction:column; gap:10px; }
@@ -374,21 +398,21 @@
         </div>
       </div>
 
-      <div class="dash-grid">
+      <div class="dash-hero-card">
+        <div class="dash-card-head">
+          <h3>📊 내 PNL / 승률 (베타)</h3>
+          <button type="button" class="dash-more" data-goto="pnl-tab">전체 캘린더 보기 →</button>
+        </div>
+        <div id="dash-pnl-big"></div>
+      </div>
+
+      <div class="dash-grid dash-grid-secondary">
         <div class="dash-card">
           <div class="dash-card-head">
             <h3>📅 다가오는 경제 일정</h3>
             <button type="button" class="dash-more" data-goto="calendar-tab">더보기 →</button>
           </div>
           <div id="dash-calendar-list"></div>
-        </div>
-
-        <div class="dash-card">
-          <div class="dash-card-head">
-            <h3>📊 내 PNL 요약 (베타)</h3>
-            <button type="button" class="dash-more" data-goto="pnl-tab">더보기 →</button>
-          </div>
-          <div id="dash-pnl-summary"></div>
         </div>
 
         <div class="dash-card">
@@ -523,7 +547,7 @@
 <div class="wrap" style="padding:0 24px 24px;" id="promo-wrap">
   <a href="referral.html" class="promo-card">
     <div>
-      <span class="num mono" style="color:var(--cyan); font-size:0.72rem;">REFERRAL PROGRAM</span>
+      <span class="num mono grad-label" style="font-size:0.8rem;">REFERRAL PROGRAM</span>
       <h3>추천인 파트너가 되어 USDT를 받아보세요 →</h3>
     </div>
   </a>
@@ -973,24 +997,57 @@
   }
 
   async function loadDashPnlSummary(){
-    var el = document.getElementById('dash-pnl-summary');
+    var el = document.getElementById('dash-pnl-big');
+    el.innerHTML = '<div class="dash-mini-empty">불러오는 중...</div>';
     try{
       var res = await fetch('/api/account/pnl-stats', { credentials:'same-origin' });
       var data = await res.json();
       if(!data.ok){
         el.innerHTML = res.status === 400
-          ? '<div class="dash-mini-empty">API 연동을 하면 승률/손익 요약이 여기 보여요. <a href="#" id="dash-pnl-goto-profile" style="color:var(--cyan); font-weight:600;">연동하러 가기 →</a></div>'
-          : '<div class="dash-mini-empty">불러오기에 실패했습니다.</div>';
+          ? '<div class="dash-mini-empty" style="padding:20px 0;">API 연동을 하면 승률·PNL 캘린더가 여기 크게 보여요. <a href="#" id="dash-pnl-goto-profile" style="color:var(--text); font-weight:600; text-decoration:underline;">연동하러 가기 →</a></div>'
+          : '<div class="dash-mini-empty" style="padding:20px 0;">불러오기에 실패했습니다.</div>';
         var link = document.getElementById('dash-pnl-goto-profile');
         if(link) link.addEventListener('click', function(e){ e.preventDefault(); profileBtn.click(); });
         return;
       }
+
+      var byDate = {};
+      (data.days || []).forEach(function(d){ byDate[d.date] = d.pnl; });
+      var now = new Date();
+      var year = now.getUTCFullYear(), month = now.getUTCMonth();
+      var pad = function(n){ return String(n).padStart(2, '0'); };
+      var firstWeekday = new Date(Date.UTC(year, month, 1)).getUTCDay();
+      var daysInMonth = new Date(Date.UTC(year, month + 1, 0)).getUTCDate();
+      var maxAbs = 0;
+      for(var d1 = 1; d1 <= daysInMonth; d1++){
+        var v = byDate[year + '-' + pad(month + 1) + '-' + pad(d1)];
+        if(v !== undefined) maxAbs = Math.max(maxAbs, Math.abs(v));
+      }
+      if(maxAbs === 0) maxAbs = 1;
+
+      var calHtml = '';
+      for(var i = 0; i < firstWeekday; i++){ calHtml += '<div class="cell empty"></div>'; }
+      for(var day = 1; day <= daysInMonth; day++){
+        var key = year + '-' + pad(month + 1) + '-' + pad(day);
+        var pnl = byDate[key];
+        var style = '';
+        if(pnl){
+          var ratio = Math.min(1, Math.abs(pnl) / maxAbs);
+          var rgb = pnl > 0 ? '74,222,128' : '255,92,122';
+          style = ' style="background:rgba(' + rgb + ',' + (0.16 + 0.5 * ratio).toFixed(2) + '); border-color:rgba(' + rgb + ',' + Math.min(0.85, 0.3 + 0.5 * ratio).toFixed(2) + ');"';
+        }
+        var titleAttr = key + (pnl !== undefined ? (' : ' + (pnl >= 0 ? '+' : '') + '$' + pnl.toFixed(2)) : '');
+        calHtml += '<div class="cell" title="' + titleAttr + '"' + style + '></div>';
+      }
+
       el.innerHTML =
-        '<div class="dash-pnl-stats">' +
-        '<div class="stat-box"><div class="num">' + (data.win_rate*100).toFixed(1) + '%</div><div class="label">승률</div></div>' +
-        '<div class="stat-box"><div class="num" style="color:' + (data.pnl_30d >= 0 ? 'var(--good)' : 'var(--danger)') + ';">' + (data.pnl_30d >= 0 ? '+' : '') + '$' + data.pnl_30d.toFixed(0) + '</div><div class="label">30일 손익</div></div>' +
+        '<div class="dash-pnl-stats-big">' +
+        '<div class="stat-box ' + (data.win_rate >= 0.5 ? 'accent-good' : 'accent-bad') + '"><div class="num">' + (data.win_rate * 100).toFixed(1) + '%</div><div class="label">승률</div></div>' +
+        '<div class="stat-box ' + (data.pnl_30d >= 0 ? 'accent-good' : 'accent-bad') + '"><div class="num" style="color:' + (data.pnl_30d >= 0 ? 'var(--good)' : 'var(--danger)') + ';">' + (data.pnl_30d >= 0 ? '+' : '') + '$' + data.pnl_30d.toFixed(0) + '</div><div class="label">30일 손익</div></div>' +
         '<div class="stat-box"><div class="num">' + data.total_trades + '</div><div class="label">거래횟수</div></div>' +
-        '</div>';
+        '</div>' +
+        '<div class="dash-mini-cal-title">' + (month + 1) + '월 손익 캘린더</div>' +
+        '<div class="dash-mini-cal-grid">' + calHtml + '</div>';
     } catch(e){ el.innerHTML = '<div class="dash-mini-empty">불러오기에 실패했습니다.</div>'; }
   }
 
