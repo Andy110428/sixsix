@@ -8,7 +8,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
   :root{
     --bg:#09090b; --bg-soft:#101014; --panel:#151519; --line:rgba(255,255,255,0.08);
-    --text:#f4f3f1; --text-dim:#96938d; --cyan:#2dd4f5; --violet:#5b6270; --amber:#c7ccd1; --danger:#ff5c7a; --good:#4ade80;
+    --text:#f4f3f1; --text-dim:#96938d; --cyan:#d7d9dc; --violet:#5b6270; --amber:#c7ccd1; --danger:#ff5c7a; --good:#4ade80;
   }
   *{ box-sizing: border-box; }
   [hidden]{ display:none !important; }
@@ -33,7 +33,7 @@
     font-size:clamp(1.7rem, 6.5vw, 3.2rem);
     text-align:center; max-width:90vw;
     color: var(--cyan);
-    text-shadow: 0 0 22px rgba(45,212,245,0.4);
+    text-shadow: 0 0 22px rgba(215,217,220,0.4);
     clip-path: inset(0 100% 0 0);
     animation: introWipe 1.4s cubic-bezier(.65,0,.35,1) forwards;
   }
@@ -57,7 +57,7 @@
     font-family:'Sora',sans-serif; font-weight:700;
     font-size:clamp(1.5rem, 5.5vw, 2.6rem);
     color: var(--cyan);
-    text-shadow: 0 0 22px rgba(45,212,245,0.4);
+    text-shadow: 0 0 22px rgba(215,217,220,0.4);
     clip-path: inset(0 100% 0 0);
     animation: welcomeWipe 1.4s cubic-bezier(.65,0,.35,1) forwards;
   }
@@ -113,7 +113,7 @@
 
   .btn{ display:inline-flex; align-items:center; justify-content:center; gap:8px; padding:11px 18px; border-radius:8px; font-weight:600; font-size:0.9rem; cursor:pointer; border:1px solid var(--line); transition:transform .15s ease; }
   .btn:hover{ transform:translateY(-1px); }
-  .btn-primary{ background:linear-gradient(135deg,var(--cyan),#8ff0ff); color:#071417; border:none; box-shadow:0 0 0 1px rgba(45,212,245,0.2),0 8px 24px -8px rgba(45,212,245,0.55); }
+  .btn-primary{ background:linear-gradient(135deg,var(--cyan),#f2f1ee); color:#071417; border:none; box-shadow:0 0 0 1px rgba(215,217,220,0.2),0 8px 24px -8px rgba(215,217,220,0.55); }
   .btn-primary:disabled{ opacity:0.6; cursor:default; transform:none; }
   .btn-block{ width:100%; }
   .btn-ghost{ background:rgba(255,255,255,0.03); color:var(--text); }
@@ -127,12 +127,12 @@
   .auth-tab.active{ background:var(--panel); color:var(--cyan); box-shadow:0 0 0 1px var(--line); }
   .auth-form{ display:flex; flex-direction:column; gap:10px; }
   input, textarea, select{ padding:12px 14px; border-radius:8px; border:1px solid var(--line); background:var(--bg-soft); color:var(--text); font-family:'JetBrains Mono',monospace; font-size:0.92rem; width:100%; }
-  input:focus, textarea:focus, select:focus{ outline:none; border-color:rgba(45,212,245,0.5); }
+  input:focus, textarea:focus, select:focus{ outline:none; border-color:rgba(215,217,220,0.5); }
   textarea{ font-family:'Inter',sans-serif; resize:vertical; min-height:120px; }
   .auth-form .btn{ margin-top:6px; }
 
   .result-box{ margin-top:16px; padding:12px 14px; border-radius:8px; font-size:0.85rem; font-family:'JetBrains Mono',monospace; white-space:pre-wrap; word-break:break-word; }
-  .result-box.good{ background:rgba(45,212,245,0.1); border:1px solid rgba(45,212,245,0.35); color:var(--cyan); }
+  .result-box.good{ background:rgba(215,217,220,0.1); border:1px solid rgba(215,217,220,0.35); color:var(--cyan); }
   .result-box.warn{ background:rgba(199,204,209,0.1); border:1px solid rgba(199,204,209,0.35); color:var(--amber); }
   .result-box.pending{ background:rgba(255,255,255,0.04); border:1px solid var(--line); color:var(--text-dim); }
   .gate-help{ margin-top:18px; font-size:0.82rem; color:var(--text-dim); text-align:center; }
@@ -148,7 +148,7 @@
 
   .post-list{ display:flex; flex-direction:column; gap:10px; }
   .post-card{ background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:16px 20px; display:flex; align-items:center; justify-content:space-between; gap:16px; cursor:pointer; }
-  .post-card:hover{ border-color:rgba(45,212,245,0.3); }
+  .post-card:hover{ border-color:rgba(215,217,220,0.3); }
   .post-card .meta{ display:flex; align-items:center; gap:10px; margin-bottom:6px; font-size:0.76rem; color:var(--text-dim); font-family:'JetBrains Mono',monospace; }
   .post-card h3{ font-size:0.98rem; font-weight:600; }
   .post-card .arrow{ color:var(--text-dim); flex-shrink:0; }
@@ -161,13 +161,7 @@
   .event-figs{ font-size:0.78rem; color:var(--text-dim); margin-top:4px; }
   .calendar-note{ color:var(--text-dim); font-size:0.78rem; margin-top:4px; margin-bottom:16px; }
 
-  .liq-card{ background:var(--panel); border:1px solid var(--line); border-radius:16px; padding:32px; text-align:center; }
-  .liq-card p{ color:var(--text-dim); font-size:0.9rem; max-width:480px; margin:10px auto 20px; }
-  .liq-embed-wrap{ position:relative; width:100%; padding-top:70%; border-radius:12px; overflow:hidden; border:1px solid var(--line); background:var(--bg-soft); }
-  .liq-embed-wrap iframe{ position:absolute; inset:0; width:100%; height:100%; border:none; }
-  @media (max-width:640px){ .liq-embed-wrap{ padding-top:120%; } }
-
-  .pnl-hero{ display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:16px; background:linear-gradient(135deg, rgba(45,212,245,0.07), rgba(255,255,255,0.02)); border:1px solid var(--line); border-radius:16px; padding:22px 26px; margin-bottom:16px; }
+  .pnl-hero{ display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:16px; background:linear-gradient(135deg, rgba(215,217,220,0.07), rgba(255,255,255,0.02)); border:1px solid var(--line); border-radius:16px; padding:22px 26px; margin-bottom:16px; }
   .pnl-hero .label{ font-size:0.7rem; color:var(--text-dim); letter-spacing:0.06em; text-transform:uppercase; font-family:'JetBrains Mono',monospace; margin-bottom:8px; }
   .pnl-hero .value{ font-family:'JetBrains Mono',monospace; font-size:clamp(1.6rem,4vw,2.1rem); font-weight:700; line-height:1; }
   .pnl-hero .sub{ font-size:0.78rem; color:var(--text-dim); margin-top:8px; }
@@ -216,11 +210,9 @@
   .stat-box .num{ font-family:'Sora',sans-serif; font-size:1.1rem; font-weight:700; color:var(--cyan); }
   .stat-box .label{ font-size:0.7rem; color:var(--text-dim); margin-top:2px; }
   .promo-card{ display:flex; align-items:center; justify-content:space-between; gap:14px; flex-wrap:wrap; background:rgba(255,255,255,0.03); backdrop-filter:blur(16px); border:1px solid var(--line); border-radius:14px; padding:14px 18px; transition:border-color .2s ease, transform .2s ease; }
-  .promo-card:hover{ border-color:rgba(45,212,245,0.35); transform:translateY(-1px); }
+  .promo-card:hover{ border-color:rgba(215,217,220,0.35); transform:translateY(-1px); }
   .promo-card h3{ font-size:0.92rem; margin:2px 0 0; }
 
-  .dash-grid{ display:grid; grid-template-columns:1fr 1fr; gap:16px; }
-  .dash-card{ background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:18px 20px; }
   .dash-card-head{ display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; gap:8px; }
   .dash-card-head h3{ font-size:0.9rem; }
   .dash-more{ border:none; background-color:transparent; background-image:linear-gradient(135deg,#f4f3f1,#8b8d93); -webkit-background-clip:text; background-clip:text; color:transparent; font-size:0.84rem; cursor:pointer; font-weight:700; padding:0; white-space:nowrap; }
@@ -228,7 +220,6 @@
   .dash-mini-row:first-child{ border-top:none; }
   .dash-mini-row .t{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .dash-mini-empty{ color:var(--text-dim); font-size:0.82rem; padding:6px 0; }
-  @media (max-width:720px){ .dash-grid{ grid-template-columns:1fr; } }
 
   .dash-hero-card{ background:var(--panel); border:1px solid var(--line); border-radius:16px; padding:22px 24px; margin-bottom:18px; }
   .dash-hero-card .dash-card-head{ margin-bottom:18px; }
@@ -245,18 +236,22 @@
   .dash-mini-cal-grid .cell{ aspect-ratio:1; border-radius:6px; border:1px solid var(--line); background:var(--bg-soft); }
   .dash-mini-cal-grid .cell.empty{ visibility:hidden; }
 
-  .dash-grid-secondary{ grid-template-columns:repeat(3,1fr); }
-  .dash-grid-secondary .dash-card{ padding:14px 16px; }
-  .dash-grid-secondary .dash-card-head{ margin-bottom:8px; }
-  .dash-grid-secondary .dash-card-head h3{ font-size:0.82rem; }
-  .dash-grid-secondary .dash-more{ font-size:0.76rem; }
-  @media (max-width:900px){ .dash-grid-secondary{ grid-template-columns:1fr; } }
+  .dash-notify{ position:fixed; top:80px; right:20px; width:280px; max-height:calc(100vh - 100px); overflow-y:auto; background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:18px; z-index:45; box-shadow:0 16px 40px -12px rgba(0,0,0,0.6); animation:dashNotifyIn .35s ease; }
+  @keyframes dashNotifyIn{ from{ opacity:0; transform:translateX(14px); } to{ opacity:1; transform:translateX(0); } }
+  .dash-notify-close{ position:absolute; top:12px; right:12px; width:24px; height:24px; border-radius:50%; border:1px solid var(--line); background:rgba(255,255,255,0.04); color:var(--text-dim); cursor:pointer; font-size:0.72rem; line-height:1; }
+  .dash-notify-section{ margin-bottom:16px; padding-right:20px; }
+  .dash-notify-section:last-child{ margin-bottom:0; }
+  .dash-notify-head{ display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; gap:8px; }
+  .dash-notify-head h4{ font-size:0.8rem; font-weight:700; margin:0; }
+  .dash-notify .dash-more{ font-size:0.72rem; }
+  @media (max-width:1180px){ .dash-notify{ display:none; } }
+  @media (min-width:1181px){ #dashboard-section .wrap{ margin:0; max-width:none; padding-right:320px; } }
   .empty-note{ text-align:center; padding:36px 20px; color:var(--text-dim); font-size:0.88rem; border:1px dashed var(--line); border-radius:12px; }
 
   .new-post-form{ background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:20px; margin-bottom:20px; display:flex; flex-direction:column; gap:10px; }
 
   .uid-box{ background:var(--bg-soft); border:1px solid var(--line); border-radius:10px; padding:14px 16px; margin-bottom:14px; font-size:0.86rem; }
-  .api-note{ color:var(--text-dim); font-size:0.8rem; margin:10px 0 14px; padding:10px 12px; background:rgba(45,212,245,0.06); border:1px solid rgba(45,212,245,0.2); border-radius:8px; }
+  .api-note{ color:var(--text-dim); font-size:0.8rem; margin:10px 0 14px; padding:10px 12px; background:rgba(215,217,220,0.06); border:1px solid rgba(215,217,220,0.2); border-radius:8px; }
   .connected-box{ display:flex; align-items:center; justify-content:space-between; gap:10px; background:rgba(74,222,128,0.08); border:1px solid rgba(74,222,128,0.3); border-radius:8px; padding:10px 14px; margin-bottom:10px; font-family:'JetBrains Mono',monospace; font-size:0.84rem; }
   .toggle-row{ display:flex; align-items:center; gap:10px; cursor:pointer; font-size:0.88rem; margin-top:4px; }
   .toggle-row input{ width:auto; accent-color:var(--cyan); }
@@ -318,7 +313,6 @@
       <button type="button" class="tab-link" data-cat="question">질문<span id="qa-badge" class="qa-badge" hidden>0</span></button>
       <button type="button" class="tab-link" data-cat="profit">수익인증</button>
       <button type="button" class="tab-link" id="calendar-tab">경제 캘린더</button>
-      <button type="button" class="tab-link" id="liq-tab">청산맵</button>
       <button type="button" class="tab-link" id="pnl-tab">내 PNL</button>
       <a class="icon-btn" href="referral.html">추천인 프로그램</a>
       <a class="icon-btn" id="admin-link" href="admin.html" hidden>관리자 페이지로</a>
@@ -405,33 +399,24 @@
         </div>
         <div id="dash-pnl-big"></div>
       </div>
-
-      <div class="dash-grid dash-grid-secondary">
-        <div class="dash-card">
-          <div class="dash-card-head">
-            <h3>📅 다가오는 경제 일정</h3>
-            <button type="button" class="dash-more" data-goto="calendar-tab">더보기 →</button>
-          </div>
-          <div id="dash-calendar-list"></div>
-        </div>
-
-        <div class="dash-card">
-          <div class="dash-card-head">
-            <h3>📢 최근 공지</h3>
-            <button type="button" class="dash-more" data-goto-cat="notice">더보기 →</button>
-          </div>
-          <div id="dash-notices-list"></div>
-        </div>
-
-        <div class="dash-card">
-          <div class="dash-card-head">
-            <h3>🏆 거래량 랭킹 TOP 5</h3>
-          </div>
-          <div id="dash-rank-list"></div>
-        </div>
-      </div>
     </div>
   </section>
+
+  <div id="dash-notify" class="dash-notify" hidden>
+    <button type="button" class="dash-notify-close" id="dash-notify-close" aria-label="닫기">✕</button>
+    <div class="dash-notify-section">
+      <div class="dash-notify-head"><h4>📅 다가오는 일정</h4><button type="button" class="dash-more" data-goto="calendar-tab">더보기 →</button></div>
+      <div id="dash-calendar-list"></div>
+    </div>
+    <div class="dash-notify-section">
+      <div class="dash-notify-head"><h4>📢 최근 공지</h4><button type="button" class="dash-more" data-goto-cat="notice">더보기 →</button></div>
+      <div id="dash-notices-list"></div>
+    </div>
+    <div class="dash-notify-section">
+      <div class="dash-notify-head"><h4>🏆 거래량 랭킹 TOP 5</h4></div>
+      <div id="dash-rank-list"></div>
+    </div>
+  </div>
 
   <section id="board" hidden>
     <div class="wrap">
@@ -443,6 +428,7 @@
         </div>
       </div>
 
+      <button type="button" class="btn btn-ghost" id="new-post-toggle-btn" hidden style="width:auto; margin-bottom:16px;">✏️ 글쓰기</button>
       <form id="new-post-form" class="new-post-form" hidden>
         <input type="text" id="new-post-title" placeholder="제목">
         <textarea id="new-post-content" placeholder="내용을 입력하세요"></textarea>
@@ -467,26 +453,6 @@
       <p class="calendar-note">★ 개수가 중요도예요. 오늘 이후 예정된 일정과 최근 지난 일정을 함께 보여줘요.</p>
       <div id="events-list"></div>
       <div id="events-empty" class="empty-note" hidden>등록된 일정이 없습니다.</div>
-    </div>
-  </section>
-
-  <section id="liq-section" hidden>
-    <div class="wrap">
-      <div class="section-head">
-        <div>
-          <span class="kicker">LIQUIDATIONS</span>
-          <h2>비트코인 청산맵</h2>
-          <p class="section-note">레버리지 포지션이 몰려있는 가격대를 보여주는 외부 전문 도구예요.</p>
-        </div>
-      </div>
-      <div class="liq-card">
-        <h3>실시간 청산 히트맵 (CoinGlass)</h3>
-        <p style="margin-bottom:14px;">외부 사이트라 보안 정책에 따라 화면이 비어 보이거나 깨질 수 있어요. 그럴 땐 아래 "새 창에서 크게 열기"를 눌러주세요.</p>
-        <div class="liq-embed-wrap">
-          <iframe src="https://www.coinglass.com/pro/futures/LiquidationHeatMap?coin=BTC&type=symbol" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
-        </div>
-        <a class="btn btn-ghost" style="width:auto; display:inline-flex; margin-top:14px; padding-left:28px; padding-right:28px;" href="https://www.coinglass.com/pro/futures/LiquidationHeatMap?coin=BTC&type=symbol" target="_blank" rel="noopener">새 창에서 크게 열기 ↗</a>
-      </div>
     </div>
   </section>
 
@@ -879,9 +845,7 @@
   var boardSection = document.getElementById('board');
   var calendarSection = document.getElementById('calendar-section');
   var calendarTab = document.getElementById('calendar-tab');
-  var liqSection = document.getElementById('liq-section');
-  var liqTab = document.getElementById('liq-tab');
-  var allSections = [dashboardSection, boardSection, calendarSection, liqSection];
+  var allSections = [dashboardSection, boardSection, calendarSection];
   var allTabLinks = document.querySelectorAll('.tab-link');
   var tabLinks = document.querySelectorAll('.tab-link[data-cat]');
 
@@ -923,12 +887,6 @@
     calendarTab.classList.add('active');
     showSection(calendarSection);
     loadEvents();
-  });
-
-  liqTab.addEventListener('click', function(){
-    allTabLinks.forEach(function(t){ t.classList.remove('active'); });
-    liqTab.classList.add('active');
-    showSection(liqSection);
   });
 
   var pnlSection = document.getElementById('pnl-section');
@@ -979,7 +937,11 @@
     loadDashPnlSummary();
     loadDashNotices();
     loadRankWidget();
+    document.getElementById('dash-notify').hidden = false;
   }
+  document.getElementById('dash-notify-close').addEventListener('click', function(){
+    document.getElementById('dash-notify').hidden = true;
+  });
 
   async function loadDashCalendar(){
     var el = document.getElementById('dash-calendar-list');
@@ -1218,13 +1180,21 @@
   var newPostForm = document.getElementById('new-post-form');
   var newPostTitle = document.getElementById('new-post-title');
   var newPostContent = document.getElementById('new-post-content');
+  var newPostToggleBtn = document.getElementById('new-post-toggle-btn');
+
+  newPostToggleBtn.addEventListener('click', function(){
+    newPostForm.hidden = !newPostForm.hidden;
+    newPostToggleBtn.textContent = newPostForm.hidden ? '✏️ 글쓰기' : '✕ 취소';
+  });
 
   async function loadPosts(){
     var meta = catMeta[currentCategory];
     document.getElementById('board-kicker').textContent = meta.kicker;
     document.getElementById('board-title').textContent = meta.title;
     document.getElementById('board-note').textContent = meta.note;
-    newPostForm.hidden = !meta.canWrite;
+    newPostToggleBtn.hidden = !meta.canWrite;
+    newPostForm.hidden = true;
+    newPostToggleBtn.textContent = '✏️ 글쓰기';
 
     var listEl = document.getElementById('post-list');
     var emptyEl = document.getElementById('empty-note');
