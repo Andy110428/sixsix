@@ -50,20 +50,23 @@
   }
   @media (prefers-reduced-motion: reduce){ .intro-splash{ animation:none; opacity:0; visibility:hidden; } }
 
-  .welcome-toast{
-    position:fixed; top:82px; left:50%; z-index:150;
-    background:rgba(21,21,25,0.92); backdrop-filter:blur(12px);
-    border:1px solid rgba(212,162,78,0.35); border-radius:999px;
-    padding:12px 26px; font-family:'Sora',sans-serif; font-weight:600; font-size:0.9rem;
-    box-shadow:0 14px 34px -12px rgba(0,0,0,0.55);
-    animation: toastFade 3.4s ease forwards;
+  .welcome-splash{
+    position:fixed; inset:0; z-index:250;
+    background:linear-gradient(165deg,#000 0%, #0a0a0c 50%, #18181d 100%);
+    display:flex; align-items:center; justify-content:center;
+    animation: welcomeSplashOut .6s ease 2.4s forwards;
   }
-  @keyframes toastFade{
-    0%{ opacity:0; transform:translate(-50%,-8px); }
-    12%{ opacity:1; transform:translate(-50%,0); }
-    82%{ opacity:1; transform:translate(-50%,0); }
-    100%{ opacity:0; transform:translate(-50%,-8px); }
+  .welcome-splash-text{
+    font-family:'Sora',sans-serif; font-weight:700;
+    font-size:clamp(1.5rem, 5.5vw, 2.6rem);
+    color: var(--cyan);
+    text-shadow: 0 0 22px rgba(212,162,78,0.4);
+    clip-path: inset(0 100% 0 0);
+    animation: welcomeWipe 1.4s cubic-bezier(.65,0,.35,1) forwards;
   }
+  @keyframes welcomeWipe{ to{ clip-path: inset(0 0% 0 0); } }
+  @keyframes welcomeSplashOut{ to{ opacity:0; visibility:hidden; pointer-events:none; } }
+  @media (prefers-reduced-motion: reduce){ .welcome-splash{ animation:none; opacity:0; visibility:hidden; } }
 
   header{ position:sticky; top:0; z-index:50; backdrop-filter:blur(14px); background:rgba(10,9,8,0.75); border-bottom:1px solid var(--line); }
   .nav{ display:flex; align-items:center; justify-content:space-between; padding:16px 24px; max-width:920px; margin:0 auto; gap: 10px; position:relative; }
@@ -229,7 +232,7 @@
   <div class="intro-word">TEAM SIXX</div>
   <div class="intro-tag">코인 선물 프라이빗 스터디룸</div>
 </div>
-<div id="welcome-toast" class="welcome-toast" hidden><span id="welcome-toast-text"></span></div>
+<div id="welcome-splash" class="welcome-splash" hidden><span id="welcome-splash-text" class="welcome-splash-text"></span></div>
 
 <div class="bg-grid"></div>
 <div class="bg-glow glow-1"></div>
@@ -536,11 +539,16 @@
 (function(){
   setTimeout(function(){ var s = document.getElementById('intro-splash'); if(s) s.hidden = true; }, 3700);
 
-  function showWelcomeToast(name){
-    var toast = document.getElementById('welcome-toast');
-    document.getElementById('welcome-toast-text').textContent = '환영합니다, ' + name + '님';
-    toast.hidden = false;
-    setTimeout(function(){ toast.hidden = true; }, 3400);
+  // 왼쪽→오른쪽으로 서서히 드러나는(wipe) 환영 문구 → 잠시 유지 → 사라지면서 뒤의 화면(대시보드)이 보임
+  function showWelcomeSplash(name, onDone){
+    var splash = document.getElementById('welcome-splash');
+    var text = document.getElementById('welcome-splash-text');
+    text.textContent = '환영합니다, ' + name + '님';
+    splash.hidden = false;
+    splash.style.animation = 'none'; text.style.animation = 'none';
+    void splash.offsetWidth;
+    splash.style.animation = ''; text.style.animation = '';
+    setTimeout(function(){ splash.hidden = true; if(onDone) onDone(); }, 3050);
   }
 
   var authGate = document.getElementById('auth-gate');
@@ -661,8 +669,7 @@
         var meRes = await fetch('/api/me', { credentials:'same-origin' });
         var me = await meRes.json();
         if (me.ok && me.uid) {
-          unlock('member');
-          showWelcomeToast(me.nickname || ('UID ' + me.uid));
+          showWelcomeSplash(me.nickname || ('UID ' + me.uid), function(){ unlock('member'); });
         } else showUidGate();
         return;
       }
