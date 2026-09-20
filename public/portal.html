@@ -164,8 +164,31 @@
   .liq-embed-wrap iframe{ position:absolute; inset:0; width:100%; height:100%; border:none; }
   @media (max-width:640px){ .liq-embed-wrap{ padding-top:120%; } }
 
-  .pnl-stats-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-bottom:24px; }
-  .pnl-stats-grid .stat-box{ padding:18px 14px; }
+  .pnl-hero{ display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:16px; background:linear-gradient(135deg, rgba(45,212,245,0.07), rgba(255,255,255,0.02)); border:1px solid var(--line); border-radius:16px; padding:22px 26px; margin-bottom:16px; }
+  .pnl-hero .label{ font-size:0.7rem; color:var(--text-dim); letter-spacing:0.06em; text-transform:uppercase; font-family:'JetBrains Mono',monospace; margin-bottom:8px; }
+  .pnl-hero .value{ font-family:'JetBrains Mono',monospace; font-size:clamp(1.6rem,4vw,2.1rem); font-weight:700; line-height:1; }
+  .pnl-hero .sub{ font-size:0.78rem; color:var(--text-dim); margin-top:8px; }
+  .pnl-hero-badge{ display:inline-flex; align-items:center; gap:6px; padding:7px 14px; border-radius:999px; font-family:'JetBrains Mono',monospace; font-size:0.8rem; font-weight:700; white-space:nowrap; }
+  .pnl-hero-badge.pos{ background:rgba(74,222,128,0.12); color:var(--good); border:1px solid rgba(74,222,128,0.3); }
+  .pnl-hero-badge.neg{ background:rgba(255,92,122,0.12); color:var(--danger); border:1px solid rgba(255,92,122,0.3); }
+
+  .pnl-stats-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-bottom:20px; }
+  .pnl-stats-grid .stat-box{ padding:16px 14px 16px 18px; text-align:left; border-left-width:3px; }
+  .pnl-stats-grid .stat-box .label{ text-transform:uppercase; letter-spacing:0.03em; }
+  .pnl-stats-grid .stat-box.accent-good{ border-left-color:var(--good); }
+  .pnl-stats-grid .stat-box.accent-bad{ border-left-color:var(--danger); }
+
+  .pnl-chart-card{ background:var(--bg-soft); border:1px solid var(--line); border-radius:14px; padding:18px 18px 4px; margin-bottom:20px; }
+  .pnl-chart-title{ font-size:0.76rem; color:var(--text-dim); font-family:'JetBrains Mono',monospace; margin-bottom:14px; display:flex; justify-content:space-between; gap:10px; }
+  .pnl-chart-wrap{ position:relative; height:110px; }
+  .pnl-chart-baseline{ position:absolute; left:0; right:0; top:50%; height:1px; background:var(--line); }
+  .pnl-chart{ position:relative; height:100%; display:flex; align-items:stretch; gap:3px; }
+  .pnl-bar{ flex:1; position:relative; min-width:2px; }
+  .pnl-bar .fill{ position:absolute; left:1px; right:1px; transition:opacity .15s ease; }
+  .pnl-bar.pos .fill{ background:var(--good); bottom:50%; border-radius:2px 2px 0 0; }
+  .pnl-bar.neg .fill{ background:var(--danger); top:50%; border-radius:0 0 2px 2px; }
+  .pnl-bar:hover .fill{ opacity:0.7; }
+
   .pnl-cal-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
   .pnl-cal-head h3{ font-size:1rem; font-weight:700; }
   .pnl-cal-weekdays{ display:grid; grid-template-columns:repeat(7,1fr); gap:6px; margin-bottom:6px; text-align:center; font-size:0.76rem; color:var(--text-dim); }
@@ -176,11 +199,9 @@
   .pnl-day.empty{ visibility:hidden; }
   .pnl-day .d{ color:var(--text-dim); font-family:'JetBrains Mono',monospace; }
   .pnl-day .p{ font-family:'JetBrains Mono',monospace; font-weight:700; font-size:0.72rem; text-align:right; }
-  .pnl-day.pos{ background:rgba(74,222,128,0.1); border-color:rgba(74,222,128,0.35); }
   .pnl-day.pos .p{ color:var(--good); }
-  .pnl-day.neg{ background:rgba(255,92,122,0.1); border-color:rgba(255,92,122,0.3); }
   .pnl-day.neg .p{ color:var(--danger); }
-  @media (max-width:640px){ .pnl-stats-grid{ grid-template-columns:1fr; } .pnl-day{ font-size:0.62rem; padding:4px; } }
+  @media (max-width:640px){ .pnl-stats-grid{ grid-template-columns:1fr; } .pnl-day{ font-size:0.62rem; padding:4px; } .pnl-hero{ padding:18px; } .pnl-hero .value{ font-size:1.5rem; } }
 
   .rank-widget{ background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:18px 20px; max-width:340px; margin:0 auto 40px; }
   .rank-widget h3{ font-size:0.86rem; color:var(--text-dim); font-weight:600; margin-bottom:10px; display:flex; align-items:center; gap:6px; }
@@ -460,11 +481,30 @@
       <div id="pnl-error" class="result-box warn" hidden></div>
 
       <div id="pnl-content" hidden>
-        <button type="button" class="btn btn-ghost" id="pnl-refresh-btn" style="width:auto; margin-bottom:16px;">🔄 불러오기</button>
+        <div class="pnl-hero" id="pnl-hero">
+          <div>
+            <div class="label">최근 70일 누적 실현손익</div>
+            <div class="value" id="pnl-total">-</div>
+            <div class="sub">연동된 Gate.io 계정의 선물 실현손익 합계예요</div>
+          </div>
+          <div style="display:flex; align-items:center; gap:12px;">
+            <span class="pnl-hero-badge" id="pnl-hero-badge">-</span>
+            <button type="button" class="btn btn-ghost" id="pnl-refresh-btn" style="width:auto;">🔄 불러오기</button>
+          </div>
+        </div>
+
         <div class="pnl-stats-grid">
           <div class="stat-box"><div class="num" id="pnl-winrate">-</div><div class="label">평균 승률</div></div>
           <div class="stat-box"><div class="num" id="pnl-30d">-</div><div class="label">최근 30일 손익</div></div>
           <div class="stat-box"><div class="num" id="pnl-total-trades">-</div><div class="label">총 거래 횟수</div></div>
+        </div>
+
+        <div class="pnl-chart-card">
+          <div class="pnl-chart-title"><span>일별 손익</span><span id="pnl-chart-range">-</span></div>
+          <div class="pnl-chart-wrap">
+            <div class="pnl-chart-baseline"></div>
+            <div class="pnl-chart" id="pnl-chart"></div>
+          </div>
         </div>
 
         <div class="pnl-cal-head">
@@ -1011,15 +1051,25 @@
       var resultEl = document.getElementById('pnl-result');
       resultEl.hidden = true;
       document.getElementById('pnl-winrate').textContent = (data.win_rate * 100).toFixed(1) + '%';
-      document.getElementById('pnl-30d').textContent = (data.pnl_30d >= 0 ? '+' : '') + '$' + data.pnl_30d.toFixed(2);
-      document.getElementById('pnl-30d').style.color = data.pnl_30d >= 0 ? 'var(--good)' : 'var(--danger)';
+      document.getElementById('pnl-winrate').closest('.stat-box').className = 'stat-box ' + (data.win_rate >= 0.5 ? 'accent-good' : 'accent-bad');
+      var pnl30El = document.getElementById('pnl-30d');
+      pnl30El.textContent = (data.pnl_30d >= 0 ? '+' : '') + '$' + data.pnl_30d.toFixed(2);
+      pnl30El.style.color = data.pnl_30d >= 0 ? 'var(--good)' : 'var(--danger)';
+      pnl30El.closest('.stat-box').className = 'stat-box ' + (data.pnl_30d >= 0 ? 'accent-good' : 'accent-bad');
       document.getElementById('pnl-total-trades').textContent = data.total_trades;
       if(data.total_trades === 0){
         showResult(resultEl, '최근 70일 안에 정산(실현손익)된 선물 거래 내역이 없어요. 청산된 포지션이 있어야 캘린더에 표시돼요.', 'pending');
       }
 
       pnlDaysByDate = {};
-      (data.days || []).forEach(function(d){ pnlDaysByDate[d.date] = d.pnl; });
+      var totalPnl = 0;
+      (data.days || []).forEach(function(d){ pnlDaysByDate[d.date] = d.pnl; totalPnl += d.pnl; });
+      var totalEl = document.getElementById('pnl-total');
+      totalEl.textContent = (totalPnl >= 0 ? '+' : '') + '$' + totalPnl.toFixed(2);
+      totalEl.style.color = totalPnl >= 0 ? 'var(--good)' : 'var(--danger)';
+      var heroBadge = document.getElementById('pnl-hero-badge');
+      heroBadge.textContent = totalPnl >= 0 ? '▲ 수익 우위' : '▼ 손실 우위';
+      heroBadge.className = 'pnl-hero-badge ' + (totalPnl >= 0 ? 'pos' : 'neg');
       pnlMonthOffset = 0;
       renderPnlCalendar();
     } catch(e){
@@ -1037,26 +1087,57 @@
     var monthStart = new Date(Date.UTC(year, month, 1));
     year = monthStart.getUTCFullYear(); month = monthStart.getUTCMonth();
     document.getElementById('pnl-cal-title').textContent = year + '년 ' + (month + 1) + '월';
+    document.getElementById('pnl-chart-range').textContent = (month + 1) + '월';
 
     var firstWeekday = monthStart.getUTCDay();
     var daysInMonth = new Date(Date.UTC(year, month + 1, 0)).getUTCDate();
     var grid = document.getElementById('pnl-cal-grid');
+    var chart = document.getElementById('pnl-chart');
     grid.innerHTML = '';
+    chart.innerHTML = '';
+
+    var pad = function(n){ return String(n).padStart(2, '0'); };
+    var maxAbs = 0;
+    for(var d1 = 1; d1 <= daysInMonth; d1++){
+      var v = pnlDaysByDate[year + '-' + pad(month + 1) + '-' + pad(d1)];
+      if(v !== undefined) maxAbs = Math.max(maxAbs, Math.abs(v));
+    }
+    if(maxAbs === 0) maxAbs = 1;
 
     for(var i = 0; i < firstWeekday; i++){
       var empty = document.createElement('div');
       empty.className = 'pnl-day empty';
       grid.appendChild(empty);
+      var emptyBar = document.createElement('div');
+      emptyBar.className = 'pnl-bar';
+      chart.appendChild(emptyBar);
     }
     for(var day = 1; day <= daysInMonth; day++){
-      var pad = function(n){ return String(n).padStart(2, '0'); };
       var dateKey = year + '-' + pad(month + 1) + '-' + pad(day);
       var pnl = pnlDaysByDate[dateKey];
+      var ratio = pnl !== undefined ? Math.min(1, Math.abs(pnl) / maxAbs) : 0;
+
       var cell = document.createElement('div');
       cell.className = 'pnl-day' + (pnl > 0 ? ' pos' : pnl < 0 ? ' neg' : '');
       cell.style.animationDelay = (day * 12) + 'ms';
+      if(pnl){
+        var rgb = pnl > 0 ? '74,222,128' : '255,92,122';
+        cell.style.background = 'rgba(' + rgb + ',' + (0.14 + 0.5 * ratio).toFixed(2) + ')';
+        cell.style.borderColor = 'rgba(' + rgb + ',' + Math.min(0.85, 0.3 + 0.5 * ratio).toFixed(2) + ')';
+      }
       cell.innerHTML = '<span class="d">' + day + '</span>' + (pnl !== undefined ? '<span class="p">' + (pnl >= 0 ? '+' : '') + pnl.toFixed(0) + '</span>' : '');
       grid.appendChild(cell);
+
+      var bar = document.createElement('div');
+      bar.className = 'pnl-bar' + (pnl > 0 ? ' pos' : pnl < 0 ? ' neg' : '');
+      if(pnl){
+        var fill = document.createElement('div');
+        fill.className = 'fill';
+        fill.style.height = (ratio * 50).toFixed(1) + '%';
+        bar.title = dateKey + ' : ' + (pnl >= 0 ? '+' : '') + '$' + pnl.toFixed(2);
+        bar.appendChild(fill);
+      }
+      chart.appendChild(bar);
     }
 
     document.getElementById('pnl-prev-month').disabled = pnlMonthOffset <= -1;
