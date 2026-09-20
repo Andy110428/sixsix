@@ -83,6 +83,18 @@
   .tabs-menu-btn{ display:none; width:42px; height:42px; flex-shrink:0; border-radius:8px; border:1px solid var(--line); background:rgba(255,255,255,0.03); flex-direction:column; align-items:center; justify-content:center; gap:5px; cursor:pointer; }
   .tabs-menu-btn span{ display:block; width:18px; height:2px; background:var(--text); border-radius:2px; }
 
+  @media (min-width:861px){
+    #tabs{
+      position:fixed; left:0; top:65px; bottom:0; z-index:40;
+      width:208px; overflow-y:auto;
+      display:flex !important; flex-direction:column; align-items:stretch; gap:2px;
+      padding:22px 14px; border-right:1px solid var(--line);
+      background:rgba(9,9,11,0.5); backdrop-filter:blur(10px);
+    }
+    #tabs .tab-link, #tabs .icon-btn{ width:100%; text-align:left; justify-content:flex-start; }
+    #gated-content, #promo-wrap{ margin-left:208px; }
+  }
+
   @media (max-width:860px){
     .tabs-menu-btn{ display:flex; }
     .tabs{
@@ -182,6 +194,18 @@
   .promo-card{ display:flex; align-items:center; justify-content:space-between; gap:14px; flex-wrap:wrap; background:rgba(255,255,255,0.03); backdrop-filter:blur(16px); border:1px solid var(--line); border-radius:14px; padding:14px 18px; transition:border-color .2s ease, transform .2s ease; }
   .promo-card:hover{ border-color:rgba(45,212,245,0.35); transform:translateY(-1px); }
   .promo-card h3{ font-size:0.92rem; margin:2px 0 0; }
+
+  .dash-grid{ display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+  .dash-card{ background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:18px 20px; }
+  .dash-card-head{ display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; gap:8px; }
+  .dash-card-head h3{ font-size:0.9rem; }
+  .dash-more{ background:none; border:none; color:var(--cyan); font-size:0.76rem; cursor:pointer; font-weight:600; padding:0; white-space:nowrap; }
+  .dash-mini-row{ display:flex; justify-content:space-between; align-items:center; gap:10px; font-size:0.82rem; padding:7px 0; border-top:1px solid var(--line-soft); }
+  .dash-mini-row:first-child{ border-top:none; }
+  .dash-mini-row .t{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .dash-mini-empty{ color:var(--text-dim); font-size:0.82rem; padding:6px 0; }
+  .dash-pnl-stats{ display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
+  @media (max-width:720px){ .dash-grid{ grid-template-columns:1fr; } }
   .empty-note{ text-align:center; padding:36px 20px; color:var(--text-dim); font-size:0.88rem; border:1px dashed var(--line); border-radius:12px; }
 
   .new-post-form{ background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:20px; margin-bottom:20px; display:flex; flex-direction:column; gap:10px; }
@@ -242,7 +266,8 @@
       <span></span><span></span><span></span>
     </button>
     <div class="tabs" id="tabs" hidden>
-      <button type="button" class="tab-link active" data-cat="notice">공지사항</button>
+      <button type="button" class="tab-link active" id="dashboard-tab">대시보드</button>
+      <button type="button" class="tab-link" data-cat="notice">공지사항</button>
       <button type="button" class="tab-link" data-cat="briefing">코인 브리핑</button>
       <button type="button" class="tab-link" data-cat="lecture">강의</button>
       <button type="button" class="tab-link" data-cat="question">질문<span id="qa-badge" class="qa-badge" hidden>0</span></button>
@@ -319,7 +344,51 @@
 
 <!-- 로그인 후 콘텐츠 -->
 <div id="gated-content" hidden>
-  <section id="board">
+  <section id="dashboard-section">
+    <div class="wrap">
+      <div class="section-head">
+        <div>
+          <span class="kicker">DASHBOARD</span>
+          <h2>대시보드</h2>
+        </div>
+      </div>
+
+      <div class="dash-grid">
+        <div class="dash-card">
+          <div class="dash-card-head">
+            <h3>📅 다가오는 경제 일정</h3>
+            <button type="button" class="dash-more" data-goto="calendar-tab">더보기 →</button>
+          </div>
+          <div id="dash-calendar-list"></div>
+        </div>
+
+        <div class="dash-card">
+          <div class="dash-card-head">
+            <h3>📊 내 PNL 요약 (베타)</h3>
+            <button type="button" class="dash-more" data-goto="pnl-tab">더보기 →</button>
+          </div>
+          <div id="dash-pnl-summary"></div>
+        </div>
+
+        <div class="dash-card">
+          <div class="dash-card-head">
+            <h3>📢 최근 공지</h3>
+            <button type="button" class="dash-more" data-goto-cat="notice">더보기 →</button>
+          </div>
+          <div id="dash-notices-list"></div>
+        </div>
+
+        <div class="dash-card">
+          <div class="dash-card-head">
+            <h3>🏆 거래량 랭킹 TOP 5</h3>
+          </div>
+          <div id="dash-rank-list"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="board" hidden>
     <div class="wrap">
       <div class="section-head">
         <div>
@@ -411,14 +480,7 @@
   </section>
 </div>
 
-<div class="wrap" style="padding:0 24px 24px;" id="rank-widget-wrap" hidden>
-  <div class="rank-widget">
-    <h3>🏆 거래량 랭킹 TOP 5</h3>
-    <div id="rank-widget-list"></div>
-  </div>
-</div>
-
-<div class="wrap" style="padding:0 24px 24px;">
+<div class="wrap" style="padding:0 24px 24px;" id="promo-wrap">
   <a href="referral.html" class="promo-card">
     <div>
       <span class="num mono" style="color:var(--cyan); font-size:0.72rem;">REFERRAL PROGRAM</span>
@@ -573,7 +635,6 @@
   var content = document.getElementById('gated-content');
   var tabs = document.getElementById('tabs');
   var tabsMenuBtn = document.getElementById('tabs-menu-btn');
-  var rankWidgetWrap = document.getElementById('rank-widget-wrap');
   var authResult = document.getElementById('auth-result');
 
   var authTabs = document.querySelectorAll('.auth-tab');
@@ -600,11 +661,13 @@
 
   function unlock(mode){
     viewMode = mode || 'member';
-    authGate.hidden = true; uidGate.hidden = true; content.hidden = false; tabs.hidden = false; rankWidgetWrap.hidden = false;
+    authGate.hidden = true; uidGate.hidden = true; content.hidden = false; tabs.hidden = false;
     profileBtn.hidden = viewMode === 'admin';
     adminLink.hidden = viewMode !== 'admin';
-    loadPosts();
-    loadRankWidget();
+    showSection(dashboardSection);
+    allTabLinks.forEach(function(t){ t.classList.remove('active'); });
+    dashboardTab.classList.add('active');
+    loadDashboardData();
     if (viewMode === 'member') refreshQaBadge();
   }
 
@@ -633,9 +696,9 @@
       .catch(function(){});
   }
   function showUidGate(){
-    authGate.hidden = true; uidGate.hidden = false; content.hidden = true; tabs.hidden = true; rankWidgetWrap.hidden = true;
+    authGate.hidden = true; uidGate.hidden = false; content.hidden = true; tabs.hidden = true;
   }
-  function lock(){ authGate.hidden = false; uidGate.hidden = true; content.hidden = true; tabs.hidden = true; rankWidgetWrap.hidden = true; }
+  function lock(){ authGate.hidden = false; uidGate.hidden = true; content.hidden = true; tabs.hidden = true; }
 
   // ── 로그인/회원가입 탭 ──
   authTabs.forEach(function(tab){
@@ -747,12 +810,14 @@
   });
 
   // ── 게시판 탭 ──
+  var dashboardSection = document.getElementById('dashboard-section');
+  var dashboardTab = document.getElementById('dashboard-tab');
   var boardSection = document.getElementById('board');
   var calendarSection = document.getElementById('calendar-section');
   var calendarTab = document.getElementById('calendar-tab');
   var liqSection = document.getElementById('liq-section');
   var liqTab = document.getElementById('liq-tab');
-  var allSections = [boardSection, calendarSection, liqSection];
+  var allSections = [dashboardSection, boardSection, calendarSection, liqSection];
   var allTabLinks = document.querySelectorAll('.tab-link');
   var tabLinks = document.querySelectorAll('.tab-link[data-cat]');
 
@@ -760,6 +825,23 @@
     allSections.forEach(function(s){ s.hidden = (s !== section); });
     tabs.classList.remove('open');
   }
+
+  dashboardTab.addEventListener('click', function(){
+    allTabLinks.forEach(function(t){ t.classList.remove('active'); });
+    dashboardTab.classList.add('active');
+    showSection(dashboardSection);
+    loadDashboardData();
+  });
+
+  document.querySelectorAll('.dash-more[data-goto]').forEach(function(btn){
+    btn.addEventListener('click', function(){ document.getElementById(btn.dataset.goto).click(); });
+  });
+  document.querySelectorAll('.dash-more[data-goto-cat]').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var target = Array.prototype.filter.call(tabLinks, function(t){ return t.dataset.cat === btn.dataset.gotoCat; })[0];
+      if(target) target.click();
+    });
+  });
 
   tabLinks.forEach(function(tab){
     tab.addEventListener('click', function(){
@@ -825,6 +907,65 @@
     var d = new Date(ts);
     var pad = function(n){ return String(n).padStart(2, '0'); };
     return (d.getMonth()+1) + '/' + d.getDate() + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes());
+  }
+
+  // ── 대시보드 (기본 화면) ──
+  function loadDashboardData(){
+    loadDashCalendar();
+    loadDashPnlSummary();
+    loadDashNotices();
+    loadRankWidget();
+  }
+
+  async function loadDashCalendar(){
+    var el = document.getElementById('dash-calendar-list');
+    el.innerHTML = '';
+    try{
+      var res = await fetch('/api/economic-events', { credentials:'same-origin' });
+      var data = await res.json();
+      var now = Date.now();
+      var list = ((data.ok && data.events) ? data.events : []).filter(function(ev){ return ev.event_time >= now; }).slice(0, 5);
+      if(list.length === 0){ el.innerHTML = '<div class="dash-mini-empty">예정된 일정이 없습니다.</div>'; return; }
+      el.innerHTML = list.map(function(ev){
+        return '<div class="dash-mini-row"><span class="t">' + '★'.repeat(ev.importance) + ' ' + escapeHtml(ev.title) + '</span><span class="mono" style="color:var(--text-dim); flex-shrink:0;">' + fmtEventTime(ev.event_time) + '</span></div>';
+      }).join('');
+    } catch(e){ el.innerHTML = '<div class="dash-mini-empty">불러오기에 실패했습니다.</div>'; }
+  }
+
+  async function loadDashPnlSummary(){
+    var el = document.getElementById('dash-pnl-summary');
+    try{
+      var res = await fetch('/api/account/pnl-stats', { credentials:'same-origin' });
+      var data = await res.json();
+      if(!data.ok){
+        el.innerHTML = res.status === 400
+          ? '<div class="dash-mini-empty">API 연동을 하면 승률/손익 요약이 여기 보여요. <a href="#" id="dash-pnl-goto-profile" style="color:var(--cyan); font-weight:600;">연동하러 가기 →</a></div>'
+          : '<div class="dash-mini-empty">불러오기에 실패했습니다.</div>';
+        var link = document.getElementById('dash-pnl-goto-profile');
+        if(link) link.addEventListener('click', function(e){ e.preventDefault(); profileBtn.click(); });
+        return;
+      }
+      el.innerHTML =
+        '<div class="dash-pnl-stats">' +
+        '<div class="stat-box"><div class="num">' + (data.win_rate*100).toFixed(1) + '%</div><div class="label">승률</div></div>' +
+        '<div class="stat-box"><div class="num" style="color:' + (data.pnl_30d >= 0 ? 'var(--good)' : 'var(--danger)') + ';">' + (data.pnl_30d >= 0 ? '+' : '') + '$' + data.pnl_30d.toFixed(0) + '</div><div class="label">30일 손익</div></div>' +
+        '<div class="stat-box"><div class="num">' + data.total_trades + '</div><div class="label">거래횟수</div></div>' +
+        '</div>';
+    } catch(e){ el.innerHTML = '<div class="dash-mini-empty">불러오기에 실패했습니다.</div>'; }
+  }
+
+  async function loadDashNotices(){
+    var el = document.getElementById('dash-notices-list');
+    el.innerHTML = '';
+    try{
+      var res = await fetch('/api/posts?category=notice', { credentials:'same-origin' });
+      var data = await res.json();
+      var list = (data.ok && data.posts) ? data.posts.slice(0, 3) : [];
+      if(list.length === 0){ el.innerHTML = '<div class="dash-mini-empty">등록된 공지가 없습니다.</div>'; return; }
+      el.innerHTML = list.map(function(p){
+        return '<div class="dash-mini-row"><span class="t">' + escapeHtml(p.title) + '</span></div>';
+      }).join('');
+    } catch(e){ el.innerHTML = '<div class="dash-mini-empty">불러오기에 실패했습니다.</div>'; }
   }
 
   // ── 내 PNL 캘린더 (베타, API 연동 필요) ──
@@ -924,7 +1065,7 @@
 
   // ── 랭킹 사이드 위젯 ──
   async function loadRankWidget(){
-    var el = document.getElementById('rank-widget-list');
+    var el = document.getElementById('dash-rank-list');
     try{
       var res = await fetch('/api/rankings', { credentials:'same-origin' });
       var data = await res.json();
