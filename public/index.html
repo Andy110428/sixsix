@@ -42,16 +42,30 @@
 
   .intro-splash{
     position:fixed; inset:0; z-index:300;
-    background:linear-gradient(160deg,#000 0%, #0b0b0d 55%, #16161a 100%);
-    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:12px;
-    animation: introOut .5s ease 1.35s forwards;
+    background:linear-gradient(165deg,#000 0%, #0a0a0c 50%, #18181d 100%);
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:16px;
+    animation: introOut 1s ease 2.6s forwards;
   }
-  .intro-logo{ display:flex; align-items:center; gap:10px; opacity:0; animation: introTextIn .9s ease forwards; }
-  .intro-logo .dot{ width:11px; height:11px; border-radius:50%; background:var(--cyan); box-shadow:0 0 12px var(--cyan),0 0 28px var(--cyan); }
-  .intro-word{ font-family:'Sora',sans-serif; font-size:1.7rem; font-weight:800; letter-spacing:0.01em; }
-  .intro-tag{ font-family:'JetBrains Mono',monospace; font-size:0.8rem; color:var(--text-dim); opacity:0; animation: introTextIn .9s ease .15s forwards; }
+  .intro-word{
+    font-family:'Sora',sans-serif; font-weight:800; letter-spacing:0.01em;
+    font-size:clamp(2.4rem, 9vw, 4.6rem);
+    background:linear-gradient(135deg,#fff 10%, var(--cyan) 100%);
+    -webkit-background-clip:text; background-clip:text; color:transparent;
+    opacity:0;
+    animation: introWordInOut 3.6s cubic-bezier(.16,.84,.44,1) forwards;
+  }
+  .intro-tag{
+    font-family:'JetBrains Mono',monospace; font-size:0.85rem; letter-spacing:0.04em; color:var(--text-dim);
+    opacity:0;
+    animation: introWordInOut 3.6s cubic-bezier(.16,.84,.44,1) .15s forwards;
+  }
   @keyframes introOut{ from{ opacity:1; visibility:visible; } to{ opacity:0; visibility:hidden; pointer-events:none; } }
-  @keyframes introTextIn{ 0%{ opacity:0; transform:translateY(8px); } 45%{ opacity:1; transform:translateY(0); } 100%{ opacity:1; } }
+  @keyframes introWordInOut{
+    0%{ opacity:0; transform:translateY(14px) scale(.96); }
+    32%{ opacity:1; transform:translateY(0) scale(1); }
+    78%{ opacity:1; transform:translateY(0) scale(1); }
+    100%{ opacity:0; transform:translateY(-6px) scale(1.01); }
+  }
   @media (prefers-reduced-motion: reduce){ .intro-splash{ animation:none; opacity:0; visibility:hidden; } }
   img{ max-width:100%; display:block; }
 
@@ -394,7 +408,7 @@
 <body>
 
 <div id="intro-splash" class="intro-splash">
-  <div class="intro-logo"><span class="dot"></span><span class="intro-word">TEAM SIXX</span></div>
+  <div class="intro-word">TEAM SIXX</div>
   <div class="intro-tag">코인 선물 프라이빗 스터디룸</div>
 </div>
 
@@ -537,7 +551,7 @@
 
 <script>
   (function(){
-    setTimeout(function(){ var s = document.getElementById('intro-splash'); if(s) s.hidden = true; }, 1900);
+    setTimeout(function(){ var s = document.getElementById('intro-splash'); if(s) s.hidden = true; }, 3700);
   })();
   (function(){
     var btn = document.getElementById('menu-btn');
