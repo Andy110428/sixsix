@@ -437,15 +437,10 @@
   .float-tg:hover{ transform: scale(1.08); }
 
   @media (max-width: 860px){
-    .story-grid, .req-grid, .contact-grid, .proof-grid, .review-grid, .full-req{ grid-template-columns: 1fr; }
+    .story-grid, .req-grid, .contact-grid, .proof-grid, .review-grid{ grid-template-columns: 1fr; }
     .cta-panel{ grid-template-columns: 1fr; padding: 32px 20px; }
     .nav-cta .btn span.txt{ display:none; }
     section{ padding: 64px 0; }
-  }
-
-  @media (max-width: 520px){
-    .full-req-card{ padding: 24px 20px; }
-    .full-req-card .value{ font-size: 1.9rem; }
   }
 
   /* header menu (hamburger + dropdown) */
@@ -519,6 +514,9 @@
     display:grid; grid-template-columns: 1fr 1fr; gap: 24px;
     margin-bottom: 20px;
   }
+  @media (max-width: 860px){
+    .full-req{ grid-template-columns: 1fr; }
+  }
   .full-req-card{
     background: var(--panel);
     border: 1px solid var(--line);
@@ -549,6 +547,10 @@
     color: var(--text-dim); font-size: 0.92rem; margin-bottom: 8px;
   }
   .full-req-card ul li::before{ content:'—'; color: var(--violet); flex-shrink:0; }
+  @media (max-width: 520px){
+    .full-req-card{ padding: 24px 20px; }
+    .full-req-card .value{ font-size: 1.9rem; }
+  }
 
   .note-panel{
     border: 1px solid rgba(232,192,125,0.35);
