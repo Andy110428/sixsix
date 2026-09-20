@@ -292,12 +292,19 @@
     <details class="help-guide">
       <summary>내 UID 어디서 확인하나요?</summary>
       <div class="guide-body">
+        <p style="margin:0 0 10px;"><b>웹사이트에서 확인하기</b></p>
         <ol>
-          <li>Gate.io 앱 또는 웹사이트에 로그인</li>
-          <li>우측 상단 프로필(계정) 아이콘 클릭 → "계정 관리" 또는 "개인센터" 이동</li>
-          <li>계정 정보 화면 상단에 숫자로 된 UID가 표시돼요 (예: 12345678)</li>
-          <li>그 숫자를 그대로 복사해서 아래 입력란에 붙여넣으면 돼요</li>
+          <li>Gate.io 웹사이트(gate.com)에 로그인</li>
+          <li>화면 우측 상단의 아바타(프로필 사진) 아이콘 클릭</li>
+          <li>드롭다운 메뉴에서 "계정(Account)" 또는 "개인정보 개요" 클릭</li>
+          <li>개인정보 화면 맨 첫 줄에 "UID"라는 이름으로 숫자가 표시돼요 (예: 12345678) — 옆의 복사 아이콘을 누르면 바로 복사돼요</li>
         </ol>
+        <p style="margin:14px 0 10px;"><b>앱(모바일)에서 확인하기</b></p>
+        <ol>
+          <li>Gate.io 앱 좌측 상단의 "계정 센터" 아이콘 클릭</li>
+          <li>프로필 화면 상단에 UID가 표시돼요</li>
+        </ol>
+        <p style="margin-top:14px;"><a href="https://www.gate.com/help/guide/functional_guidelines/43847/how-to-find-my-gate.io-user-id" target="_blank" rel="noopener" style="color:var(--cyan); font-weight:600;">📄 Gate.io 공식 가이드 바로가기 (스크린샷 포함) ↗</a></p>
       </div>
     </details>
     <form id="uid-gate-form" class="auth-form">
@@ -467,12 +474,19 @@
       <details class="help-guide" id="uid-help-guide" hidden>
         <summary>내 UID 어디서 확인하나요?</summary>
         <div class="guide-body">
+          <p style="margin:0 0 10px;"><b>웹사이트에서 확인하기</b></p>
           <ol>
-            <li>Gate.io 앱 또는 웹사이트에 로그인</li>
-            <li>우측 상단 프로필(계정) 아이콘 클릭 → "계정 관리" 또는 "개인센터" 이동</li>
-            <li>계정 정보 화면 상단에 숫자로 된 UID가 표시돼요 (예: 12345678)</li>
-            <li>그 숫자를 그대로 복사해서 아래 입력란에 붙여넣으면 돼요</li>
+            <li>Gate.io 웹사이트(gate.com)에 로그인</li>
+            <li>화면 우측 상단의 아바타(프로필 사진) 아이콘 클릭</li>
+            <li>드롭다운 메뉴에서 "계정(Account)" 또는 "개인정보 개요" 클릭</li>
+            <li>개인정보 화면 맨 첫 줄에 "UID"라는 이름으로 숫자가 표시돼요 (예: 12345678) — 옆의 복사 아이콘을 누르면 바로 복사돼요</li>
           </ol>
+          <p style="margin:14px 0 10px;"><b>앱(모바일)에서 확인하기</b></p>
+          <ol>
+            <li>Gate.io 앱 좌측 상단의 "계정 센터" 아이콘 클릭</li>
+            <li>프로필 화면 상단에 UID가 표시돼요</li>
+          </ol>
+          <p style="margin-top:14px;"><a href="https://www.gate.com/help/guide/functional_guidelines/43847/how-to-find-my-gate.io-user-id" target="_blank" rel="noopener" style="color:var(--cyan); font-weight:600;">📄 Gate.io 공식 가이드 바로가기 (스크린샷 포함) ↗</a></p>
         </div>
       </details>
       <form id="uid-form" class="auth-form" hidden>
@@ -487,14 +501,18 @@
         <summary>API 키는 어떻게 발급하나요?</summary>
         <div class="guide-body">
           <ol>
-            <li>Gate.io 웹사이트에 로그인 → 우측 상단 프로필 아이콘 → "API 관리(API Management)" 이동</li>
-            <li>"API 키 생성" 버튼 클릭</li>
-            <li>권한(Permissions) 목록에 지갑(Wallet)·현물거래(Spot Trade)·마진·선물거래(Futures) 등 여러 항목이 나와요. 이 중 <b>딱 2개만 "읽기 전용(Read Only)"으로 켜주세요</b>: ① <b>지갑(Wallet)</b> — 계정 소유 확인용, ② <b>선물거래(Futures Trade)</b> — 아래 "내 거래량 동기화" 버튼이 선물 체결 내역을 읽어서 거래량을 계산하는 데 필요해요</li>
-            <li>나머지 현물거래(Spot)/마진/옵션 등은 전부 꺼진 상태(비활성) 그대로 두세요 — 거래량 확인에 필요 없어요</li>
-            <li>어떤 항목이든 "읽기+쓰기(Read & Write)"나 "출금(Withdraw)" 권한은 절대 켜지 마세요 — 켜져 있다면 반드시 꺼주세요</li>
-            <li>IP 화이트리스트는 비워둬도 괜찮아요</li>
-            <li>생성 완료 후 나오는 API Key와 Secret Key를 복사해서 아래에 붙여넣으세요 (Secret은 그때 한 번만 보여지니 꼭 복사해두세요)</li>
+            <li>Gate.io 웹사이트(gate.com)에 로그인 → 우측 상단 아바타(프로필) 아이콘 클릭 → "API 관리(API Management)" 이동</li>
+            <li>"API 키 생성(Create API Key)" 버튼 클릭</li>
+            <li>키 종류(Key Type)는 반드시 <b>APIv4</b>로 선택하세요 — APIv2는 현물거래만 지원해서 저희 기능(선물 거래량/손익 조회)과 안 맞아요</li>
+            <li>키 이름(Name)은 아무거나 적어도 돼요 (예: teamsixx)</li>
+            <li>권한(Permissions) 목록에 지갑(Wallet)·현물거래(Spot Trade)·마진·선물거래(Futures) 등 여러 항목이 나와요. 이 중 <b>딱 2개만 "읽기 전용(Read Only)"으로 켜주세요</b>: ① <b>지갑(Wallet)</b> — 계정 소유 확인용, ② <b>선물거래(Futures Trade)</b> — "내 거래량 동기화"/"내 PNL" 기능이 선물 체결·손익 내역을 읽는 데 필요해요</li>
+            <li>나머지 현물거래(Spot)/마진/옵션 등은 전부 꺼진 상태(비활성) 그대로 두세요 — 필요 없어요</li>
+            <li>어떤 항목이든 <b>"읽기+쓰기(Read & Write)"나 "출금(Withdraw)" 권한은 절대 켜지 마세요</b> — 켜져 있다면 반드시 꺼주세요</li>
+            <li>IP 화이트리스트는 비워둬도 되는데, <b>비워두면 Gate.io 정책상 키가 생성 후 90일 뒤 자동 만료</b>돼요. 90일 넘게 계속 쓰실 거면 만료 후 새로 키를 만들어서 재연동해주시면 돼요</li>
+            <li>2단계 인증(2FA)과 자금 비밀번호(Fund Password)를 입력해서 생성 완료</li>
+            <li>생성 완료 후 나오는 API Key와 Secret Key를 복사해서 아래에 붙여넣으세요 (<b>Secret은 그때 한 번만 보여지니 꼭 복사해두세요</b> — 나중에 다시 볼 수 없어요)</li>
           </ol>
+          <p style="margin-top:14px;"><a href="https://www.gate.com/help/guide/faq/17521/how-to-utilize-api" target="_blank" rel="noopener" style="color:var(--cyan); font-weight:600;">📄 Gate.io 공식 API 가이드 바로가기 ↗</a></p>
         </div>
       </details>
       <div id="api-connected-box" class="connected-box" hidden>
