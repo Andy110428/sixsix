@@ -327,6 +327,16 @@ public/admin.html       관리자 전용 (게시판 글쓰기/수정/삭제, 회
 - 스플래시 wipe 리빌 타이밍(1.4초 리빌 + 유지 + 0.6초 페이드아웃, 총 3초)이 실제로 봤을 때 너무 길거나 짧다는 피드백이 오면 조정
 - 참고 스크린샷의 대시보드(Account Balance/PNL/Win Rate/Total Trades/Psychology Score/캘린더 위젯 레이아웃)는 이번 요청 범위 밖 — PNL 캘린더(8~9단계)와 유사한 컨셉이라 나중에 이 레이아웃도 참고해서 다듬어달라는 요청이 올 수 있음
 
+## 12단계: 최초 진입 인트로 스플래시도 wipe 리빌로 통일 (2026-09-20)
+
+11단계에서 로그인 후 환영 화면에만 적용했던 wipe 리빌을, 사용자가 "사이트를 처음 시작했을 때도 그렇게 바꿔달라"고 요청 — index.html/portal.html의 `#intro-splash`(로그인 여부와 무관하게 페이지 로드마다 뜨는 스플래시)도 똑같은 패턴으로 교체함.
+
+- 텍스트를 "TEAM SIXX"에서 **"Welcome to TEAM SIXX"**로 변경(사용자가 영문으로 지정).
+- 애니메이션을 기존 fade+scale(`introWordInOut`)에서 `#welcome-splash`와 동일한 `clip-path` 왼쪽→오른쪽 wipe 리빌(`introWipe`, 1.4초)로 교체. 작은 태그라인("코인 선물 프라이빗 스터디룸")은 메인 문구 wipe가 끝난 직후(1.1초 지점) 페이드인.
+- 전체 재생시간을 기존 3.6초에서 **3.05초로 단축**해서 로그인 환영 화면(11단계, 총 3초)과 타이밍을 맞춤 — 사이트 전체에서 "wipe 리빌 + 약 3초"가 하나의 일관된 패턴이 되도록 통일. JS의 `hidden=true` 처리 타임아웃도 3700ms → 3050ms로 같이 조정.
+- 문구 길이가 늘어나서("TEAM SIXX" → "Welcome to TEAM SIXX") 모바일에서 안 잘리도록 `font-size` clamp를 낮추고(`clamp(1.7rem, 6.5vw, 3.2rem)`) `text-align:center; max-width:90vw`를 추가해 좁은 화면에서 줄바꿈되더라도 중앙 정렬 유지.
+- index.html/portal.html 양쪽 다 동일하게 적용 — 사용자가 "로그인 화면 말고도" 라고 콕 집어서 index.html(최초 진입)과 portal.html(로그인 전 진입 시의 인트로 스플래시, 로그인 후 환영 화면과는 별개)에 모두 반영.
+
 ## 환경변수 목록 (Cloudflare 대시보드 Settings > Variables and Secrets)
 
 ```
