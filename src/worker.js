@@ -1199,7 +1199,7 @@ async function handleReferralRecentWithdrawals(request, env) {
      ORDER BY COALESCE(referral_withdrawals.paid_at, referral_withdrawals.created_at) DESC LIMIT 20`
   ).all();
   const feed = (rows.results || []).map((r) => ({
-    label: maskNickname(r.nickname || maskEmail(r.email || '익명')),
+    label: r.nickname ? maskNickname(r.nickname) : maskEmail(r.email || '익명'),
     amount_label: maskAmount(r.amount_krw),
     at: r.paid_at || r.created_at,
   }));
