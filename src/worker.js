@@ -22,6 +22,7 @@
 //   GET  /api/account/gate-account-raw   연동된 키로 계좌 정보 원본 조회 (베타, 진단용)
 //   POST /api/account/ranking-opt-in     랭킹 시스템 참여/탈퇴 (참여하려면 API 연동 필요)
 //   POST /api/account/sync-volume        연동된 키로 선물 거래내역을 조회해 거래량을 직접 계산/갱신 (베타, 선물거래 읽기 권한 필요)
+//   GET  /api/account/pnl-stats          연동된 키로 최근 62일 실현손익 캘린더 + 승률/최근30일수익/총거래횟수 (베타)
 //
 // 게시판 API (Gate UID가 등록된 회원 또는 관리자만 글쓰기/댓글, 목록/상세는 공개):
 //   GET  /api/posts?category=notice|briefing|lecture|question|profit
@@ -88,6 +89,7 @@ export default {
       if (path === '/api/account/gate-account-raw' && method === 'GET') return await handleGateAccountRaw(request, env);
       if (path === '/api/account/ranking-opt-in' && method === 'POST') return await handleRankingOptIn(request, env);
       if (path === '/api/account/sync-volume' && method === 'POST') return await handleSyncVolume(request, env);
+      if (path === '/api/account/pnl-stats' && method === 'GET') return await handleAccountPnlStats(request, env);
 
       if (path === '/api/posts' && method === 'GET') return await handleListPosts(request, env);
       if (path === '/api/posts/detail' && method === 'GET') return await handlePostDetail(request, env);
@@ -732,6 +734,7 @@ async function gateApiGet(apiKey, apiSecret, path, queryString) {
 // 연동된 키로 USDT 무기한 선물 체결 내역을 조회해 명목 거래량(USD)을 계산.
 // 계약별 quanto_multiplier(공개 정보)를 곱해서 실제 달러 규모로 환산함.
 // ⚠️ 베타 — 실제 API 키로 검증되지 않음. 거래소 정책상 조회 가능한 과거 내역 범위 안에서만 집계됨(전체 누적이 아닐 수 있음).
+// ⚠️ my_trades는 Gate.io 문서상 최근 6개월치만 조회 가능 (그 이전 내역은 API로 못 가져옴)
 async function computeFuturesVolumeUsd(apiKey, apiSecret) {
   const settle = 'usdt';
   const limit = 1000;
@@ -740,11 +743,9 @@ async function computeFuturesVolumeUsd(apiKey, apiSecret) {
   const multiplierCache = {};
   let totalUsd = 0;
   let tradesSeen = 0;
-  let lastId = '';
 
   for (let page = 0; page < maxPages; page++) {
-    let query = `settle=${settle}&limit=${limit}`;
-    if (lastId) query += `&last_id=${encodeURIComponent(lastId)}`;
+    const query = `settle=${settle}&limit=${limit}&offset=${page * limit}`;
     const trades = await gateApiGet(apiKey, apiSecret, `/futures/${settle}/my_trades`, query);
     if (!Array.isArray(trades) || trades.length === 0) break;
 
@@ -768,13 +769,60 @@ async function computeFuturesVolumeUsd(apiKey, apiSecret) {
     }
 
     tradesSeen += trades.length;
-    const newLastId = trades[trades.length - 1].id;
-    if (!newLastId || newLastId === lastId) break;
-    lastId = newLastId;
     if (trades.length < limit) break;
   }
 
   return { totalUsd, tradesSeen };
+}
+
+// PNL 캘린더용 — 최근 62일치 실현손익(account_book, type=pnl)을 날짜별로 집계.
+// ⚠️ 베타 — FuturesAccountBook.time 단위가 공식 문서에 명시 안 돼있어서 초 단위로 가정함(Gate.io의 다른 time 필드들과 일관되게).
+async function computeFuturesPnlCalendar(apiKey, apiSecret) {
+  const settle = 'usdt';
+  const limit = 1000;
+  const maxPages = 5;
+  const windowDays = 70; // 이번 달 + 지난 달 전체를 여유있게 덮도록
+  const nowSec = Math.floor(Date.now() / 1000);
+  const fromSec = nowSec - windowDays * 24 * 60 * 60;
+
+  const byDate = {};
+  let winCount = 0;
+  let totalCount = 0;
+  let pnl30d = 0;
+  const thirtyDaysAgoSec = nowSec - 30 * 24 * 60 * 60;
+
+  for (let page = 0; page < maxPages; page++) {
+    const query = `settle=${settle}&type=pnl&from=${fromSec}&to=${nowSec}&limit=${limit}&offset=${page * limit}`;
+    const entries = await gateApiGet(apiKey, apiSecret, `/futures/${settle}/account_book`, query);
+    if (!Array.isArray(entries) || entries.length === 0) break;
+
+    for (const e of entries) {
+      const change = Number(e.change || 0);
+      const timeSec = Number(e.time || 0);
+      const dateKey = new Date(timeSec * 1000).toISOString().slice(0, 10);
+      byDate[dateKey] = (byDate[dateKey] || 0) + change;
+      totalCount++;
+      if (change > 0) winCount++;
+      if (timeSec >= thirtyDaysAgoSec) pnl30d += change;
+    }
+
+    if (entries.length < limit) break;
+  }
+
+  const days = [];
+  for (let i = 0; i < windowDays; i++) {
+    const d = new Date((nowSec - i * 24 * 60 * 60) * 1000);
+    const dateKey = d.toISOString().slice(0, 10);
+    days.push({ date: dateKey, pnl: byDate[dateKey] || 0 });
+  }
+  days.reverse();
+
+  return {
+    days,
+    win_rate: totalCount > 0 ? winCount / totalCount : 0,
+    pnl_30d: pnl30d,
+    total_trades: totalCount,
+  };
 }
 
 async function handleSyncVolume(request, env) {
@@ -795,6 +843,26 @@ async function handleSyncVolume(request, env) {
     const msg = err.status === 403 || err.status === 401
       ? 'API 키 권한이 부족합니다. Gate.io에서 "선물거래(Futures Trade)" 읽기 전용 권한이 켜져 있는지 확인해주세요.'
       : (err.message || 'Gate.io 거래내역 조회 중 오류가 발생했습니다.');
+    return json({ ok: false, error: msg, detail: err.detail }, err.status || 500);
+  }
+}
+
+async function handleAccountPnlStats(request, env) {
+  const email = await getMemberEmail(request, env);
+  if (!email) return json({ ok: false, error: '로그인이 필요합니다.' }, 401);
+
+  const member = await env.DB.prepare('SELECT gate_api_key, gate_api_secret FROM members WHERE email = ?').bind(email).first();
+  if (!member || !member.gate_api_key) {
+    return json({ ok: false, error: 'Gate.io API가 연동되어 있지 않습니다. 먼저 "내 정보"에서 API 키를 연동해주세요.' }, 400);
+  }
+
+  try {
+    const stats = await computeFuturesPnlCalendar(member.gate_api_key, member.gate_api_secret);
+    return json({ ok: true, ...stats });
+  } catch (err) {
+    const msg = err.status === 403 || err.status === 401
+      ? 'API 키 권한이 부족합니다. Gate.io에서 "선물거래(Futures Trade)" 읽기 전용 권한이 켜져 있는지 확인해주세요.'
+      : (err.message || 'Gate.io 손익 내역 조회 중 오류가 발생했습니다.');
     return json({ ok: false, error: msg, detail: err.detail }, err.status || 500);
   }
 }

@@ -13,7 +13,7 @@
   *{ box-sizing: border-box; }
   [hidden]{ display:none !important; }
   html{ scroll-behavior: smooth; }
-  body{ margin:0; background:var(--bg); color:var(--text); font-family:'Inter',sans-serif; line-height:1.6; -webkit-font-smoothing:antialiased; }
+  body{ margin:0; background:radial-gradient(ellipse 120% 55% at 50% -8%, #1b1b20 0%, #101013 42%, var(--bg) 100%); background-attachment:fixed; color:var(--text); font-family:'Inter',sans-serif; line-height:1.6; -webkit-font-smoothing:antialiased; }
   h1,h2,h3{ font-family:'Sora',sans-serif; margin:0; letter-spacing:-0.01em; }
   .mono{ font-family:'JetBrains Mono',monospace; }
   a{ color:inherit; text-decoration:none; }
@@ -21,6 +21,35 @@
   .bg-glow{ position:fixed; z-index:-1; filter:blur(120px); opacity:0.3; border-radius:50%; pointer-events:none; }
   .glow-1{ width:560px; height:560px; top:-180px; left:-120px; background:var(--cyan); }
   .wrap{ max-width:920px; margin:0 auto; padding:0 24px; }
+
+  .intro-splash{
+    position:fixed; inset:0; z-index:300;
+    background:linear-gradient(160deg,#000 0%, #0b0b0d 55%, #16161a 100%);
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:12px;
+    animation: introOut .5s ease 1.35s forwards;
+  }
+  .intro-logo{ display:flex; align-items:center; gap:10px; opacity:0; animation: introTextIn .9s ease forwards; }
+  .intro-logo .dot{ width:11px; height:11px; border-radius:50%; background:var(--cyan); box-shadow:0 0 12px var(--cyan),0 0 28px var(--cyan); }
+  .intro-word{ font-family:'Sora',sans-serif; font-size:1.7rem; font-weight:800; letter-spacing:0.01em; }
+  .intro-tag{ font-family:'JetBrains Mono',monospace; font-size:0.8rem; color:var(--text-dim); opacity:0; animation: introTextIn .9s ease .15s forwards; }
+  @keyframes introOut{ from{ opacity:1; visibility:visible; } to{ opacity:0; visibility:hidden; pointer-events:none; } }
+  @keyframes introTextIn{ 0%{ opacity:0; transform:translateY(8px); } 45%{ opacity:1; transform:translateY(0); } 100%{ opacity:1; } }
+  @media (prefers-reduced-motion: reduce){ .intro-splash{ animation:none; opacity:0; visibility:hidden; } }
+
+  .welcome-toast{
+    position:fixed; top:82px; left:50%; z-index:150;
+    background:rgba(21,21,25,0.92); backdrop-filter:blur(12px);
+    border:1px solid rgba(212,162,78,0.35); border-radius:999px;
+    padding:12px 26px; font-family:'Sora',sans-serif; font-weight:600; font-size:0.9rem;
+    box-shadow:0 14px 34px -12px rgba(0,0,0,0.55);
+    animation: toastFade 3.4s ease forwards;
+  }
+  @keyframes toastFade{
+    0%{ opacity:0; transform:translate(-50%,-8px); }
+    12%{ opacity:1; transform:translate(-50%,0); }
+    82%{ opacity:1; transform:translate(-50%,0); }
+    100%{ opacity:0; transform:translate(-50%,-8px); }
+  }
 
   header{ position:sticky; top:0; z-index:50; backdrop-filter:blur(14px); background:rgba(10,9,8,0.75); border-bottom:1px solid var(--line); }
   .nav{ display:flex; align-items:center; justify-content:space-between; padding:16px 24px; max-width:920px; margin:0 auto; gap: 10px; position:relative; }
@@ -109,6 +138,22 @@
   .liq-embed-wrap iframe{ position:absolute; inset:0; width:100%; height:100%; border:none; }
   @media (max-width:640px){ .liq-embed-wrap{ padding-top:120%; } }
 
+  .pnl-stats-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-bottom:24px; }
+  .pnl-stats-grid .stat-box{ padding:18px 14px; }
+  .pnl-cal-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
+  .pnl-cal-head h3{ font-size:1rem; font-weight:700; }
+  .pnl-cal-weekdays{ display:grid; grid-template-columns:repeat(7,1fr); gap:6px; margin-bottom:6px; text-align:center; font-size:0.76rem; color:var(--text-dim); }
+  .pnl-cal-grid{ display:grid; grid-template-columns:repeat(7,1fr); gap:6px; }
+  .pnl-day{ aspect-ratio:1; border-radius:8px; border:1px solid var(--line); background:var(--bg-soft); padding:6px; display:flex; flex-direction:column; justify-content:space-between; font-size:0.7rem; }
+  .pnl-day.empty{ visibility:hidden; }
+  .pnl-day .d{ color:var(--text-dim); font-family:'JetBrains Mono',monospace; }
+  .pnl-day .p{ font-family:'JetBrains Mono',monospace; font-weight:700; font-size:0.72rem; text-align:right; }
+  .pnl-day.pos{ background:rgba(74,222,128,0.1); border-color:rgba(74,222,128,0.35); }
+  .pnl-day.pos .p{ color:var(--good); }
+  .pnl-day.neg{ background:rgba(255,92,122,0.1); border-color:rgba(255,92,122,0.3); }
+  .pnl-day.neg .p{ color:var(--danger); }
+  @media (max-width:640px){ .pnl-stats-grid{ grid-template-columns:1fr; } .pnl-day{ font-size:0.62rem; padding:4px; } }
+
   .rank-widget{ background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:18px 20px; max-width:340px; margin:0 auto 40px; }
   .rank-widget h3{ font-size:0.86rem; color:var(--text-dim); font-weight:600; margin-bottom:10px; display:flex; align-items:center; gap:6px; }
   .rank-row{ display:flex; justify-content:space-between; align-items:center; padding:6px 0; font-size:0.82rem; border-top:1px solid rgba(255,255,255,0.05); }
@@ -141,9 +186,10 @@
   .help-guide .guide-body li:last-child{ margin-bottom:0; }
 
   /* 게시글 상세 모달 */
-  .modal-backdrop{ display:none; position:fixed; inset:0; z-index:100; background:rgba(3,4,8,0.75); backdrop-filter:blur(4px); align-items:center; justify-content:center; padding:20px; }
-  .modal-backdrop.open{ display:flex; }
-  .modal{ position:relative; width:100%; max-width:560px; max-height:82vh; overflow-y:auto; background:var(--panel); border:1px solid var(--line); border-radius:16px; padding:32px; }
+  .modal-backdrop{ position:fixed; inset:0; z-index:100; background:rgba(3,4,8,0.75); backdrop-filter:blur(4px); display:flex; align-items:center; justify-content:center; padding:20px; opacity:0; visibility:hidden; pointer-events:none; transition:opacity .22s ease, visibility .22s; }
+  .modal-backdrop.open{ opacity:1; visibility:visible; pointer-events:auto; }
+  .modal{ position:relative; width:100%; max-width:560px; max-height:82vh; overflow-y:auto; background:var(--panel); border:1px solid var(--line); border-radius:16px; padding:32px; transform:translateY(10px) scale(.98); transition:transform .28s cubic-bezier(.16,1,.3,1); }
+  .modal-backdrop.open .modal{ transform:translateY(0) scale(1); }
   .modal-close{ position:absolute; top:16px; right:16px; width:28px; height:28px; border-radius:50%; border:1px solid var(--line); background:rgba(255,255,255,0.04); color:var(--text-dim); cursor:pointer; }
   .modal h2{ font-size:1.15rem; margin-bottom:8px; padding-right:24px; }
   .modal .post-meta{ font-size:0.78rem; color:var(--text-dim); font-family:'JetBrains Mono',monospace; margin-bottom:16px; }
@@ -163,6 +209,12 @@
 </head>
 <body>
 
+<div id="intro-splash" class="intro-splash">
+  <div class="intro-logo"><span class="dot"></span><span class="intro-word">TEAM SIXX</span></div>
+  <div class="intro-tag">코인 선물 프라이빗 스터디룸</div>
+</div>
+<div id="welcome-toast" class="welcome-toast" hidden><span id="welcome-toast-text"></span></div>
+
 <div class="bg-grid"></div>
 <div class="bg-glow glow-1"></div>
 
@@ -180,6 +232,7 @@
       <button type="button" class="tab-link" data-cat="profit">수익인증</button>
       <button type="button" class="tab-link" id="calendar-tab">경제 캘린더</button>
       <button type="button" class="tab-link" id="liq-tab">청산맵</button>
+      <button type="button" class="tab-link" id="pnl-tab">내 PNL</button>
       <a class="icon-btn" href="referral.html">추천인 프로그램</a>
       <a class="icon-btn" id="admin-link" href="admin.html" hidden>관리자 페이지로</a>
       <button type="button" class="icon-btn" id="profile-btn">내 정보</button>
@@ -295,6 +348,38 @@
           <iframe src="https://www.coinglass.com/pro/futures/LiquidationHeatMap?coin=BTC&type=symbol" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
         </div>
         <a class="btn btn-ghost" style="width:auto; display:inline-flex; margin-top:14px; padding-left:28px; padding-right:28px;" href="https://www.coinglass.com/pro/futures/LiquidationHeatMap?coin=BTC&type=symbol" target="_blank" rel="noopener">새 창에서 크게 열기 ↗</a>
+      </div>
+    </div>
+  </section>
+
+  <section id="pnl-section" hidden>
+    <div class="wrap">
+      <div class="section-head">
+        <div>
+          <span class="kicker">MY PNL</span>
+          <h2>내 손익 캘린더</h2>
+          <p class="section-note">연동된 Gate.io API로 최근 선물 실현손익을 계산해요. 날짜는 UTC 기준이라 한국 시간과 최대 9시간 차이날 수 있어요. (베타)</p>
+        </div>
+      </div>
+
+      <div id="pnl-connect-note" class="empty-note" hidden>API 연동을 해야 손익 캘린더를 볼 수 있어요. <a href="#" id="pnl-goto-profile" style="color:var(--cyan); font-weight:600;">내 정보에서 연동하기 →</a></div>
+
+      <div id="pnl-content" hidden>
+        <button type="button" class="btn btn-ghost" id="pnl-refresh-btn" style="width:auto; margin-bottom:16px;">🔄 불러오기</button>
+        <div class="pnl-stats-grid">
+          <div class="stat-box"><div class="num" id="pnl-winrate">-</div><div class="label">평균 승률</div></div>
+          <div class="stat-box"><div class="num" id="pnl-30d">-</div><div class="label">최근 30일 손익</div></div>
+          <div class="stat-box"><div class="num" id="pnl-total-trades">-</div><div class="label">총 거래 횟수</div></div>
+        </div>
+
+        <div class="pnl-cal-head">
+          <button type="button" class="btn btn-ghost" id="pnl-prev-month" style="width:auto;">← 이전 달</button>
+          <h3 id="pnl-cal-title">-</h3>
+          <button type="button" class="btn btn-ghost" id="pnl-next-month" style="width:auto;">다음 달 →</button>
+        </div>
+        <div class="pnl-cal-weekdays"><span>일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span></div>
+        <div class="pnl-cal-grid" id="pnl-cal-grid"></div>
+        <div id="pnl-result" class="result-box" hidden></div>
       </div>
     </div>
   </section>
@@ -433,6 +518,15 @@
 
 <script>
 (function(){
+  setTimeout(function(){ var s = document.getElementById('intro-splash'); if(s) s.hidden = true; }, 1900);
+
+  function showWelcomeToast(name){
+    var toast = document.getElementById('welcome-toast');
+    document.getElementById('welcome-toast-text').textContent = '환영합니다, ' + name + '님';
+    toast.hidden = false;
+    setTimeout(function(){ toast.hidden = true; }, 3400);
+  }
+
   var authGate = document.getElementById('auth-gate');
   var uidGate = document.getElementById('uid-gate');
   var content = document.getElementById('gated-content');
@@ -550,7 +644,10 @@
         currentEmail = data.email; currentNickname = data.nickname;
         var meRes = await fetch('/api/me', { credentials:'same-origin' });
         var me = await meRes.json();
-        if (me.ok && me.uid) unlock('member'); else showUidGate();
+        if (me.ok && me.uid) {
+          unlock('member');
+          showWelcomeToast(me.nickname || ('UID ' + me.uid));
+        } else showUidGate();
         return;
       }
 
@@ -648,6 +745,16 @@
     showSection(liqSection);
   });
 
+  var pnlSection = document.getElementById('pnl-section');
+  var pnlTab = document.getElementById('pnl-tab');
+  allSections.push(pnlSection);
+  pnlTab.addEventListener('click', function(){
+    allTabLinks.forEach(function(t){ t.classList.remove('active'); });
+    pnlTab.classList.add('active');
+    showSection(pnlSection);
+    loadPnlStats();
+  });
+
   async function loadEvents(){
     var el = document.getElementById('events-list');
     var emptyEl = document.getElementById('events-empty');
@@ -678,6 +785,81 @@
     var d = new Date(ts);
     var pad = function(n){ return String(n).padStart(2, '0'); };
     return (d.getMonth()+1) + '/' + d.getDate() + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes());
+  }
+
+  // ── 내 PNL 캘린더 (베타, API 연동 필요) ──
+  var pnlDaysByDate = null;
+  var pnlMonthOffset = 0; // 0 = 이번 달, -1 = 지난 달
+  document.getElementById('pnl-goto-profile').addEventListener('click', function(e){
+    e.preventDefault();
+    document.getElementById('pnl-connect-note').hidden = true;
+    profileBtn.click();
+  });
+  document.getElementById('pnl-refresh-btn').addEventListener('click', loadPnlStats);
+  document.getElementById('pnl-prev-month').addEventListener('click', function(){ pnlMonthOffset--; renderPnlCalendar(); });
+  document.getElementById('pnl-next-month').addEventListener('click', function(){ pnlMonthOffset++; renderPnlCalendar(); });
+
+  async function loadPnlStats(){
+    var connectNote = document.getElementById('pnl-connect-note');
+    var content = document.getElementById('pnl-content');
+    var resultEl = document.getElementById('pnl-result');
+    var refreshBtn = document.getElementById('pnl-refresh-btn');
+    resultEl.hidden = true;
+    refreshBtn.disabled = true;
+    try{
+      var res = await fetch('/api/account/pnl-stats', { credentials:'same-origin' });
+      var data = await res.json();
+      if(!data.ok){
+        if(res.status === 400){ connectNote.hidden = false; content.hidden = true; }
+        else { content.hidden = false; showResult(resultEl, data.error || '불러오기에 실패했습니다.', 'warn'); }
+        return;
+      }
+      connectNote.hidden = true;
+      content.hidden = false;
+      document.getElementById('pnl-winrate').textContent = (data.win_rate * 100).toFixed(1) + '%';
+      document.getElementById('pnl-30d').textContent = (data.pnl_30d >= 0 ? '+' : '') + '$' + data.pnl_30d.toFixed(2);
+      document.getElementById('pnl-30d').style.color = data.pnl_30d >= 0 ? 'var(--good)' : 'var(--danger)';
+      document.getElementById('pnl-total-trades').textContent = data.total_trades;
+
+      pnlDaysByDate = {};
+      (data.days || []).forEach(function(d){ pnlDaysByDate[d.date] = d.pnl; });
+      pnlMonthOffset = 0;
+      renderPnlCalendar();
+    } catch(e){ content.hidden = false; showResult(resultEl, '오류가 발생했습니다.', 'warn'); }
+    finally{ refreshBtn.disabled = false; }
+  }
+
+  // 서버가 UTC 날짜(YYYY-MM-DD)로 집계해서 내려주기 때문에, 캘린더도 UTC 기준으로 맞춰서 그려야 날짜가 안 어긋남
+  function renderPnlCalendar(){
+    if(!pnlDaysByDate) return;
+    var now = new Date();
+    var year = now.getUTCFullYear(), month = now.getUTCMonth() + pnlMonthOffset;
+    var monthStart = new Date(Date.UTC(year, month, 1));
+    year = monthStart.getUTCFullYear(); month = monthStart.getUTCMonth();
+    document.getElementById('pnl-cal-title').textContent = year + '년 ' + (month + 1) + '월';
+
+    var firstWeekday = monthStart.getUTCDay();
+    var daysInMonth = new Date(Date.UTC(year, month + 1, 0)).getUTCDate();
+    var grid = document.getElementById('pnl-cal-grid');
+    grid.innerHTML = '';
+
+    for(var i = 0; i < firstWeekday; i++){
+      var empty = document.createElement('div');
+      empty.className = 'pnl-day empty';
+      grid.appendChild(empty);
+    }
+    for(var day = 1; day <= daysInMonth; day++){
+      var pad = function(n){ return String(n).padStart(2, '0'); };
+      var dateKey = year + '-' + pad(month + 1) + '-' + pad(day);
+      var pnl = pnlDaysByDate[dateKey];
+      var cell = document.createElement('div');
+      cell.className = 'pnl-day' + (pnl > 0 ? ' pos' : pnl < 0 ? ' neg' : '');
+      cell.innerHTML = '<span class="d">' + day + '</span>' + (pnl !== undefined ? '<span class="p">' + (pnl >= 0 ? '+' : '') + pnl.toFixed(0) + '</span>' : '');
+      grid.appendChild(cell);
+    }
+
+    document.getElementById('pnl-prev-month').disabled = pnlMonthOffset <= -1;
+    document.getElementById('pnl-next-month').disabled = pnlMonthOffset >= 0;
   }
 
   // ── 랭킹 사이드 위젯 ──
