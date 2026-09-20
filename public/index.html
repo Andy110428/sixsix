@@ -14,9 +14,9 @@
     --line: rgba(255,255,255,0.08);
     --text: #f4f3f1;
     --text-dim: #96938d;
-    --cyan: #d4a24e;
-    --violet: #8a6633;
-    --amber: #e8c07d;
+    --cyan: #2dd4f5;
+    --violet: #5b6270;
+    --amber: #c7ccd1;
     --danger: #ff5c7a;
   }
 
@@ -44,14 +44,14 @@
     position:fixed; inset:0; z-index:300;
     background:linear-gradient(165deg,#000 0%, #0a0a0c 50%, #18181d 100%);
     display:flex; flex-direction:column; align-items:center; justify-content:center; gap:16px;
-    animation: introOut .6s ease 2.4s forwards;
+    animation: introOut .6s ease 3.8s forwards;
   }
   .intro-word{
     font-family:'Sora',sans-serif; font-weight:800; letter-spacing:0.01em;
     font-size:clamp(1.7rem, 6.5vw, 3.2rem);
     text-align:center; max-width:90vw;
     color: var(--cyan);
-    text-shadow: 0 0 22px rgba(212,162,78,0.4);
+    text-shadow: 0 0 22px rgba(45,212,245,0.4);
     clip-path: inset(0 100% 0 0);
     animation: introWipe 1.4s cubic-bezier(.65,0,.35,1) forwards;
   }
@@ -122,12 +122,12 @@
   }
   .btn:hover{ transform: translateY(-1px); }
   .btn-primary{
-    background: linear-gradient(135deg, var(--cyan), #f0c988);
-    color: #170d03;
+    background: linear-gradient(135deg, var(--cyan), #8ff0ff);
+    color: #071417;
     border: none;
-    box-shadow: 0 4px 14px -6px rgba(212,162,78,0.35);
+    box-shadow: 0 4px 14px -6px rgba(45,212,245,0.35);
   }
-  .btn-primary:hover{ box-shadow: 0 6px 18px -6px rgba(212,162,78,0.45); }
+  .btn-primary:hover{ box-shadow: 0 6px 18px -6px rgba(45,212,245,0.45); }
   .btn-ghost{
     background: rgba(255,255,255,0.03);
     color: var(--text);
@@ -136,7 +136,7 @@
   .btn-violet{
     background: rgba(255,255,255,0.03);
     color: var(--cyan);
-    border: 1px solid rgba(212,162,78,0.3);
+    border: 1px solid rgba(45,212,245,0.3);
   }
   .btn-block{ width:100%; padding: 14px 18px; font-size: 1rem; }
 
@@ -236,7 +236,7 @@
     content:'';
     position:absolute; top:-40%; right:-30%;
     width: 220px; height: 220px;
-    background: radial-gradient(circle, rgba(212,162,78,0.08), transparent 70%);
+    background: radial-gradient(circle, rgba(45,212,245,0.08), transparent 70%);
   }
   .req-card .num{
     font-family: 'JetBrains Mono', monospace;
@@ -300,8 +300,8 @@
     margin-bottom: 18px;
     font-size: 1.3rem;
   }
-  .contact-card.channel .icon{ background: rgba(212,162,78,0.12); color: var(--cyan); }
-  .contact-card.support .icon{ background: rgba(138,102,51,0.14); color: var(--violet); }
+  .contact-card.channel .icon{ background: rgba(45,212,245,0.12); color: var(--cyan); }
+  .contact-card.support .icon{ background: rgba(91,98,112,0.14); color: var(--violet); }
   .contact-card h3{ font-size: 1.15rem; margin-bottom: 10px; }
   .contact-card p{ color: var(--text-dim); font-size: 0.95rem; margin-bottom: 20px; }
 
@@ -324,11 +324,11 @@
     z-index: 60;
     width: 58px; height: 58px;
     border-radius: 50%;
-    background: linear-gradient(135deg, var(--cyan), #f0c988);
+    background: linear-gradient(135deg, var(--cyan), #8ff0ff);
     display:flex; align-items:center; justify-content:center;
-    box-shadow: 0 6px 20px -6px rgba(212,162,78,0.45);
+    box-shadow: 0 6px 20px -6px rgba(45,212,245,0.45);
     font-size: 1.5rem;
-    color: #170d03;
+    color: #071417;
     transition: transform .15s ease;
   }
   .float-tg:hover{ transform: scale(1.08); }
@@ -391,10 +391,15 @@
   .menu-dropdown .menu-member{
     color: var(--text);
     font-weight: 600;
-    background: rgba(212,162,78,0.08);
+    background: rgba(45,212,245,0.08);
   }
 
-  .rank-widget{ background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:18px 20px; max-width:340px; margin:32px auto 0; }
+  .referral-banner{ display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; background:rgba(255,255,255,0.03); border:1px solid var(--line); border-radius:14px; padding:18px 22px; transition:border-color .2s ease, transform .2s ease; }
+  .referral-banner:hover{ border-color:rgba(45,212,245,0.3); transform:translateY(-1px); }
+  .referral-banner .kicker{ font-family:'JetBrains Mono',monospace; font-size:0.7rem; color:var(--violet); letter-spacing:0.06em; }
+  .referral-banner h3{ font-size:1.05rem; margin:4px 0 2px; }
+  .referral-banner p{ color:var(--text-dim); font-size:0.84rem; margin:0; }
+  .rank-widget{ background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:18px 20px; max-width:340px; margin:24px auto 0; }
   .rank-widget h3{ font-size:0.86rem; color:var(--text-dim); font-weight:600; margin:0 0 10px; }
   .rank-row{ display:flex; justify-content:space-between; align-items:center; padding:6px 0; font-size:0.82rem; border-top:1px solid rgba(255,255,255,0.05); }
   .rank-row:first-of-type{ border-top:none; }
@@ -497,16 +502,16 @@
   </div>
 </section>
 
-<section id="referral-teaser">
+<section id="referral-teaser" style="padding:48px 0;">
   <div class="wrap">
-    <div class="section-head reveal">
-      <span class="kicker">REFERRAL PARTNER</span>
-      <h2>추천인 파트너로 USDT 받기</h2>
-      <p>파트너 신청 후 승인되면 추천인 코드를 발급받아, 코드로 가입한 사람의 거래량이 $100,000를 넘으면 건당 2만원(USDT-TRC20)을 받을 수 있어요.</p>
-    </div>
-    <div class="hero-actions">
-      <a class="btn btn-primary" href="referral.html">추천인 프로그램 알아보기 ↗</a>
-    </div>
+    <a href="referral.html" class="referral-banner reveal">
+      <div>
+        <span class="kicker">REFERRAL PARTNER</span>
+        <h3>추천인 파트너로 USDT 받기</h3>
+        <p>승인 후 코드 발급 → 가입자 거래량 $100k 달성 시 건당 2만원(USDT-TRC20)</p>
+      </div>
+      <span class="btn btn-ghost" style="width:auto; flex-shrink:0;">알아보기 ↗</span>
+    </a>
 
     <div class="rank-widget reveal" id="rank-widget">
       <h3>🏆 거래량 랭킹 TOP 5</h3>
@@ -548,7 +553,7 @@
 
 <script>
   (function(){
-    setTimeout(function(){ var s = document.getElementById('intro-splash'); if(s) s.hidden = true; }, 3050);
+    setTimeout(function(){ var s = document.getElementById('intro-splash'); if(s) s.hidden = true; }, 4450);
   })();
   (function(){
     var btn = document.getElementById('menu-btn');
