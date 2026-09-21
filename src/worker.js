@@ -719,9 +719,18 @@ async function gateApiGet(apiKey, apiSecret, path, queryString) {
   const url = `${host}${prefix}${path}${query ? '?' + query : ''}`;
   const res = await fetch(url, {
     method,
-    headers: { Accept: 'application/json', KEY: apiKey, SIGN: sign, Timestamp: timestamp },
+    headers: { Accept: 'application/json', 'Content-Type': 'application/json', KEY: apiKey, SIGN: sign, Timestamp: timestamp },
   });
-  const data = await res.json();
+  const bodyText = await res.text();
+  let data;
+  try {
+    data = bodyText ? JSON.parse(bodyText) : null;
+  } catch (e) {
+    const err = new Error('Gate.io 응답을 해석하지 못했습니다 (JSON 아님).');
+    err.status = res.status;
+    err.detail = { raw: bodyText.slice(0, 500) };
+    throw err;
+  }
   if (!res.ok) {
     const err = new Error((data && data.message) || 'Gate.io API 오류');
     err.status = res.status;
