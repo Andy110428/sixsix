@@ -203,7 +203,7 @@ async function handleMe(request, env) {
   const email = await getMemberEmail(request, env);
   if (!email) return json({ ok: false });
   const member = await env.DB.prepare(
-    'SELECT nickname, uid, gate_uid, trading_volume, ranking_opt_in, referral_partner_status FROM members WHERE email = ?'
+    'SELECT nickname, uid, gate_uid, gate_api_key, trading_volume, ranking_opt_in, referral_partner_status FROM members WHERE email = ?'
   ).bind(email).first();
   if (!member) return json({ ok: false });
 
@@ -227,7 +227,7 @@ async function handleMe(request, env) {
     grade: grade ? grade.key : null,
     grade_label: grade ? grade.label : null,
     activity,
-    has_gate_api: !!member.gate_uid,
+    has_gate_api: !!member.gate_api_key,
     gate_uid: member.gate_uid || null,
     trading_volume: member.trading_volume || 0,
     ranking_opt_in: !!member.ranking_opt_in,
@@ -886,8 +886,8 @@ async function handleRankingOptIn(request, env) {
   const optIn = !!body.opt_in;
 
   if (optIn) {
-    const member = await env.DB.prepare('SELECT gate_uid FROM members WHERE email = ?').bind(email).first();
-    if (!member || !member.gate_uid) {
+    const member = await env.DB.prepare('SELECT gate_api_key FROM members WHERE email = ?').bind(email).first();
+    if (!member || !member.gate_api_key) {
       return json({ ok: false, error: '랭킹 시스템에 참여하려면 먼저 Gate.io Read-Only API를 연동해주세요.' }, 400);
     }
   }
