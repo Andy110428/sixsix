@@ -162,31 +162,6 @@
   .event-figs{ font-size:0.78rem; color:var(--text-dim); margin-top:4px; }
   .calendar-note{ color:var(--text-dim); font-size:0.78rem; margin-top:4px; margin-bottom:16px; }
 
-  .pnl-hero{ display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:16px; background:linear-gradient(135deg, rgba(215,217,220,0.07), rgba(255,255,255,0.02)); border:1px solid var(--line); border-radius:16px; padding:22px 26px; margin-bottom:16px; }
-  .pnl-hero .label{ font-size:0.7rem; color:var(--text-dim); letter-spacing:0.06em; text-transform:uppercase; font-family:'JetBrains Mono',monospace; margin-bottom:8px; }
-  .pnl-hero .value{ font-family:'JetBrains Mono',monospace; font-size:clamp(1.6rem,4vw,2.1rem); font-weight:700; line-height:1; }
-  .pnl-hero .sub{ font-size:0.78rem; color:var(--text-dim); margin-top:8px; }
-  .pnl-hero-badge{ display:inline-flex; align-items:center; gap:6px; padding:7px 14px; border-radius:999px; font-family:'JetBrains Mono',monospace; font-size:0.8rem; font-weight:700; white-space:nowrap; }
-  .pnl-hero-badge.pos{ background:rgba(74,222,128,0.12); color:var(--good); border:1px solid rgba(74,222,128,0.3); }
-  .pnl-hero-badge.neg{ background:rgba(255,92,122,0.12); color:var(--danger); border:1px solid rgba(255,92,122,0.3); }
-
-  .pnl-stats-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-bottom:20px; }
-  .pnl-stats-grid .stat-box{ padding:16px 14px 16px 18px; text-align:left; border-left-width:3px; }
-  .pnl-stats-grid .stat-box .label{ text-transform:uppercase; letter-spacing:0.03em; }
-  .pnl-stats-grid .stat-box.accent-good{ border-left-color:var(--good); }
-  .pnl-stats-grid .stat-box.accent-bad{ border-left-color:var(--danger); }
-
-  .pnl-chart-card{ background:var(--bg-soft); border:1px solid var(--line); border-radius:14px; padding:18px; }
-  .pnl-chart-title{ font-size:0.76rem; color:var(--text-dim); font-family:'JetBrains Mono',monospace; margin-bottom:10px; display:flex; justify-content:space-between; gap:10px; }
-  .pnl-days-list{ display:flex; flex-direction:column; max-height:440px; overflow-y:auto; }
-  .pnl-day-row{ display:flex; justify-content:space-between; align-items:center; padding:9px 2px; font-size:0.88rem; border-top:1px solid var(--line-soft); }
-  .pnl-day-row:first-child{ border-top:none; }
-  .pnl-day-row .d{ color:var(--text-dim); font-family:'JetBrains Mono',monospace; font-size:0.82rem; }
-  .pnl-day-row .p{ font-family:'JetBrains Mono',monospace; font-weight:700; }
-  .pnl-day-row .p.pos{ color:var(--good); }
-  .pnl-day-row .p.neg{ color:var(--danger); }
-  @media (max-width:640px){ .pnl-stats-grid{ grid-template-columns:1fr; } .pnl-hero{ padding:18px; } .pnl-hero .value{ font-size:1.5rem; } }
-
   .rank-widget{ background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:18px 20px; max-width:340px; margin:0 auto 40px; }
   .rank-widget h3{ font-size:0.86rem; color:var(--text-dim); font-weight:600; margin-bottom:10px; display:flex; align-items:center; gap:6px; }
   .rank-row{ display:flex; justify-content:space-between; align-items:center; padding:6px 0; font-size:0.82rem; border-top:1px solid rgba(255,255,255,0.05); }
@@ -200,6 +175,8 @@
   .promo-card:hover{ border-color:rgba(215,217,220,0.35); transform:translateY(-1px); }
   .promo-card h3{ font-size:0.92rem; margin:2px 0 0; }
 
+  .dash-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:16px; }
+  .dash-card{ background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:18px 20px; }
   .dash-card-head{ display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; gap:8px; }
   .dash-card-head h3{ font-size:0.9rem; }
   .dash-more{ border:none; background-color:transparent; background-image:linear-gradient(135deg,#f4f3f1,#8b8d93); -webkit-background-clip:text; background-clip:text; color:transparent; font-size:0.84rem; cursor:pointer; font-weight:700; padding:0; white-space:nowrap; }
@@ -207,28 +184,7 @@
   .dash-mini-row:first-child{ border-top:none; }
   .dash-mini-row .t{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .dash-mini-empty{ color:var(--text-dim); font-size:0.82rem; padding:6px 0; }
-
-  .dash-hero-card{ background:var(--panel); border:1px solid var(--line); border-radius:16px; padding:22px 24px; margin-bottom:18px; }
-  .dash-hero-card .dash-card-head{ margin-bottom:18px; }
-  .dash-hero-card .dash-card-head h3{ font-size:1.05rem; }
-  .dash-pnl-stats-big{ display:grid; grid-template-columns:repeat(4,1fr); gap:14px; }
-  .dash-pnl-stats-big .stat-box{ padding:16px 14px 16px 18px; text-align:left; border-left-width:3px; }
-  .dash-pnl-stats-big .stat-box .num{ font-size:1.4rem; }
-  .dash-pnl-stats-big .stat-box .label{ text-transform:uppercase; letter-spacing:0.03em; }
-  .dash-pnl-stats-big .stat-box.accent-good{ border-left-color:var(--good); }
-  .dash-pnl-stats-big .stat-box.accent-bad{ border-left-color:var(--danger); }
-  @media (max-width:640px){ .dash-pnl-stats-big{ grid-template-columns:1fr 1fr; } }
-
-  .dash-notify{ position:fixed; top:80px; right:20px; width:280px; max-height:calc(100vh - 100px); overflow-y:auto; background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:18px; z-index:45; box-shadow:0 16px 40px -12px rgba(0,0,0,0.6); animation:dashNotifyIn .35s ease; }
-  @keyframes dashNotifyIn{ from{ opacity:0; transform:translateX(14px); } to{ opacity:1; transform:translateX(0); } }
-  .dash-notify-close{ position:absolute; top:12px; right:12px; width:24px; height:24px; border-radius:50%; border:1px solid var(--line); background:rgba(255,255,255,0.04); color:var(--text-dim); cursor:pointer; font-size:0.72rem; line-height:1; }
-  .dash-notify-section{ margin-bottom:16px; padding-right:20px; }
-  .dash-notify-section:last-child{ margin-bottom:0; }
-  .dash-notify-head{ display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; gap:8px; }
-  .dash-notify-head h4{ font-size:0.8rem; font-weight:700; margin:0; }
-  .dash-notify .dash-more{ font-size:0.72rem; }
-  @media (max-width:1180px){ .dash-notify{ display:none; } }
-  @media (min-width:1181px){ #dashboard-section .wrap{ margin:0; max-width:none; padding-right:320px; } }
+  @media (max-width:900px){ .dash-grid{ grid-template-columns:1fr; } }
   .empty-note{ text-align:center; padding:36px 20px; color:var(--text-dim); font-size:0.88rem; border:1px dashed var(--line); border-radius:12px; }
 
   .new-post-form{ background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:20px; margin-bottom:20px; display:flex; flex-direction:column; gap:10px; }
@@ -296,7 +252,6 @@
       <button type="button" class="tab-link" data-cat="question">질문<span id="qa-badge" class="qa-badge" hidden>0</span></button>
       <button type="button" class="tab-link" data-cat="profit">수익인증</button>
       <button type="button" class="tab-link" id="calendar-tab">경제 캘린더</button>
-      <button type="button" class="tab-link" id="pnl-tab">내 PNL</button>
       <a class="icon-btn" href="referral.html">추천인 프로그램</a>
       <a class="icon-btn" id="admin-link" href="admin.html" hidden>관리자 페이지로</a>
       <button type="button" class="icon-btn" id="profile-btn">내 정보</button>
@@ -375,31 +330,22 @@
         </div>
       </div>
 
-      <div class="dash-hero-card">
-        <div class="dash-card-head">
-          <h3>📊 내 PNL / 승률 (베타)</h3>
-          <button type="button" class="dash-more" data-goto="pnl-tab">전체 캘린더 보기 →</button>
+      <div class="dash-grid">
+        <div class="dash-card">
+          <div class="dash-card-head"><h3>📅 다가오는 경제 일정</h3><button type="button" class="dash-more" data-goto="calendar-tab">더보기 →</button></div>
+          <div id="dash-calendar-list"></div>
         </div>
-        <div id="dash-pnl-big"></div>
+        <div class="dash-card">
+          <div class="dash-card-head"><h3>📢 최근 공지</h3><button type="button" class="dash-more" data-goto-cat="notice">더보기 →</button></div>
+          <div id="dash-notices-list"></div>
+        </div>
+        <div class="dash-card">
+          <div class="dash-card-head"><h3>🏆 거래량 랭킹 TOP 5</h3></div>
+          <div id="dash-rank-list"></div>
+        </div>
       </div>
     </div>
   </section>
-
-  <div id="dash-notify" class="dash-notify" hidden>
-    <button type="button" class="dash-notify-close" id="dash-notify-close" aria-label="닫기">✕</button>
-    <div class="dash-notify-section">
-      <div class="dash-notify-head"><h4>📅 다가오는 일정</h4><button type="button" class="dash-more" data-goto="calendar-tab">더보기 →</button></div>
-      <div id="dash-calendar-list"></div>
-    </div>
-    <div class="dash-notify-section">
-      <div class="dash-notify-head"><h4>📢 최근 공지</h4><button type="button" class="dash-more" data-goto-cat="notice">더보기 →</button></div>
-      <div id="dash-notices-list"></div>
-    </div>
-    <div class="dash-notify-section">
-      <div class="dash-notify-head"><h4>🏆 거래량 랭킹 TOP 5</h4></div>
-      <div id="dash-rank-list"></div>
-    </div>
-  </div>
 
   <section id="board" hidden>
     <div class="wrap">
@@ -439,46 +385,6 @@
     </div>
   </section>
 
-  <section id="pnl-section" hidden>
-    <div class="wrap">
-      <div class="section-head">
-        <div>
-          <span class="kicker">MY PNL</span>
-          <h2>내 손익 캘린더</h2>
-          <p class="section-note">연동된 Gate.io API로 최근 선물 실현손익을 계산해요. 날짜는 UTC 기준이라 한국 시간과 최대 9시간 차이날 수 있어요. (베타)</p>
-        </div>
-      </div>
-
-      <div id="pnl-loading" class="empty-note" hidden>불러오는 중입니다... (몇 초 걸릴 수 있어요)</div>
-      <div id="pnl-connect-note" class="empty-note" hidden>API 연동을 해야 손익 캘린더를 볼 수 있어요. <a href="#" id="pnl-goto-profile" style="color:var(--cyan); font-weight:600;">내 정보에서 연동하기 →</a></div>
-      <div id="pnl-error" class="result-box err" hidden></div>
-
-      <div id="pnl-content" hidden>
-        <div class="pnl-hero" id="pnl-hero">
-          <div>
-            <div class="label">최근 70일 누적 실현손익</div>
-            <div class="value" id="pnl-total">-</div>
-            <div class="sub">연동된 Gate.io 계정의 선물 실현손익 합계예요</div>
-          </div>
-          <div style="display:flex; align-items:center; gap:12px;">
-            <span class="pnl-hero-badge" id="pnl-hero-badge">-</span>
-            <button type="button" class="btn btn-ghost" id="pnl-refresh-btn" style="width:auto;">🔄 불러오기</button>
-          </div>
-        </div>
-
-        <div class="pnl-stats-grid">
-          <div class="stat-box"><div class="num" id="pnl-winrate">-</div><div class="label">평균 승률</div></div>
-          <div class="stat-box"><div class="num" id="pnl-30d">-</div><div class="label">최근 30일 손익</div></div>
-          <div class="stat-box"><div class="num" id="pnl-total-trades">-</div><div class="label">총 거래 횟수</div></div>
-        </div>
-
-        <div class="pnl-chart-card">
-          <div class="pnl-chart-title"><span>일별 손익 내역</span><span id="pnl-chart-range">-</span></div>
-          <div class="pnl-days-list" id="pnl-days-list"></div>
-        </div>
-      </div>
-    </div>
-  </section>
 </div>
 
 <div class="wrap" style="padding:0 24px 24px;" id="promo-wrap">
@@ -568,7 +474,7 @@
             <li>"API 키 생성(Create API Key)" 버튼 클릭</li>
             <li>키 종류(Key Type)는 반드시 <b>APIv4</b>로 선택하세요 — APIv2는 현물거래만 지원해서 저희 기능(선물 거래량/손익 조회)과 안 맞아요</li>
             <li>키 이름(Name)은 아무거나 적어도 돼요 (예: teamsixx)</li>
-            <li>권한(Permissions) 목록에 지갑(Wallet)·현물거래(Spot Trade)·마진·선물거래(Futures) 등 여러 항목이 나와요. 이 중 <b>딱 2개만 "읽기 전용(Read Only)"으로 켜주세요</b>: ① <b>지갑(Wallet)</b> — 계정 소유 확인용, ② <b>선물거래(Futures Trade)</b> — "내 거래량 동기화"/"내 PNL" 기능이 선물 체결·손익 내역을 읽는 데 필요해요</li>
+            <li>권한(Permissions) 목록에 지갑(Wallet)·현물거래(Spot Trade)·마진·선물거래(Futures) 등 여러 항목이 나와요. 이 중 <b>딱 2개만 "읽기 전용(Read Only)"으로 켜주세요</b>: ① <b>지갑(Wallet)</b> — 계정 소유 확인용, ② <b>선물거래(Futures Trade)</b> — "내 거래량 동기화" 기능이 선물 체결 내역을 읽는 데 필요해요</li>
             <li>나머지 현물거래(Spot)/마진/옵션 등은 전부 꺼진 상태(비활성) 그대로 두세요 — 필요 없어요</li>
             <li>어떤 항목이든 <b>"읽기+쓰기(Read & Write)"나 "출금(Withdraw)" 권한은 절대 켜지 마세요</b> — 켜져 있다면 반드시 꺼주세요</li>
             <li>IP 화이트리스트는 비워둬도 되는데, <b>비워두면 Gate.io 정책상 키가 생성 후 90일 뒤 자동 만료</b>돼요. 90일 넘게 계속 쓰실 거면 만료 후 새로 키를 만들어서 재연동해주시면 돼요</li>
@@ -860,16 +766,6 @@
     loadEvents();
   });
 
-  var pnlSection = document.getElementById('pnl-section');
-  var pnlTab = document.getElementById('pnl-tab');
-  allSections.push(pnlSection);
-  pnlTab.addEventListener('click', function(){
-    allTabLinks.forEach(function(t){ t.classList.remove('active'); });
-    pnlTab.classList.add('active');
-    showSection(pnlSection);
-    loadPnlStats();
-  });
-
   async function loadEvents(){
     var el = document.getElementById('events-list');
     var emptyEl = document.getElementById('events-empty');
@@ -905,14 +801,9 @@
   // ── 대시보드 (기본 화면) ──
   function loadDashboardData(){
     loadDashCalendar();
-    loadDashPnlSummary();
     loadDashNotices();
     loadRankWidget();
-    document.getElementById('dash-notify').hidden = false;
   }
-  document.getElementById('dash-notify-close').addEventListener('click', function(){
-    document.getElementById('dash-notify').hidden = true;
-  });
 
   async function loadDashCalendar(){
     var el = document.getElementById('dash-calendar-list');
@@ -929,37 +820,6 @@
     } catch(e){ el.innerHTML = '<div class="dash-mini-empty">불러오기에 실패했습니다.</div>'; }
   }
 
-  async function loadDashPnlSummary(){
-    var el = document.getElementById('dash-pnl-big');
-    el.innerHTML = '<div class="dash-mini-empty">불러오는 중...</div>';
-    try{
-      var res = await fetch('/api/account/pnl-stats', { credentials:'same-origin' });
-      var data = await res.json();
-      if(!data.ok){
-        if(res.status === 400){
-          el.innerHTML = '<div class="dash-mini-empty" style="padding:20px 0;">API 연동을 하면 승률·손익이 여기 크게 보여요. <a href="#" id="dash-pnl-goto-profile" style="color:var(--text); font-weight:600; text-decoration:underline;">연동하러 가기 →</a></div>';
-          var link = document.getElementById('dash-pnl-goto-profile');
-          if(link) link.addEventListener('click', function(e){ e.preventDefault(); profileBtn.click(); });
-        } else {
-          var errMsg = '⚠️ ' + (data.error || '불러오기에 실패했습니다.') + ' (상태코드 ' + res.status + ')';
-          el.innerHTML = '<div class="result-box err">' + escapeHtml(errMsg) + '</div>';
-        }
-        return;
-      }
-
-      var totalPnl = 0;
-      (data.days || []).forEach(function(d){ totalPnl += d.pnl; });
-
-      el.innerHTML =
-        '<div class="dash-pnl-stats-big">' +
-        '<div class="stat-box ' + (totalPnl >= 0 ? 'accent-good' : 'accent-bad') + '"><div class="num" style="color:' + (totalPnl >= 0 ? 'var(--good)' : 'var(--danger)') + ';">' + (totalPnl >= 0 ? '+' : '') + '$' + totalPnl.toFixed(0) + '</div><div class="label">70일 누적 손익</div></div>' +
-        '<div class="stat-box ' + (data.win_rate >= 0.5 ? 'accent-good' : 'accent-bad') + '"><div class="num">' + (data.win_rate * 100).toFixed(1) + '%</div><div class="label">승률</div></div>' +
-        '<div class="stat-box ' + (data.pnl_30d >= 0 ? 'accent-good' : 'accent-bad') + '"><div class="num" style="color:' + (data.pnl_30d >= 0 ? 'var(--good)' : 'var(--danger)') + ';">' + (data.pnl_30d >= 0 ? '+' : '') + '$' + data.pnl_30d.toFixed(0) + '</div><div class="label">30일 손익</div></div>' +
-        '<div class="stat-box"><div class="num">' + data.total_trades + '</div><div class="label">거래횟수</div></div>' +
-        '</div>';
-    } catch(e){ el.innerHTML = '<div class="dash-mini-empty">불러오기에 실패했습니다.</div>'; }
-  }
-
   async function loadDashNotices(){
     var el = document.getElementById('dash-notices-list');
     el.innerHTML = '';
@@ -972,87 +832,6 @@
         return '<div class="dash-mini-row"><span class="t">' + escapeHtml(p.title) + '</span></div>';
       }).join('');
     } catch(e){ el.innerHTML = '<div class="dash-mini-empty">불러오기에 실패했습니다.</div>'; }
-  }
-
-  // ── 내 PNL 수치 (베타, API 연동 필요) ──
-  var pnlDaysByDate = null;
-  document.getElementById('pnl-goto-profile').addEventListener('click', function(e){
-    e.preventDefault();
-    document.getElementById('pnl-connect-note').hidden = true;
-    profileBtn.click();
-  });
-  document.getElementById('pnl-refresh-btn').addEventListener('click', loadPnlStats);
-
-  // 상태 4개(로딩/연동필요/에러/성공)가 서로 겹쳐 보이지 않도록 매번 전부 hidden으로 리셋 후 딱 하나만 켬
-  function setPnlView(view){
-    document.getElementById('pnl-loading').hidden = view !== 'loading';
-    document.getElementById('pnl-connect-note').hidden = view !== 'connect';
-    document.getElementById('pnl-error').hidden = view !== 'error';
-    document.getElementById('pnl-content').hidden = view !== 'content';
-  }
-
-  async function loadPnlStats(){
-    var refreshBtn = document.getElementById('pnl-refresh-btn');
-    var errorEl = document.getElementById('pnl-error');
-    refreshBtn.disabled = true;
-    setPnlView('loading');
-    try{
-      var res = await fetch('/api/account/pnl-stats', { credentials:'same-origin' });
-      var data = await res.json();
-      if(!data.ok){
-        if(res.status === 400){ setPnlView('connect'); }
-        else {
-          var msg = '⚠️ ' + (data.error || '불러오기에 실패했습니다.') + ' (상태코드 ' + res.status + ')';
-          if(data.detail){ try{ msg += '\n진단정보: ' + JSON.stringify(data.detail); } catch(e2){} }
-          errorEl.textContent = msg;
-          setPnlView('error');
-        }
-        return;
-      }
-
-      setPnlView('content');
-      document.getElementById('pnl-winrate').textContent = (data.win_rate * 100).toFixed(1) + '%';
-      document.getElementById('pnl-winrate').closest('.stat-box').className = 'stat-box ' + (data.win_rate >= 0.5 ? 'accent-good' : 'accent-bad');
-      var pnl30El = document.getElementById('pnl-30d');
-      pnl30El.textContent = (data.pnl_30d >= 0 ? '+' : '') + '$' + data.pnl_30d.toFixed(2);
-      pnl30El.style.color = data.pnl_30d >= 0 ? 'var(--good)' : 'var(--danger)';
-      pnl30El.closest('.stat-box').className = 'stat-box ' + (data.pnl_30d >= 0 ? 'accent-good' : 'accent-bad');
-      document.getElementById('pnl-total-trades').textContent = data.total_trades;
-
-      pnlDaysByDate = {};
-      var totalPnl = 0;
-      (data.days || []).forEach(function(d){ pnlDaysByDate[d.date] = d.pnl; totalPnl += d.pnl; });
-      var totalEl = document.getElementById('pnl-total');
-      totalEl.textContent = (totalPnl >= 0 ? '+' : '') + '$' + totalPnl.toFixed(2);
-      totalEl.style.color = totalPnl >= 0 ? 'var(--good)' : 'var(--danger)';
-      var heroBadge = document.getElementById('pnl-hero-badge');
-      heroBadge.textContent = totalPnl >= 0 ? '▲ 수익 우위' : '▼ 손실 우위';
-      heroBadge.className = 'pnl-hero-badge ' + (totalPnl >= 0 ? 'pos' : 'neg');
-      renderPnlDaysList();
-    } catch(e){
-      errorEl.textContent = '⚠️ 오류가 발생했습니다: ' + (e && e.message ? e.message : e);
-      setPnlView('error');
-    }
-    finally{ refreshBtn.disabled = false; }
-  }
-
-  // 그리드/달력 렌더링 대신 날짜순 숫자 목록으로만 표시 (캘린더 렌더링 문제가 반복 보고되어 단순화)
-  function renderPnlDaysList(){
-    if(!pnlDaysByDate) return;
-    var el = document.getElementById('pnl-days-list');
-    var allKeys = Object.keys(pnlDaysByDate).sort().reverse();
-    document.getElementById('pnl-chart-range').textContent = allKeys.length ? (allKeys[allKeys.length - 1] + ' ~ ' + allKeys[0]) : '-';
-    // 손익이 0인 날(거래 없음)은 목록에서 빼서, 실제 정산이 있었던 날만 눈에 띄게 보여줌
-    var keys = allKeys.filter(function(k){ return pnlDaysByDate[k]; });
-    if(keys.length === 0){
-      el.innerHTML = '<div class="dash-mini-empty" style="padding:20px 0;">조회 기간(' + (allKeys[allKeys.length - 1] || '-') + ' ~ ' + (allKeys[0] || '-') + ') 안에 정산된 손익이 없어요. 청산(포지션 종료)된 선물 거래가 있어야 여기 표시돼요.</div>';
-      return;
-    }
-    el.innerHTML = keys.map(function(k){
-      var pnl = pnlDaysByDate[k];
-      var cls = pnl > 0 ? 'pos' : 'neg';
-      return '<div class="pnl-day-row"><span class="d">' + k + '</span><span class="p ' + cls + '">' + (pnl >= 0 ? '+' : '') + '$' + pnl.toFixed(2) + '</span></div>';
-    }).join('');
   }
 
   // ── 랭킹 사이드 위젯 ──
