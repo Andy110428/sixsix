@@ -135,6 +135,7 @@
   .result-box.good{ background:rgba(215,217,220,0.1); border:1px solid rgba(215,217,220,0.35); color:var(--cyan); }
   .result-box.warn{ background:rgba(199,204,209,0.1); border:1px solid rgba(199,204,209,0.35); color:var(--amber); }
   .result-box.pending{ background:rgba(255,255,255,0.04); border:1px solid var(--line); color:var(--text-dim); }
+  .result-box.err{ background:rgba(255,92,122,0.12); border:1px solid rgba(255,92,122,0.5); color:var(--danger); font-weight:600; font-size:0.9rem; }
   .gate-help{ margin-top:18px; font-size:0.82rem; color:var(--text-dim); text-align:center; }
   .gate-help a{ color:var(--cyan); font-weight:600; }
 
@@ -450,7 +451,7 @@
 
       <div id="pnl-loading" class="empty-note" hidden>불러오는 중입니다... (몇 초 걸릴 수 있어요)</div>
       <div id="pnl-connect-note" class="empty-note" hidden>API 연동을 해야 손익 캘린더를 볼 수 있어요. <a href="#" id="pnl-goto-profile" style="color:var(--cyan); font-weight:600;">내 정보에서 연동하기 →</a></div>
-      <div id="pnl-error" class="result-box warn" hidden></div>
+      <div id="pnl-error" class="result-box err" hidden></div>
 
       <div id="pnl-content" hidden>
         <div class="pnl-hero" id="pnl-hero">
@@ -475,7 +476,6 @@
           <div class="pnl-chart-title"><span>일별 손익 내역</span><span id="pnl-chart-range">-</span></div>
           <div class="pnl-days-list" id="pnl-days-list"></div>
         </div>
-        <div id="pnl-result" class="result-box" hidden></div>
       </div>
     </div>
   </section>
@@ -936,11 +936,14 @@
       var res = await fetch('/api/account/pnl-stats', { credentials:'same-origin' });
       var data = await res.json();
       if(!data.ok){
-        el.innerHTML = res.status === 400
-          ? '<div class="dash-mini-empty" style="padding:20px 0;">API 연동을 하면 승률·PNL 캘린더가 여기 크게 보여요. <a href="#" id="dash-pnl-goto-profile" style="color:var(--text); font-weight:600; text-decoration:underline;">연동하러 가기 →</a></div>'
-          : '<div class="dash-mini-empty" style="padding:20px 0;">불러오기에 실패했습니다.</div>';
-        var link = document.getElementById('dash-pnl-goto-profile');
-        if(link) link.addEventListener('click', function(e){ e.preventDefault(); profileBtn.click(); });
+        if(res.status === 400){
+          el.innerHTML = '<div class="dash-mini-empty" style="padding:20px 0;">API 연동을 하면 승률·손익이 여기 크게 보여요. <a href="#" id="dash-pnl-goto-profile" style="color:var(--text); font-weight:600; text-decoration:underline;">연동하러 가기 →</a></div>';
+          var link = document.getElementById('dash-pnl-goto-profile');
+          if(link) link.addEventListener('click', function(e){ e.preventDefault(); profileBtn.click(); });
+        } else {
+          var errMsg = '⚠️ ' + (data.error || '불러오기에 실패했습니다.') + ' (상태코드 ' + res.status + ')';
+          el.innerHTML = '<div class="result-box err">' + escapeHtml(errMsg) + '</div>';
+        }
         return;
       }
 
@@ -999,8 +1002,8 @@
       if(!data.ok){
         if(res.status === 400){ setPnlView('connect'); }
         else {
-          var msg = data.error || '불러오기에 실패했습니다.';
-          if(data.detail){ try{ msg += '\n(진단정보: ' + JSON.stringify(data.detail) + ')'; } catch(e2){} }
+          var msg = '⚠️ ' + (data.error || '불러오기에 실패했습니다.') + ' (상태코드 ' + res.status + ')';
+          if(data.detail){ try{ msg += '\n진단정보: ' + JSON.stringify(data.detail); } catch(e2){} }
           errorEl.textContent = msg;
           setPnlView('error');
         }
@@ -1008,8 +1011,6 @@
       }
 
       setPnlView('content');
-      var resultEl = document.getElementById('pnl-result');
-      resultEl.hidden = true;
       document.getElementById('pnl-winrate').textContent = (data.win_rate * 100).toFixed(1) + '%';
       document.getElementById('pnl-winrate').closest('.stat-box').className = 'stat-box ' + (data.win_rate >= 0.5 ? 'accent-good' : 'accent-bad');
       var pnl30El = document.getElementById('pnl-30d');
@@ -1017,9 +1018,6 @@
       pnl30El.style.color = data.pnl_30d >= 0 ? 'var(--good)' : 'var(--danger)';
       pnl30El.closest('.stat-box').className = 'stat-box ' + (data.pnl_30d >= 0 ? 'accent-good' : 'accent-bad');
       document.getElementById('pnl-total-trades').textContent = data.total_trades;
-      if(data.total_trades === 0){
-        showResult(resultEl, '최근 70일 안에 정산(실현손익)된 선물 거래 내역이 없어요. 청산된 포지션이 있어야 내역에 표시돼요.', 'pending');
-      }
 
       pnlDaysByDate = {};
       var totalPnl = 0;
@@ -1032,7 +1030,7 @@
       heroBadge.className = 'pnl-hero-badge ' + (totalPnl >= 0 ? 'pos' : 'neg');
       renderPnlDaysList();
     } catch(e){
-      errorEl.textContent = '오류가 발생했습니다: ' + (e && e.message ? e.message : e);
+      errorEl.textContent = '⚠️ 오류가 발생했습니다: ' + (e && e.message ? e.message : e);
       setPnlView('error');
     }
     finally{ refreshBtn.disabled = false; }
@@ -1042,15 +1040,17 @@
   function renderPnlDaysList(){
     if(!pnlDaysByDate) return;
     var el = document.getElementById('pnl-days-list');
-    var keys = Object.keys(pnlDaysByDate).sort().reverse();
-    document.getElementById('pnl-chart-range').textContent = keys.length ? (keys[keys.length - 1] + ' ~ ' + keys[0]) : '-';
+    var allKeys = Object.keys(pnlDaysByDate).sort().reverse();
+    document.getElementById('pnl-chart-range').textContent = allKeys.length ? (allKeys[allKeys.length - 1] + ' ~ ' + allKeys[0]) : '-';
+    // 손익이 0인 날(거래 없음)은 목록에서 빼서, 실제 정산이 있었던 날만 눈에 띄게 보여줌
+    var keys = allKeys.filter(function(k){ return pnlDaysByDate[k]; });
     if(keys.length === 0){
-      el.innerHTML = '<div class="dash-mini-empty">표시할 손익 내역이 없어요.</div>';
+      el.innerHTML = '<div class="dash-mini-empty" style="padding:20px 0;">조회 기간(' + (allKeys[allKeys.length - 1] || '-') + ' ~ ' + (allKeys[0] || '-') + ') 안에 정산된 손익이 없어요. 청산(포지션 종료)된 선물 거래가 있어야 여기 표시돼요.</div>';
       return;
     }
     el.innerHTML = keys.map(function(k){
       var pnl = pnlDaysByDate[k];
-      var cls = pnl > 0 ? 'pos' : pnl < 0 ? 'neg' : '';
+      var cls = pnl > 0 ? 'pos' : 'neg';
       return '<div class="pnl-day-row"><span class="d">' + k + '</span><span class="p ' + cls + '">' + (pnl >= 0 ? '+' : '') + '$' + pnl.toFixed(2) + '</span></div>';
     }).join('');
   }
