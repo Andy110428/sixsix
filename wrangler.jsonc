@@ -12,5 +12,8 @@
       "database_name": "sixsix-db",
       "database_id": "d537829e-f956-4217-a6f6-5ff7555bd06a"
     }
-  ]
+  ],
+  "triggers": {
+    "crons": ["0 * * * *"]
+  }
 }

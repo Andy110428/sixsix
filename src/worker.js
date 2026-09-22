@@ -22,6 +22,7 @@
 //   GET  /api/account/gate-account-raw   연동된 키로 계좌 정보 원본 조회 (베타, 진단용)
 //   POST /api/account/ranking-opt-in     랭킹 시스템 참여/탈퇴 (참여하려면 API 연동 필요)
 //   POST /api/account/sync-volume        연동된 키로 선물 거래내역을 조회해 거래량을 직접 계산/갱신 (베타, 선물거래 읽기 권한 필요)
+//                                         — 이 버튼과 별개로, Cron Trigger가 매시 정각에 API 연동된 회원 전원을 자동으로 동기화함 (아래 scheduled 참고)
 //
 // 게시판 API (Gate UID가 등록된 회원 또는 관리자만 글쓰기/댓글, 목록/상세는 공개):
 //   GET  /api/posts?category=notice|briefing|lecture|question|profit
@@ -132,6 +133,12 @@ export default {
     }
 
     return env.ASSETS.fetch(request);
+  },
+
+  // Cloudflare Cron Trigger (wrangler.jsonc의 triggers.crons, 매시 정각) — API 연동된 회원 전원의
+  // 거래량을 자동으로 동기화. 회원이 직접 "내 거래량 동기화" 버튼을 누를 필요 없이 매시간 갱신됨.
+  async scheduled(event, env, ctx) {
+    ctx.waitUntil(syncAllVolumes(env));
   },
 };
 
@@ -742,12 +749,12 @@ async function gateApiGet(apiKey, apiSecret, path, queryString) {
 // 계약별 quanto_multiplier(공개 정보)를 곱해서 실제 달러 규모로 환산함.
 // ⚠️ 베타 — 실제 API 키로 검증되지 않음. 거래소 정책상 조회 가능한 과거 내역 범위 안에서만 집계됨(전체 누적이 아닐 수 있음).
 // ⚠️ my_trades는 Gate.io 문서상 최근 6개월치만 조회 가능 (그 이전 내역은 API로 못 가져옴)
-async function computeFuturesVolumeUsd(apiKey, apiSecret) {
+async function computeFuturesVolumeUsd(apiKey, apiSecret, sharedMultiplierCache) {
   const settle = 'usdt';
   const limit = 1000;
   const maxPages = 5;
   const maxContracts = 30;
-  const multiplierCache = {};
+  const multiplierCache = sharedMultiplierCache || {};
   let totalUsd = 0;
   let tradesSeen = 0;
 
@@ -801,6 +808,33 @@ async function handleSyncVolume(request, env) {
       ? 'API 키 권한이 부족합니다. Gate.io에서 "선물거래(Futures Trade)" 읽기 전용 권한이 켜져 있는지 확인해주세요.'
       : (err.message || 'Gate.io 거래내역 조회 중 오류가 발생했습니다.');
     return json({ ok: false, error: msg, detail: err.detail }, err.status || 500);
+  }
+}
+
+// Cron Trigger(매시)에서 호출 — API 연동된 회원 전원의 거래량을 순회하며 자동 갱신.
+// 계약별 quanto_multiplier는 공개 정보라 이번 실행 안에서 회원 간 공유 캐시로 재사용(API 호출 절약).
+// 한 회원 실패가 나머지 회원 처리를 막지 않도록 회원별로 개별 try/catch.
+const AUTO_SYNC_MAX_MEMBERS = 200;
+async function syncAllVolumes(env) {
+  if (!env.DB) return;
+  await ensureSchema(env);
+
+  const rows = await env.DB.prepare(
+    `SELECT email, gate_api_key, gate_api_secret FROM members
+     WHERE gate_api_key IS NOT NULL AND gate_api_secret IS NOT NULL
+     ORDER BY id LIMIT ?`
+  ).bind(AUTO_SYNC_MAX_MEMBERS).all();
+  const members = rows.results || [];
+
+  const sharedMultiplierCache = {};
+  for (const m of members) {
+    try {
+      const { totalUsd } = await computeFuturesVolumeUsd(m.gate_api_key, m.gate_api_secret, sharedMultiplierCache);
+      await env.DB.prepare('UPDATE members SET trading_volume = ? WHERE email = ?').bind(totalUsd, m.email).run();
+      await checkAndQualifyReferral(env, m.email, totalUsd);
+    } catch (err) {
+      // 개별 회원의 키 만료/권한 부족/일시적 오류가 전체 배치를 막지 않도록 건너뜀 — 다음 시간에 재시도됨
+    }
   }
 }
 
