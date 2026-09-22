@@ -55,6 +55,18 @@
   .result-box.warn{ background:rgba(255,92,122,0.1); border:1px solid rgba(255,92,122,0.35); color:var(--danger); }
   .result-box.pending{ background:rgba(255,255,255,0.04); border:1px solid var(--line); color:var(--text-dim); }
 
+  .help-guide{ margin:0 0 4px; font-size:0.82rem; }
+  .help-guide summary{ cursor:pointer; color:var(--cyan); font-weight:600; list-style:none; }
+  .help-guide summary::-webkit-details-marker{ display:none; }
+  .help-guide summary::before{ content:'❓ '; }
+  .help-guide[open] summary{ margin-bottom:8px; }
+  .help-guide .guide-body{ background:var(--bg-soft); border:1px solid var(--line); border-radius:8px; padding:12px 14px; color:var(--text-dim); line-height:1.7; }
+  .help-guide .guide-body code{ background:rgba(255,255,255,0.06); padding:1px 5px; border-radius:4px; font-family:'JetBrains Mono',monospace; color:var(--text); }
+  .lecture-images-preview{ display:flex; flex-wrap:wrap; gap:8px; }
+  .lecture-images-preview .thumb{ position:relative; width:68px; height:68px; border-radius:8px; overflow:hidden; border:1px solid var(--line); background:var(--bg-soft); }
+  .lecture-images-preview .thumb img{ width:100%; height:100%; object-fit:cover; display:block; }
+  .lecture-images-preview .thumb .idx{ position:absolute; bottom:0; left:0; right:0; background:rgba(0,0,0,0.65); color:#fff; font-size:0.68rem; text-align:center; font-family:'JetBrains Mono',monospace; padding:1px 0; }
+
   main.wrap{ padding:36px 24px 80px; }
   .page-head{ margin-bottom:24px; }
   .page-head .kicker{ font-family:'JetBrains Mono',monospace; font-size:0.76rem; color:var(--violet); letter-spacing:0.08em; display:block; margin-bottom:6px; }
@@ -276,10 +288,30 @@
         <option value="gold">골드 이상</option>
         <option value="platinum">플래티넘 이상</option>
       </select>
+      <div id="lecture-guide-wrap" hidden>
+        <details class="help-guide">
+          <summary>강의 내용을 전자책처럼 꾸미는 문법</summary>
+          <div class="guide-body">
+            <p style="margin:0 0 8px;"><code>## 소제목</code> — 목차에 자동으로 추가되는 소제목 (글 맨 위에 목차가 자동 생성돼요)</p>
+            <p style="margin:0 0 8px;"><code>**굵게**</code> — 굵은 글씨</p>
+            <p style="margin:0 0 8px;"><code>---</code> — 구분선</p>
+            <p style="margin:0 0 8px;"><code>&gt; 제목 | 내용</code> — 정의·강조 박스 (노션의 콜아웃처럼 배경 있는 박스로 표시돼요)</p>
+            <p style="margin:0 0 8px;"><code>&gt; 제목 | 내용 | 태그1,태그2</code> — 박스 아래에 작은 태그 칩도 같이 표시</p>
+            <p style="margin:0 0 8px;"><code>[img:1]</code>, <code>[img:2]</code> ... — 아래에서 올린 이미지를 그 줄 위치에 삽입 (올린 순서대로 번호)</p>
+            <p style="margin:0;"><code>[video:유튜브링크]</code> — 영상 삽입 (나중에 영상 강의 올릴 때 사용, 유튜브만 지원)</p>
+          </div>
+        </details>
+      </div>
       <input type="text" id="post-title" placeholder="제목">
       <textarea id="post-content" placeholder="내용을 입력하세요"></textarea>
       <input type="file" id="post-image" accept="image/*,application/pdf">
-      <p style="color:var(--text-dim); font-size:0.78rem; margin:-4px 0 0;">이미지 또는 PDF 1개 첨부 가능 (최대 약 1.5MB). 영상은 용량이 커서 아직 지원 안 됨 — 필요하면 말씀해주세요.</p>
+      <p style="color:var(--text-dim); font-size:0.78rem; margin:-4px 0 0;">이미지 또는 PDF 1개 첨부 가능 (최대 약 1.5MB) — 목록 카드에 쓰이는 대표 썸네일이에요.</p>
+      <div id="lecture-images-wrap" hidden>
+        <input type="file" id="post-images" accept="image/*" multiple>
+        <p style="color:var(--text-dim); font-size:0.78rem; margin:4px 0 0;">본문 안에 <code style="background:rgba(255,255,255,0.06); padding:1px 5px; border-radius:4px;">[img:1]</code> 식으로 넣을 이미지들 (최대 10개, 개당 약 1.5MB). 올린 순서대로 번호가 매겨져요.</p>
+        <div class="lecture-images-preview" id="lecture-images-preview" style="margin-top:8px;"></div>
+        <p id="lecture-images-existing-note" class="empty-note" hidden style="font-size:0.78rem; margin-top:6px;"></p>
+      </div>
       <div style="display:flex; gap:8px;">
         <button type="submit" class="btn btn-primary">등록하기</button>
         <button type="button" class="btn btn-ghost" id="cancel-edit-btn" hidden>취소</button>
@@ -753,6 +785,8 @@
     return (d.getMonth()+1) + '/' + d.getDate() + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes());
   }
 
+  var lectureImages = [];
+
   postForm.addEventListener('submit', async function(e){
     e.preventDefault();
     var editingId = document.getElementById('post-editing-id').value;
@@ -774,6 +808,12 @@
       var payload = editingId
         ? { id: Number(editingId), title: title, content: content }
         : { category: category, title: title, content: content, image_data: imageData, thumb_data: thumbData, min_grade: minGrade || null };
+      if (category === 'lecture' && lectureImages.length) {
+        payload.images_data = lectureImages;
+      }
+      if (editingId) {
+        payload.min_grade = minGrade || null;
+      }
       var res = await fetch(url, { method:'POST', credentials:'same-origin', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
       var data = await res.json();
       if(data.ok){
@@ -788,8 +828,41 @@
   var postCategorySelect = document.getElementById('post-category');
   var postMinGradeSelect = document.getElementById('post-min-grade');
   postCategorySelect.addEventListener('change', function(){
-    postMinGradeSelect.hidden = postCategorySelect.value !== 'lecture';
+    var isLecture = postCategorySelect.value === 'lecture';
+    postMinGradeSelect.hidden = !isLecture;
+    document.getElementById('lecture-guide-wrap').hidden = !isLecture;
+    document.getElementById('lecture-images-wrap').hidden = !isLecture;
   });
+
+  document.getElementById('post-images').addEventListener('change', async function(e){
+    var files = Array.prototype.slice.call(e.target.files || []).slice(0, 10);
+    lectureImages = [];
+    renderLectureImagesPreview();
+    for (var i = 0; i < files.length; i++) {
+      try{
+        var dataUrl = await readFileAsDataUrl(files[i]);
+        lectureImages.push(dataUrl);
+      } catch(err){}
+      renderLectureImagesPreview();
+    }
+  });
+
+  function renderLectureImagesPreview(){
+    var wrap = document.getElementById('lecture-images-preview');
+    wrap.innerHTML = '';
+    lectureImages.forEach(function(src, i){
+      var thumb = document.createElement('div');
+      thumb.className = 'thumb';
+      var img = document.createElement('img');
+      img.src = src;
+      var idx = document.createElement('div');
+      idx.className = 'idx';
+      idx.textContent = '[img:' + (i + 1) + ']';
+      thumb.appendChild(img);
+      thumb.appendChild(idx);
+      wrap.appendChild(thumb);
+    });
+  }
 
   function readFileAsDataUrl(file){
     return new Promise(function(resolve, reject){
@@ -832,8 +905,15 @@
     document.getElementById('post-title').value = '';
     document.getElementById('post-content').value = '';
     document.getElementById('post-image').value = '';
+    document.getElementById('post-images').value = '';
+    lectureImages = [];
+    renderLectureImagesPreview();
+    document.getElementById('lecture-images-existing-note').hidden = true;
     document.getElementById('post-min-grade').value = '';
-    document.getElementById('post-min-grade').hidden = document.getElementById('post-category').value !== 'lecture';
+    var isLecture = document.getElementById('post-category').value === 'lecture';
+    document.getElementById('post-min-grade').hidden = !isLecture;
+    document.getElementById('lecture-guide-wrap').hidden = !isLecture;
+    document.getElementById('lecture-images-wrap').hidden = !isLecture;
     document.getElementById('post-category').disabled = false;
     document.getElementById('post-form-title').textContent = '글쓰기';
     document.getElementById('cancel-edit-btn').hidden = true;
@@ -848,6 +928,25 @@
     document.getElementById('post-form-title').textContent = '글 수정';
     document.getElementById('cancel-edit-btn').hidden = false;
     postForm.querySelector('button[type=submit]').textContent = '수정 완료';
+
+    var isLecture = post.category === 'lecture';
+    document.getElementById('post-min-grade').hidden = !isLecture;
+    document.getElementById('post-min-grade').value = post.min_grade || '';
+    document.getElementById('lecture-guide-wrap').hidden = !isLecture;
+    document.getElementById('lecture-images-wrap').hidden = !isLecture;
+    document.getElementById('post-images').value = '';
+    lectureImages = [];
+    renderLectureImagesPreview();
+    var existingNote = document.getElementById('lecture-images-existing-note');
+    var existingCount = 0;
+    try{ existingCount = post.images_data ? JSON.parse(post.images_data).length : 0; } catch(e){}
+    if (isLecture && existingCount > 0) {
+      existingNote.textContent = '기존 이미지 ' + existingCount + '개가 등록돼 있어요. 새로 선택하면 전부 교체됩니다.';
+      existingNote.hidden = false;
+    } else {
+      existingNote.hidden = true;
+    }
+
     window.scrollTo({ top: postForm.offsetTop - 20, behavior: 'smooth' });
   }
 

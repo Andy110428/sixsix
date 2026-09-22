@@ -214,6 +214,26 @@
   .modal h2{ font-size:1.15rem; margin-bottom:8px; padding-right:24px; }
   .modal .post-meta{ font-size:0.78rem; color:var(--text-dim); font-family:'JetBrains Mono',monospace; margin-bottom:16px; }
   .modal .post-body{ white-space:pre-wrap; font-size:0.94rem; line-height:1.7; margin-bottom:24px; }
+  .modal.lecture-modal{ max-width:760px; }
+  .lecture-toc{ background:var(--bg-soft); border:1px solid var(--line); border-radius:10px; padding:14px 16px; margin-bottom:20px; }
+  .lecture-toc-title{ font-size:0.78rem; color:var(--text-dim); font-family:'JetBrains Mono',monospace; margin-bottom:8px; letter-spacing:0.02em; }
+  .lecture-toc ol{ margin:0; padding-left:18px; }
+  .lecture-toc li{ margin-bottom:4px; }
+  .lecture-toc-link{ color:var(--cyan); text-decoration:none; font-size:0.88rem; }
+  .lecture-toc-link:hover{ text-decoration:underline; }
+  .lecture-content{ font-size:0.94rem; line-height:1.75; white-space:normal; }
+  .lecture-heading{ font-size:1.05rem; margin:26px 0 10px; padding-top:6px; scroll-margin-top:20px; }
+  .lecture-heading:first-child{ margin-top:0; }
+  .lecture-p{ margin:0 0 14px; }
+  .lecture-divider{ border:none; border-top:1px solid var(--line); margin:22px 0; }
+  .lecture-img{ width:100%; border-radius:10px; margin:10px 0 18px; display:block; }
+  .lecture-video{ position:relative; padding-top:56.25%; margin:10px 0 18px; border-radius:10px; overflow:hidden; background:#000; }
+  .lecture-video iframe{ position:absolute; inset:0; width:100%; height:100%; border:0; }
+  .callout-box{ background:rgba(215,217,220,0.07); border:1px solid rgba(215,217,220,0.25); border-left:3px solid var(--cyan); border-radius:8px; padding:14px 16px; margin:0 0 16px; }
+  .callout-title{ font-weight:700; color:var(--cyan); margin-bottom:4px; font-size:0.92rem; }
+  .callout-body{ font-size:0.88rem; color:var(--text); line-height:1.6; }
+  .callout-tags{ display:flex; flex-wrap:wrap; gap:6px; margin-top:10px; }
+  .tag-chip{ font-size:0.7rem; font-family:'JetBrains Mono',monospace; color:var(--text-dim); background:rgba(255,255,255,0.06); border:1px solid var(--line); border-radius:20px; padding:2px 9px; }
   .comment-list{ display:flex; flex-direction:column; gap:10px; margin-bottom:16px; }
   .comment-item{ background:var(--bg-soft); border:1px solid var(--line); border-radius:10px; padding:12px 14px; }
   .comment-item .who{ font-size:0.74rem; color:var(--cyan); font-family:'JetBrains Mono',monospace; margin-bottom:4px; }
@@ -978,7 +998,14 @@
       if(!data.ok) return;
       pmTitle.textContent = data.post.title;
       pmMeta.textContent = fmtDate(data.post.created_at) + ' · ' + authorLabel(data.post);
-      pmBody.textContent = data.post.content;
+      var modalEl = postModal.querySelector('.modal');
+      if (data.post.category === 'lecture') {
+        modalEl.classList.add('lecture-modal');
+        pmBody.innerHTML = renderLectureContent(data.post.content, data.post.images_data);
+      } else {
+        modalEl.classList.remove('lecture-modal');
+        pmBody.textContent = data.post.content;
+      }
       var existingImg = document.getElementById('pm-image');
       if (existingImg) existingImg.remove();
       if (data.post.image_data) {
@@ -1016,6 +1043,13 @@
   }
   document.getElementById('post-modal-close').addEventListener('click', function(){ postModal.classList.remove('open'); });
   postModal.addEventListener('click', function(e){ if(e.target === postModal) postModal.classList.remove('open'); });
+  pmBody.addEventListener('click', function(e){
+    var link = e.target.closest('.lecture-toc-link');
+    if (!link) return;
+    e.preventDefault();
+    var target = document.getElementById(link.getAttribute('href').slice(1));
+    if (target) target.scrollIntoView({ behavior:'smooth', block:'start' });
+  });
 
   commentForm.addEventListener('submit', async function(e){
     e.preventDefault();
@@ -1237,6 +1271,106 @@
     return String(s).replace(/[&<>"']/g, function(c){
       return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c];
     });
+  }
+
+  // ── 강의(lecture) 게시글 전자책 스타일 렌더링 ──
+  function renderLectureContent(content, imagesDataRaw){
+    var images = [];
+    try{ images = imagesDataRaw ? JSON.parse(imagesDataRaw) : []; } catch(e){ images = []; }
+
+    function inlineFormat(line){
+      var escaped = escapeHtml(line);
+      escaped = escaped.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+      return escaped;
+    }
+
+    var lines = String(content || '').split('\n');
+    var tocItems = [];
+    var bodyHtml = '';
+    var paraBuf = [];
+    var headingCount = 0;
+
+    function flushPara(){
+      if (paraBuf.length){
+        bodyHtml += '<p class="lecture-p">' + paraBuf.map(inlineFormat).join('<br>') + '</p>';
+        paraBuf = [];
+      }
+    }
+
+    lines.forEach(function(raw){
+      var line = raw.trim();
+      if (line === '') { flushPara(); return; }
+
+      if (line.indexOf('## ') === 0) {
+        flushPara();
+        headingCount++;
+        var text = line.slice(3).trim();
+        var id = 'lec-h-' + headingCount;
+        tocItems.push({ id: id, text: text });
+        bodyHtml += '<h3 class="lecture-heading" id="' + id + '">' + escapeHtml(text) + '</h3>';
+        return;
+      }
+
+      if (line === '---') {
+        flushPara();
+        bodyHtml += '<hr class="lecture-divider">';
+        return;
+      }
+
+      var imgMatch = line.match(/^\[img:(\d+)\]$/);
+      if (imgMatch) {
+        flushPara();
+        var idx = Number(imgMatch[1]) - 1;
+        if (images[idx]) {
+          bodyHtml += '<img class="lecture-img" src="' + images[idx] + '" alt="">';
+        }
+        return;
+      }
+
+      var videoMatch = line.match(/^\[video:(\S+)\]$/);
+      if (videoMatch) {
+        flushPara();
+        var url = videoMatch[1];
+        var ytId = extractYoutubeId(url);
+        if (ytId) {
+          bodyHtml += '<div class="lecture-video"><iframe src="https://www.youtube.com/embed/' + ytId + '" title="lecture video" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>';
+        } else {
+          bodyHtml += '<a class="btn btn-ghost" href="' + escapeHtml(url) + '" target="_blank" rel="noopener" style="display:inline-flex; margin:6px 0 18px;">🎬 영상 보기</a>';
+        }
+        return;
+      }
+
+      if (line.indexOf('> ') === 0) {
+        flushPara();
+        var parts = line.slice(2).split('|').map(function(s){ return s.trim(); });
+        var cTitle = parts[0] || '';
+        var cBody = parts[1] || '';
+        var cTags = parts[2] ? parts[2].split(',').map(function(s){ return s.trim(); }).filter(Boolean) : [];
+        bodyHtml += '<div class="callout-box">' +
+          (cTitle ? '<div class="callout-title">' + inlineFormat(cTitle) + '</div>' : '') +
+          (cBody ? '<div class="callout-body">' + inlineFormat(cBody) + '</div>' : '') +
+          (cTags.length ? '<div class="callout-tags">' + cTags.map(function(t){ return '<span class="tag-chip">' + escapeHtml(t) + '</span>'; }).join('') + '</div>' : '') +
+          '</div>';
+        return;
+      }
+
+      paraBuf.push(line);
+    });
+    flushPara();
+
+    var tocHtml = '';
+    if (tocItems.length) {
+      tocHtml = '<div class="lecture-toc"><div class="lecture-toc-title">목차</div><ol>' +
+        tocItems.map(function(t){ return '<li><a href="#' + t.id + '" class="lecture-toc-link">' + escapeHtml(t.text) + '</a></li>'; }).join('') +
+        '</ol></div>';
+    }
+
+    return tocHtml + '<div class="lecture-content">' + bodyHtml + '</div>';
+  }
+
+  function extractYoutubeId(url){
+    var m = String(url).match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/))([\w-]{6,})/);
+    return m ? m[1] : null;
   }
 })();
 </script>

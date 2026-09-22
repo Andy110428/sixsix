@@ -501,6 +501,9 @@ async function handleCreatePost(request, env) {
   const imageData = body.image_data || null;
   const thumbData = body.thumb_data || null;
   const minGrade = category === 'lecture' && GRADES.some((g) => g.key === body.min_grade) ? body.min_grade : null;
+  const imagesDataErr = validateImagesData(body.images_data);
+  if (imagesDataErr) return json({ ok: false, error: imagesDataErr }, 400);
+  const imagesData = Array.isArray(body.images_data) && body.images_data.length ? JSON.stringify(body.images_data) : null;
 
   if (!ALLOWED_CATEGORIES.includes(category)) return json({ ok: false, error: '잘못된 카테고리입니다.' }, 400);
   if (!title || !content) return json({ ok: false, error: '제목과 내용을 입력해주세요.' }, 400);
@@ -525,10 +528,21 @@ async function handleCreatePost(request, env) {
   }
 
   const result = await env.DB.prepare(
-    'INSERT INTO posts (category, title, content, image_data, thumb_data, min_grade, author_type, author_id, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
-  ).bind(category, title, content, imageData, thumbData, minGrade, authorType, authorId, Date.now()).run();
+    'INSERT INTO posts (category, title, content, image_data, thumb_data, min_grade, images_data, author_type, author_id, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+  ).bind(category, title, content, imageData, thumbData, minGrade, imagesData, authorType, authorId, Date.now()).run();
 
   return json({ ok: true, id: result.meta.last_row_id });
+}
+
+// 강의 게시글에 첨부하는 여러 이미지(전자책 스타일 삽입용) 검증 — 개수/개별 용량 제한
+function validateImagesData(images) {
+  if (images === undefined || images === null) return null;
+  if (!Array.isArray(images)) return '이미지 목록 형식이 올바르지 않습니다.';
+  if (images.length > 10) return '이미지는 최대 10개까지 첨부할 수 있습니다.';
+  for (const img of images) {
+    if (typeof img !== 'string' || img.length > 2_000_000) return '이미지 용량이 너무 큽니다. (개당 최대 약 1.5MB)';
+  }
+  return null;
 }
 
 async function handleDeletePost(request, env) {
@@ -554,10 +568,20 @@ async function handleUpdatePost(request, env) {
   const content = (body.content || '').trim();
   if (!id || !title || !content) return json({ ok: false, error: '제목과 내용을 입력해주세요.' }, 400);
 
-  const post = await env.DB.prepare('SELECT id FROM posts WHERE id = ?').bind(id).first();
+  const post = await env.DB.prepare('SELECT id, category, images_data, min_grade FROM posts WHERE id = ?').bind(id).first();
   if (!post) return json({ ok: false, error: '게시글을 찾을 수 없습니다.' }, 404);
 
-  await env.DB.prepare('UPDATE posts SET title = ?, content = ? WHERE id = ?').bind(title, content, id).run();
+  const imagesDataErr = validateImagesData(body.images_data);
+  if (imagesDataErr) return json({ ok: false, error: imagesDataErr }, 400);
+  // images_data/min_grade는 요청에 없으면(undefined) 기존 값을 그대로 유지 — 프론트가 안 보내는 옛 클라이언트에서도 기존 데이터가 지워지지 않도록
+  const imagesData = body.images_data === undefined
+    ? post.images_data
+    : (Array.isArray(body.images_data) && body.images_data.length ? JSON.stringify(body.images_data) : null);
+  const minGrade = body.min_grade === undefined
+    ? post.min_grade
+    : (post.category === 'lecture' && GRADES.some((g) => g.key === body.min_grade) ? body.min_grade : null);
+
+  await env.DB.prepare('UPDATE posts SET title = ?, content = ?, images_data = ?, min_grade = ? WHERE id = ?').bind(title, content, imagesData, minGrade, id).run();
   return json({ ok: true });
 }
 
@@ -1672,6 +1696,8 @@ async function ensureSchema(env) {
   }
 
   try { await env.DB.prepare('ALTER TABLE referral_withdrawals ADD COLUMN paid_at INTEGER').run(); } catch (e) {}
+  // 강의(lecture) 게시글을 전자책처럼 여러 이미지와 함께 꾸밀 수 있도록 — JSON 배열(base64) 문자열로 저장
+  try { await env.DB.prepare('ALTER TABLE posts ADD COLUMN images_data TEXT').run(); } catch (e) {}
 
   // 경제 캘린더가 비어있으면 근시일 내 실제 발표 일정 몇 건을 예시로 미리 넣어둠 (관리자가 자유롭게 추가/수정/삭제 가능)
   try {
