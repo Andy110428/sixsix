@@ -234,6 +234,12 @@
   .callout-body{ font-size:0.88rem; color:var(--text); line-height:1.6; }
   .callout-tags{ display:flex; flex-wrap:wrap; gap:6px; margin-top:10px; }
   .tag-chip{ font-size:0.7rem; font-family:'JetBrains Mono',monospace; color:var(--text-dim); background:rgba(255,255,255,0.06); border:1px solid var(--line); border-radius:20px; padding:2px 9px; }
+  .lecture-wrap{ position:relative; }
+  .lecture-watermark{ position:absolute; inset:0; pointer-events:none; z-index:5; overflow:hidden; }
+  .lecture-watermark svg{ display:block; width:100%; height:100%; }
+  .modal.lecture-modal .lecture-toc,
+  .modal.lecture-modal .lecture-content{ -webkit-user-select:none; -moz-user-select:none; user-select:none; }
+  .modal.lecture-modal .lecture-img{ pointer-events:none; -webkit-touch-callout:none; }
   .comment-list{ display:flex; flex-direction:column; gap:10px; margin-bottom:16px; }
   .comment-item{ background:var(--bg-soft); border:1px solid var(--line); border-radius:10px; padding:12px 14px; }
   .comment-item .who{ font-size:0.74rem; color:var(--cyan); font-family:'JetBrains Mono',monospace; margin-bottom:4px; }
@@ -641,13 +647,14 @@
 
   var currentEmail = null;
   var currentNickname = null;
+  var currentUid = null;
 
   async function checkSession(){
     try{
       var res = await fetch('/api/me', { credentials: 'same-origin' });
       var data = await res.json();
       if (data.ok) {
-        currentEmail = data.email; currentNickname = data.nickname;
+        currentEmail = data.email; currentNickname = data.nickname; currentUid = data.uid || null;
         if (data.uid) unlock('member'); else showUidGate();
         return;
       }
@@ -655,7 +662,7 @@
       // 회원 세션이 없으면 관리자로 로그인된 상태인지 확인 (관리자도 스터디룸을 둘러볼 수 있게)
       var adminRes = await fetch('/api/admin/me', { credentials: 'same-origin' });
       var adminData = await adminRes.json();
-      if (adminData.ok) { unlock('admin'); return; }
+      if (adminData.ok) { currentNickname = '관리자'; unlock('admin'); return; }
 
       lock();
     } catch(e){ lock(); }
@@ -676,6 +683,7 @@
         currentEmail = data.email; currentNickname = data.nickname;
         var meRes = await fetch('/api/me', { credentials:'same-origin' });
         var me = await meRes.json();
+        currentUid = me.uid || null;
         if (me.ok && me.uid) {
           showWelcomeSplash(me.nickname || ('UID ' + me.uid), function(){ unlock('member'); });
         } else showUidGate();
@@ -1001,7 +1009,8 @@
       var modalEl = postModal.querySelector('.modal');
       if (data.post.category === 'lecture') {
         modalEl.classList.add('lecture-modal');
-        pmBody.innerHTML = renderLectureContent(data.post.content, data.post.images_data);
+        var wmLabel = currentNickname || (currentUid ? ('UID ' + currentUid) : (currentEmail || 'TEAM SIXX'));
+        pmBody.innerHTML = renderLectureContent(data.post.content, data.post.images_data, wmLabel);
       } else {
         modalEl.classList.remove('lecture-modal');
         pmBody.textContent = data.post.content;
@@ -1022,6 +1031,7 @@
           attachEl = document.createElement('img');
           attachEl.src = data.post.image_data;
           attachEl.style.cssText = 'width:100%; border-radius:10px; margin-bottom:16px; display:block;';
+          if (data.post.category === 'lecture') { attachEl.draggable = false; attachEl.style.pointerEvents = 'none'; }
         }
         attachEl.id = 'pm-image';
         pmBody.parentNode.insertBefore(attachEl, pmBody);
@@ -1049,6 +1059,28 @@
     e.preventDefault();
     var target = document.getElementById(link.getAttribute('href').slice(1));
     if (target) target.scrollIntoView({ behavior:'smooth', block:'start' });
+  });
+
+  // ── 강의 콘텐츠 복사/캡처 방지 (베스트 에포트 — 화면 캡처 자체는 어떤 웹사이트도 기술적으로 막을 수 없음.
+  //     대신 텍스트 선택/우클릭 저장/단축키를 막고, 유출 시 추적 가능하도록 워터마크로 억제하는 방식) ──
+  function isLectureModalOpen(){
+    return postModal.classList.contains('open') && postModal.querySelector('.modal').classList.contains('lecture-modal');
+  }
+  function isProtectedTarget(target){
+    return !!(target && target.closest && target.closest('#pm-body, #pm-image, #pm-title, #pm-meta'));
+  }
+  ['contextmenu', 'copy', 'cut', 'dragstart', 'selectstart'].forEach(function(evtName){
+    postModal.addEventListener(evtName, function(e){
+      if (isLectureModalOpen() && isProtectedTarget(e.target)) e.preventDefault();
+    });
+  });
+  document.addEventListener('keydown', function(e){
+    if (!isLectureModalOpen()) return;
+    var tag = document.activeElement ? document.activeElement.tagName : '';
+    if (tag === 'INPUT' || tag === 'TEXTAREA') return; // 댓글 입력창 등은 정상 동작 유지
+    var k = e.key ? e.key.toLowerCase() : '';
+    var mod = e.ctrlKey || e.metaKey;
+    if (mod && (k === 'c' || k === 'x' || k === 's' || k === 'p')) e.preventDefault();
   });
 
   commentForm.addEventListener('submit', async function(e){
@@ -1274,7 +1306,15 @@
   }
 
   // ── 강의(lecture) 게시글 전자책 스타일 렌더링 ──
-  function renderLectureContent(content, imagesDataRaw){
+  function buildLectureWatermarkSvg(label){
+    var text = escapeHtml(String(label || 'TEAM SIXX') + '  ·  ' + fmtDate(Date.now()));
+    return '<div class="lecture-watermark" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%">' +
+      '<defs><pattern id="lecwm" width="280" height="150" patternUnits="userSpaceOnUse" patternTransform="rotate(-24)">' +
+      '<text x="0" y="80" font-family="JetBrains Mono, monospace" font-size="13" fill="rgba(255,255,255,0.05)">' + text + '</text>' +
+      '</pattern></defs><rect width="100%" height="100%" fill="url(#lecwm)"></rect></svg></div>';
+  }
+
+  function renderLectureContent(content, imagesDataRaw, watermarkLabel){
     var images = [];
     try{ images = imagesDataRaw ? JSON.parse(imagesDataRaw) : []; } catch(e){ images = []; }
 
@@ -1365,7 +1405,7 @@
         '</ol></div>';
     }
 
-    return tocHtml + '<div class="lecture-content">' + bodyHtml + '</div>';
+    return '<div class="lecture-wrap">' + buildLectureWatermarkSvg(watermarkLabel) + tocHtml + '<div class="lecture-content">' + bodyHtml + '</div></div>';
   }
 
   function extractYoutubeId(url){
