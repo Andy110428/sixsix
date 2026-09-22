@@ -45,6 +45,7 @@ CREATE TABLE IF NOT EXISTS posts (
   image_data TEXT,
   thumb_data TEXT,
   min_grade TEXT,
+  external_url TEXT,                     -- 강의(lecture) 카드의 "수강하러가기" 외부 링크
   author_type TEXT NOT NULL,
   author_id TEXT NOT NULL,               -- member면 members.uid 값
   created_at INTEGER NOT NULL

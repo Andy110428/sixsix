@@ -35,6 +35,7 @@ CREATE TABLE IF NOT EXISTS posts (
   image_data TEXT,
   thumb_data TEXT,
   min_grade TEXT,
+  external_url TEXT,
   author_type TEXT NOT NULL,
   author_id TEXT NOT NULL,
   created_at INTEGER NOT NULL

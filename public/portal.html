@@ -87,13 +87,14 @@
   @media (min-width:861px){
     #tabs{
       position:fixed; left:0; top:65px; bottom:0; z-index:40;
-      width:208px; overflow-y:auto;
-      display:flex !important; flex-direction:column; align-items:stretch; gap:2px;
-      padding:22px 14px; border-right:1px solid var(--line);
+      width:240px; overflow-y:auto;
+      display:flex !important; flex-direction:column; align-items:stretch; gap:8px;
+      padding:32px 18px; border-right:1px solid var(--line);
       background:rgba(9,9,11,0.5); backdrop-filter:blur(10px);
     }
-    #tabs .tab-link, #tabs .icon-btn{ width:100%; text-align:left; justify-content:flex-start; }
-    #gated-content, #promo-wrap{ margin-left:208px; }
+    #tabs .tab-link, #tabs .icon-btn{ width:100%; text-align:left; justify-content:flex-start; padding:13px 16px; font-size:1rem; border-radius:10px; }
+    #tabs .tabs-divider{ height:1px; background:var(--line); margin:10px 2px; flex-shrink:0; }
+    #gated-content, #promo-wrap{ margin-left:240px; }
   }
 
   @media (max-width:860px){
@@ -214,32 +215,18 @@
   .modal h2{ font-size:1.15rem; margin-bottom:8px; padding-right:24px; }
   .modal .post-meta{ font-size:0.78rem; color:var(--text-dim); font-family:'JetBrains Mono',monospace; margin-bottom:16px; }
   .modal .post-body{ white-space:pre-wrap; font-size:0.94rem; line-height:1.7; margin-bottom:24px; }
-  .modal.lecture-modal{ max-width:760px; }
-  .lecture-toc{ background:var(--bg-soft); border:1px solid var(--line); border-radius:10px; padding:14px 16px; margin-bottom:20px; }
-  .lecture-toc-title{ font-size:0.78rem; color:var(--text-dim); font-family:'JetBrains Mono',monospace; margin-bottom:8px; letter-spacing:0.02em; }
-  .lecture-toc ol{ margin:0; padding-left:18px; }
-  .lecture-toc li{ margin-bottom:4px; }
-  .lecture-toc-link{ color:var(--cyan); text-decoration:none; font-size:0.88rem; }
-  .lecture-toc-link:hover{ text-decoration:underline; }
-  .lecture-content{ font-size:0.94rem; line-height:1.75; white-space:normal; }
-  .lecture-heading{ font-size:1.05rem; margin:26px 0 10px; padding-top:6px; scroll-margin-top:20px; }
-  .lecture-heading:first-child{ margin-top:0; }
-  .lecture-p{ margin:0 0 14px; }
-  .lecture-divider{ border:none; border-top:1px solid var(--line); margin:22px 0; }
-  .lecture-img{ width:100%; border-radius:10px; margin:10px 0 18px; display:block; }
-  .lecture-video{ position:relative; padding-top:56.25%; margin:10px 0 18px; border-radius:10px; overflow:hidden; background:#000; }
-  .lecture-video iframe{ position:absolute; inset:0; width:100%; height:100%; border:0; }
-  .callout-box{ background:rgba(215,217,220,0.07); border:1px solid rgba(215,217,220,0.25); border-left:3px solid var(--cyan); border-radius:8px; padding:14px 16px; margin:0 0 16px; }
-  .callout-title{ font-weight:700; color:var(--cyan); margin-bottom:4px; font-size:0.92rem; }
-  .callout-body{ font-size:0.88rem; color:var(--text); line-height:1.6; }
-  .callout-tags{ display:flex; flex-wrap:wrap; gap:6px; margin-top:10px; }
-  .tag-chip{ font-size:0.7rem; font-family:'JetBrains Mono',monospace; color:var(--text-dim); background:rgba(255,255,255,0.06); border:1px solid var(--line); border-radius:20px; padding:2px 9px; }
-  .lecture-wrap{ position:relative; }
-  .lecture-watermark{ position:absolute; inset:0; pointer-events:none; z-index:5; overflow:hidden; }
-  .lecture-watermark svg{ display:block; width:100%; height:100%; }
-  .modal.lecture-modal .lecture-toc,
-  .modal.lecture-modal .lecture-content{ -webkit-user-select:none; -moz-user-select:none; user-select:none; }
-  .modal.lecture-modal .lecture-img{ pointer-events:none; -webkit-touch-callout:none; }
+  .lecture-grid{ display:grid; grid-template-columns:repeat(auto-fill, minmax(240px, 1fr)); gap:18px; }
+  .lecture-card{ background:var(--panel); border:1px solid var(--line); border-radius:14px; overflow:hidden; display:flex; flex-direction:column; transition:transform .18s ease, border-color .18s ease; }
+  .lecture-card:hover{ transform:translateY(-3px); border-color:rgba(215,217,220,0.3); }
+  .lecture-card-img{ width:100%; aspect-ratio:16/9; object-fit:cover; display:block; background:var(--bg-soft); }
+  .lecture-card-img-placeholder{ width:100%; aspect-ratio:16/9; display:flex; align-items:center; justify-content:center; background:var(--bg-soft); color:var(--text-dim); font-size:1.8rem; }
+  .lecture-card-body{ padding:16px 18px 18px; display:flex; flex-direction:column; gap:8px; flex:1; }
+  .lecture-card-title{ font-size:1rem; font-weight:700; }
+  .lecture-card-desc{ font-size:0.84rem; color:var(--text-dim); line-height:1.55; flex:1; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; }
+  .lecture-card-btn{ margin-top:4px; display:inline-flex; align-items:center; justify-content:center; gap:6px; padding:10px 14px; border-radius:8px; background:rgba(215,217,220,0.1); border:1px solid rgba(215,217,220,0.3); color:var(--cyan); font-weight:600; font-size:0.86rem; text-decoration:none; }
+  .lecture-card-btn:hover{ background:rgba(215,217,220,0.18); }
+  .lecture-card.locked{ opacity:0.6; }
+  .lecture-card.locked .lecture-card-btn{ pointer-events:none; opacity:0.5; }
   .comment-list{ display:flex; flex-direction:column; gap:10px; margin-bottom:16px; }
   .comment-item{ background:var(--bg-soft); border:1px solid var(--line); border-radius:10px; padding:12px 14px; }
   .comment-item .who{ font-size:0.74rem; color:var(--cyan); font-family:'JetBrains Mono',monospace; margin-bottom:4px; }
@@ -278,8 +265,10 @@
       <button type="button" class="tab-link" data-cat="question">질문<span id="qa-badge" class="qa-badge" hidden>0</span></button>
       <button type="button" class="tab-link" data-cat="profit">수익인증</button>
       <button type="button" class="tab-link" id="calendar-tab">경제 캘린더</button>
+      <div class="tabs-divider"></div>
       <a class="icon-btn" href="referral.html">추천인 프로그램</a>
       <a class="icon-btn" id="admin-link" href="admin.html" hidden>관리자 페이지로</a>
+      <div class="tabs-divider"></div>
       <button type="button" class="icon-btn" id="profile-btn">내 정보</button>
       <button type="button" class="icon-btn" id="logout-btn">로그아웃</button>
     </div>
@@ -585,7 +574,7 @@
   var catMeta = {
     notice:   { kicker:'NOTICE',   title:'공지사항', note:'실시간 브리핑은 텔레그램에서, 정리된 내용은 코인 브리핑 탭에서 확인하세요.', canWrite:false },
     briefing: { kicker:'BRIEFING', title:'코인 브리핑', note:'', canWrite:false },
-    lecture:  { kicker:'LECTURES', title:'강의',     note:'', canWrite:false },
+    lecture:  { kicker:'LECTURES', title:'강의',     note:'카드를 눌러 "수강하러가기"를 클릭하면 강의 사이트로 이동해요.', canWrite:false },
     question: { kicker:'Q&A',      title:'질문',     note:'궁금한 점을 자유롭게 남겨주세요.', canWrite:true },
     profit:   { kicker:'PROFIT',   title:'수익인증', note:'수익 인증샷과 함께 자유롭게 공유해주세요.', canWrite:true }
   };
@@ -647,14 +636,13 @@
 
   var currentEmail = null;
   var currentNickname = null;
-  var currentUid = null;
 
   async function checkSession(){
     try{
       var res = await fetch('/api/me', { credentials: 'same-origin' });
       var data = await res.json();
       if (data.ok) {
-        currentEmail = data.email; currentNickname = data.nickname; currentUid = data.uid || null;
+        currentEmail = data.email; currentNickname = data.nickname;
         if (data.uid) unlock('member'); else showUidGate();
         return;
       }
@@ -662,7 +650,7 @@
       // 회원 세션이 없으면 관리자로 로그인된 상태인지 확인 (관리자도 스터디룸을 둘러볼 수 있게)
       var adminRes = await fetch('/api/admin/me', { credentials: 'same-origin' });
       var adminData = await adminRes.json();
-      if (adminData.ok) { currentNickname = '관리자'; unlock('admin'); return; }
+      if (adminData.ok) { unlock('admin'); return; }
 
       lock();
     } catch(e){ lock(); }
@@ -683,7 +671,6 @@
         currentEmail = data.email; currentNickname = data.nickname;
         var meRes = await fetch('/api/me', { credentials:'same-origin' });
         var me = await meRes.json();
-        currentUid = me.uid || null;
         if (me.ok && me.uid) {
           showWelcomeSplash(me.nickname || ('UID ' + me.uid), function(){ unlock('member'); });
         } else showUidGate();
@@ -899,6 +886,8 @@
     var listEl = document.getElementById('post-list');
     var emptyEl = document.getElementById('empty-note');
     listEl.innerHTML = '';
+    listEl.classList.toggle('lecture-grid', currentCategory === 'lecture');
+    listEl.classList.toggle('post-list', currentCategory !== 'lecture');
     emptyEl.hidden = true;
 
     try{
@@ -906,19 +895,15 @@
       var data = await res.json();
       var posts = (data.ok && data.posts) ? data.posts : [];
       if(posts.length === 0){ emptyEl.hidden = false; return; }
-      var gradeLabels = { bronze:'브론즈', silver:'실버', gold:'골드', platinum:'플래티넘' };
+
+      if (currentCategory === 'lecture') {
+        posts.forEach(function(p){ listEl.appendChild(buildLectureCard(p)); });
+        return;
+      }
+
       posts.forEach(function(p){
         var card = document.createElement('div');
         card.className = 'post-card';
-        if(p.locked){
-          card.style.opacity = '0.6';
-          card.innerHTML =
-            '<div style="flex:1; min-width:0;"><div class="meta">' + fmtDate(p.created_at) + ' · 🔒 ' + (gradeLabels[p.min_grade] || p.min_grade) + ' 등급 이상</div>' +
-            '<h3>' + escapeHtml(p.title) + '</h3></div><span class="arrow">🔒</span>';
-          card.addEventListener('click', function(){ alert((gradeLabels[p.min_grade] || p.min_grade) + ' 등급 이상만 볼 수 있는 강의입니다. 댓글/활동을 늘리면 등급이 올라가요.'); });
-          listEl.appendChild(card);
-          return;
-        }
         var isNew = (Date.now() - p.created_at) < (3 * 24 * 60 * 60 * 1000);
         var thumb = p.thumb_data ? '<img src="' + p.thumb_data + '" class="post-thumb" alt="">' : '';
         var qaStatus = currentCategory === 'question' ? ('<span class="qa-status' + (p.has_admin_reply ? ' answered' : '') + '">' + (p.has_admin_reply ? '✅ 답변완료' : '⏳ 답변대기') + '</span>') : '';
@@ -930,6 +915,37 @@
         listEl.appendChild(card);
       });
     } catch(e){ emptyEl.hidden = false; }
+  }
+
+  var gradeLabels = { bronze:'브론즈', silver:'실버', gold:'골드', platinum:'플래티넘' };
+
+  function buildLectureCard(p){
+    var card = document.createElement('div');
+    card.className = 'lecture-card';
+    if (p.locked) {
+      card.classList.add('locked');
+      card.innerHTML =
+        '<div class="lecture-card-img-placeholder">🔒</div>' +
+        '<div class="lecture-card-body">' +
+          '<div class="lecture-card-title">' + escapeHtml(p.title) + '</div>' +
+          '<div class="lecture-card-desc">' + (gradeLabels[p.min_grade] || p.min_grade) + ' 등급 이상만 볼 수 있어요.</div>' +
+          '<span class="lecture-card-btn">🔒 등급 제한</span>' +
+        '</div>';
+      card.addEventListener('click', function(){ alert((gradeLabels[p.min_grade] || p.min_grade) + ' 등급 이상만 볼 수 있는 강의입니다. 댓글/활동을 늘리면 등급이 올라가요.'); });
+      return card;
+    }
+
+    var imgHtml = p.thumb_data
+      ? '<img class="lecture-card-img" src="' + p.thumb_data + '" alt="">'
+      : '<div class="lecture-card-img-placeholder">🎬</div>';
+    card.innerHTML =
+      imgHtml +
+      '<div class="lecture-card-body">' +
+        '<div class="lecture-card-title">' + escapeHtml(p.title) + '</div>' +
+        '<div class="lecture-card-desc">' + escapeHtml(p.content || '') + '</div>' +
+        '<a class="lecture-card-btn" href="' + escapeHtml(p.external_url || '#') + '" target="_blank" rel="noopener">수강하러가기 →</a>' +
+      '</div>';
+    return card;
   }
 
   var newPostImage = document.getElementById('new-post-image');
@@ -1006,15 +1022,7 @@
       if(!data.ok) return;
       pmTitle.textContent = data.post.title;
       pmMeta.textContent = fmtDate(data.post.created_at) + ' · ' + authorLabel(data.post);
-      var modalEl = postModal.querySelector('.modal');
-      if (data.post.category === 'lecture') {
-        modalEl.classList.add('lecture-modal');
-        var wmLabel = currentNickname || (currentUid ? ('UID ' + currentUid) : (currentEmail || 'TEAM SIXX'));
-        pmBody.innerHTML = renderLectureContent(data.post.content, data.post.images_data, wmLabel);
-      } else {
-        modalEl.classList.remove('lecture-modal');
-        pmBody.textContent = data.post.content;
-      }
+      pmBody.textContent = data.post.content;
       var existingImg = document.getElementById('pm-image');
       if (existingImg) existingImg.remove();
       if (data.post.image_data) {
@@ -1031,7 +1039,6 @@
           attachEl = document.createElement('img');
           attachEl.src = data.post.image_data;
           attachEl.style.cssText = 'width:100%; border-radius:10px; margin-bottom:16px; display:block;';
-          if (data.post.category === 'lecture') { attachEl.draggable = false; attachEl.style.pointerEvents = 'none'; }
         }
         attachEl.id = 'pm-image';
         pmBody.parentNode.insertBefore(attachEl, pmBody);
@@ -1053,35 +1060,6 @@
   }
   document.getElementById('post-modal-close').addEventListener('click', function(){ postModal.classList.remove('open'); });
   postModal.addEventListener('click', function(e){ if(e.target === postModal) postModal.classList.remove('open'); });
-  pmBody.addEventListener('click', function(e){
-    var link = e.target.closest('.lecture-toc-link');
-    if (!link) return;
-    e.preventDefault();
-    var target = document.getElementById(link.getAttribute('href').slice(1));
-    if (target) target.scrollIntoView({ behavior:'smooth', block:'start' });
-  });
-
-  // ── 강의 콘텐츠 복사/캡처 방지 (베스트 에포트 — 화면 캡처 자체는 어떤 웹사이트도 기술적으로 막을 수 없음.
-  //     대신 텍스트 선택/우클릭 저장/단축키를 막고, 유출 시 추적 가능하도록 워터마크로 억제하는 방식) ──
-  function isLectureModalOpen(){
-    return postModal.classList.contains('open') && postModal.querySelector('.modal').classList.contains('lecture-modal');
-  }
-  function isProtectedTarget(target){
-    return !!(target && target.closest && target.closest('#pm-body, #pm-image, #pm-title, #pm-meta'));
-  }
-  ['contextmenu', 'copy', 'cut', 'dragstart', 'selectstart'].forEach(function(evtName){
-    postModal.addEventListener(evtName, function(e){
-      if (isLectureModalOpen() && isProtectedTarget(e.target)) e.preventDefault();
-    });
-  });
-  document.addEventListener('keydown', function(e){
-    if (!isLectureModalOpen()) return;
-    var tag = document.activeElement ? document.activeElement.tagName : '';
-    if (tag === 'INPUT' || tag === 'TEXTAREA') return; // 댓글 입력창 등은 정상 동작 유지
-    var k = e.key ? e.key.toLowerCase() : '';
-    var mod = e.ctrlKey || e.metaKey;
-    if (mod && (k === 'c' || k === 'x' || k === 's' || k === 'p')) e.preventDefault();
-  });
 
   commentForm.addEventListener('submit', async function(e){
     e.preventDefault();
@@ -1305,113 +1283,6 @@
     });
   }
 
-  // ── 강의(lecture) 게시글 전자책 스타일 렌더링 ──
-  function buildLectureWatermarkSvg(label){
-    var text = escapeHtml(String(label || 'TEAM SIXX') + '  ·  ' + fmtDate(Date.now()));
-    return '<div class="lecture-watermark" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%">' +
-      '<defs><pattern id="lecwm" width="280" height="150" patternUnits="userSpaceOnUse" patternTransform="rotate(-24)">' +
-      '<text x="0" y="80" font-family="JetBrains Mono, monospace" font-size="13" fill="rgba(255,255,255,0.05)">' + text + '</text>' +
-      '</pattern></defs><rect width="100%" height="100%" fill="url(#lecwm)"></rect></svg></div>';
-  }
-
-  function renderLectureContent(content, imagesDataRaw, watermarkLabel){
-    var images = [];
-    try{ images = imagesDataRaw ? JSON.parse(imagesDataRaw) : []; } catch(e){ images = []; }
-
-    function inlineFormat(line){
-      var escaped = escapeHtml(line);
-      escaped = escaped.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
-      return escaped;
-    }
-
-    var lines = String(content || '').split('\n');
-    var tocItems = [];
-    var bodyHtml = '';
-    var paraBuf = [];
-    var headingCount = 0;
-
-    function flushPara(){
-      if (paraBuf.length){
-        bodyHtml += '<p class="lecture-p">' + paraBuf.map(inlineFormat).join('<br>') + '</p>';
-        paraBuf = [];
-      }
-    }
-
-    lines.forEach(function(raw){
-      var line = raw.trim();
-      if (line === '') { flushPara(); return; }
-
-      if (line.indexOf('## ') === 0) {
-        flushPara();
-        headingCount++;
-        var text = line.slice(3).trim();
-        var id = 'lec-h-' + headingCount;
-        tocItems.push({ id: id, text: text });
-        bodyHtml += '<h3 class="lecture-heading" id="' + id + '">' + escapeHtml(text) + '</h3>';
-        return;
-      }
-
-      if (line === '---') {
-        flushPara();
-        bodyHtml += '<hr class="lecture-divider">';
-        return;
-      }
-
-      var imgMatch = line.match(/^\[img:(\d+)\]$/);
-      if (imgMatch) {
-        flushPara();
-        var idx = Number(imgMatch[1]) - 1;
-        if (images[idx]) {
-          bodyHtml += '<img class="lecture-img" src="' + images[idx] + '" alt="">';
-        }
-        return;
-      }
-
-      var videoMatch = line.match(/^\[video:(\S+)\]$/);
-      if (videoMatch) {
-        flushPara();
-        var url = videoMatch[1];
-        var ytId = extractYoutubeId(url);
-        if (ytId) {
-          bodyHtml += '<div class="lecture-video"><iframe src="https://www.youtube.com/embed/' + ytId + '" title="lecture video" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>';
-        } else {
-          bodyHtml += '<a class="btn btn-ghost" href="' + escapeHtml(url) + '" target="_blank" rel="noopener" style="display:inline-flex; margin:6px 0 18px;">🎬 영상 보기</a>';
-        }
-        return;
-      }
-
-      if (line.indexOf('> ') === 0) {
-        flushPara();
-        var parts = line.slice(2).split('|').map(function(s){ return s.trim(); });
-        var cTitle = parts[0] || '';
-        var cBody = parts[1] || '';
-        var cTags = parts[2] ? parts[2].split(',').map(function(s){ return s.trim(); }).filter(Boolean) : [];
-        bodyHtml += '<div class="callout-box">' +
-          (cTitle ? '<div class="callout-title">' + inlineFormat(cTitle) + '</div>' : '') +
-          (cBody ? '<div class="callout-body">' + inlineFormat(cBody) + '</div>' : '') +
-          (cTags.length ? '<div class="callout-tags">' + cTags.map(function(t){ return '<span class="tag-chip">' + escapeHtml(t) + '</span>'; }).join('') + '</div>' : '') +
-          '</div>';
-        return;
-      }
-
-      paraBuf.push(line);
-    });
-    flushPara();
-
-    var tocHtml = '';
-    if (tocItems.length) {
-      tocHtml = '<div class="lecture-toc"><div class="lecture-toc-title">목차</div><ol>' +
-        tocItems.map(function(t){ return '<li><a href="#' + t.id + '" class="lecture-toc-link">' + escapeHtml(t.text) + '</a></li>'; }).join('') +
-        '</ol></div>';
-    }
-
-    return '<div class="lecture-wrap">' + buildLectureWatermarkSvg(watermarkLabel) + tocHtml + '<div class="lecture-content">' + bodyHtml + '</div></div>';
-  }
-
-  function extractYoutubeId(url){
-    var m = String(url).match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/))([\w-]{6,})/);
-    return m ? m[1] : null;
-  }
 })();
 </script>
 

@@ -443,8 +443,10 @@ async function handleListPosts(request, env) {
   if (!ALLOWED_CATEGORIES.includes(category)) return json({ ok: false, error: '잘못된 카테고리입니다.' }, 400);
 
   const order = category === 'lecture' ? 'ASC' : 'DESC';
+  // 강의(lecture) 카드에는 목록 단계에서 바로 짧은 소개와 수강 링크가 필요해서 content/external_url도 같이 내려줌
+  const extraCols = category === 'lecture' ? ', posts.content, posts.external_url' : '';
   const rows = await env.DB.prepare(
-    `SELECT posts.id, posts.title, posts.author_type, posts.author_id, posts.created_at, posts.thumb_data, posts.min_grade, members.nickname AS author_nickname,
+    `SELECT posts.id, posts.title, posts.author_type, posts.author_id, posts.created_at, posts.thumb_data, posts.min_grade${extraCols}, members.nickname AS author_nickname,
       (SELECT COUNT(*) FROM comments WHERE comments.post_id = posts.id AND comments.author_type = 'admin') > 0 AS has_admin_reply
      FROM posts LEFT JOIN members ON members.uid = posts.author_id
      WHERE posts.category = ? ORDER BY posts.id ${order} LIMIT 100`
@@ -501,12 +503,13 @@ async function handleCreatePost(request, env) {
   const imageData = body.image_data || null;
   const thumbData = body.thumb_data || null;
   const minGrade = category === 'lecture' && GRADES.some((g) => g.key === body.min_grade) ? body.min_grade : null;
-  const imagesDataErr = validateImagesData(body.images_data);
-  if (imagesDataErr) return json({ ok: false, error: imagesDataErr }, 400);
-  const imagesData = Array.isArray(body.images_data) && body.images_data.length ? JSON.stringify(body.images_data) : null;
+  const externalUrlErr = validateExternalUrl(body.external_url);
+  if (externalUrlErr) return json({ ok: false, error: externalUrlErr }, 400);
+  const externalUrl = category === 'lecture' && body.external_url ? body.external_url.trim() : null;
 
   if (!ALLOWED_CATEGORIES.includes(category)) return json({ ok: false, error: '잘못된 카테고리입니다.' }, 400);
   if (!title || !content) return json({ ok: false, error: '제목과 내용을 입력해주세요.' }, 400);
+  if (category === 'lecture' && !externalUrl) return json({ ok: false, error: '강의는 수강 링크(외부 URL)를 입력해야 합니다.' }, 400);
   if (imageData && imageData.length > 2_000_000) return json({ ok: false, error: '이미지 용량이 너무 큽니다. (최대 약 1.5MB)' }, 400);
   if (thumbData && thumbData.length > 150_000) return json({ ok: false, error: '미리보기 이미지 생성에 실패했습니다.' }, 400);
 
@@ -528,20 +531,17 @@ async function handleCreatePost(request, env) {
   }
 
   const result = await env.DB.prepare(
-    'INSERT INTO posts (category, title, content, image_data, thumb_data, min_grade, images_data, author_type, author_id, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
-  ).bind(category, title, content, imageData, thumbData, minGrade, imagesData, authorType, authorId, Date.now()).run();
+    'INSERT INTO posts (category, title, content, image_data, thumb_data, min_grade, external_url, author_type, author_id, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+  ).bind(category, title, content, imageData, thumbData, minGrade, externalUrl, authorType, authorId, Date.now()).run();
 
   return json({ ok: true, id: result.meta.last_row_id });
 }
 
-// 강의 게시글에 첨부하는 여러 이미지(전자책 스타일 삽입용) 검증 — 개수/개별 용량 제한
-function validateImagesData(images) {
-  if (images === undefined || images === null) return null;
-  if (!Array.isArray(images)) return '이미지 목록 형식이 올바르지 않습니다.';
-  if (images.length > 10) return '이미지는 최대 10개까지 첨부할 수 있습니다.';
-  for (const img of images) {
-    if (typeof img !== 'string' || img.length > 2_000_000) return '이미지 용량이 너무 큽니다. (개당 최대 약 1.5MB)';
-  }
+// 강의(lecture) 카드의 "수강하러가기" 버튼이 이동할 외부 링크 검증
+function validateExternalUrl(url) {
+  if (url === undefined || url === null || url === '') return null;
+  if (typeof url !== 'string' || url.length > 500) return '링크 형식이 올바르지 않습니다.';
+  if (!/^https?:\/\//i.test(url.trim())) return '링크는 http:// 또는 https://로 시작해야 합니다.';
   return null;
 }
 
@@ -568,20 +568,23 @@ async function handleUpdatePost(request, env) {
   const content = (body.content || '').trim();
   if (!id || !title || !content) return json({ ok: false, error: '제목과 내용을 입력해주세요.' }, 400);
 
-  const post = await env.DB.prepare('SELECT id, category, images_data, min_grade FROM posts WHERE id = ?').bind(id).first();
+  const post = await env.DB.prepare('SELECT id, category, external_url, min_grade FROM posts WHERE id = ?').bind(id).first();
   if (!post) return json({ ok: false, error: '게시글을 찾을 수 없습니다.' }, 404);
 
-  const imagesDataErr = validateImagesData(body.images_data);
-  if (imagesDataErr) return json({ ok: false, error: imagesDataErr }, 400);
-  // images_data/min_grade는 요청에 없으면(undefined) 기존 값을 그대로 유지 — 프론트가 안 보내는 옛 클라이언트에서도 기존 데이터가 지워지지 않도록
-  const imagesData = body.images_data === undefined
-    ? post.images_data
-    : (Array.isArray(body.images_data) && body.images_data.length ? JSON.stringify(body.images_data) : null);
+  const externalUrlErr = validateExternalUrl(body.external_url);
+  if (externalUrlErr) return json({ ok: false, error: externalUrlErr }, 400);
+  if (post.category === 'lecture' && body.external_url !== undefined && !body.external_url) {
+    return json({ ok: false, error: '강의는 수강 링크(외부 URL)를 입력해야 합니다.' }, 400);
+  }
+  // external_url/min_grade는 요청에 없으면(undefined) 기존 값을 그대로 유지 — 프론트가 안 보내는 옛 클라이언트에서도 기존 데이터가 지워지지 않도록
+  const externalUrl = body.external_url === undefined
+    ? post.external_url
+    : (post.category === 'lecture' && body.external_url ? body.external_url.trim() : null);
   const minGrade = body.min_grade === undefined
     ? post.min_grade
     : (post.category === 'lecture' && GRADES.some((g) => g.key === body.min_grade) ? body.min_grade : null);
 
-  await env.DB.prepare('UPDATE posts SET title = ?, content = ?, images_data = ?, min_grade = ? WHERE id = ?').bind(title, content, imagesData, minGrade, id).run();
+  await env.DB.prepare('UPDATE posts SET title = ?, content = ?, external_url = ?, min_grade = ? WHERE id = ?').bind(title, content, externalUrl, minGrade, id).run();
   return json({ ok: true });
 }
 
@@ -1696,8 +1699,10 @@ async function ensureSchema(env) {
   }
 
   try { await env.DB.prepare('ALTER TABLE referral_withdrawals ADD COLUMN paid_at INTEGER').run(); } catch (e) {}
-  // 강의(lecture) 게시글을 전자책처럼 여러 이미지와 함께 꾸밀 수 있도록 — JSON 배열(base64) 문자열로 저장
-  try { await env.DB.prepare('ALTER TABLE posts ADD COLUMN images_data TEXT').run(); } catch (e) {}
+  // 강의(lecture) 카드의 "수강하러가기" 버튼이 이동할 외부 링크
+  try { await env.DB.prepare('ALTER TABLE posts ADD COLUMN external_url TEXT').run(); } catch (e) {}
+  // 예전(전자책 스타일) 강의 렌더링에서 쓰던 다중 이미지 컬럼은 더 이상 안 씀 — D1이 DROP COLUMN을 지원하면 정리, 안 되면 조용히 무시(앱 동작엔 영향 없음)
+  try { await env.DB.prepare('ALTER TABLE posts DROP COLUMN images_data').run(); } catch (e) {}
 
   // 경제 캘린더가 비어있으면 근시일 내 실제 발표 일정 몇 건을 예시로 미리 넣어둠 (관리자가 자유롭게 추가/수정/삭제 가능)
   try {
