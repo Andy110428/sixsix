@@ -432,7 +432,8 @@
 
     <div data-profile-panel="summary">
       <div id="my-stats" class="stats-grid" style="display:grid; grid-template-columns:repeat(2,1fr); gap:10px;"></div>
-      <button type="button" class="btn btn-ghost btn-block" id="sync-volume-btn" hidden style="margin-top:10px;">🔄 내 거래량 동기화 (베타)</button>
+      <button type="button" class="btn btn-ghost btn-block" id="sync-volume-btn" hidden style="margin-top:10px;">🔄 지금 바로 동기화 (베타)</button>
+      <p id="sync-volume-note" class="section-note" hidden style="margin-top:6px; font-size:0.78rem;">매시 정각에 자동으로도 갱신돼요. 지금 바로 반영하고 싶을 때만 눌러주세요.</p>
       <div id="sync-volume-result" class="result-box" hidden></div>
       <div id="referred-by-box" class="uid-box" hidden style="margin-top:14px;">추천인 코드 <b class="mono" id="referred-by-code"></b>로 가입했어요 (<span id="referred-by-label"></span>)</div>
     </div>
@@ -1093,9 +1094,10 @@
       el.innerHTML =
         '<div class="stat-box"><div class="num">' + (data.grade_label || '-') + '</div><div class="label">등급</div></div>' +
         '<div class="stat-box"><div class="num">' + (data.activity || 0) + '</div><div class="label">활동량(댓글+글)</div></div>' +
-        '<div class="stat-box" style="grid-column:span 2;"><div class="num">$' + Number(data.trading_volume || 0).toLocaleString() + '</div><div class="label">내 거래량 (관리자 입력 또는 아래 동기화 버튼으로 갱신)</div></div>';
+        '<div class="stat-box" style="grid-column:span 2;"><div class="num">$' + Number(data.trading_volume || 0).toLocaleString() + '</div><div class="label">내 거래량 (API 연동 시 매시 자동 갱신)</div></div>';
 
       syncVolumeBtn.hidden = !data.has_gate_api;
+      document.getElementById('sync-volume-note').hidden = !data.has_gate_api;
 
       var referredByBox = document.getElementById('referred-by-box');
       if(data.referred_by_code){
