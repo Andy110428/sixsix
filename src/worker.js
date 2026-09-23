@@ -509,9 +509,13 @@ async function handleCreatePost(request, env) {
 
   if (!ALLOWED_CATEGORIES.includes(category)) return json({ ok: false, error: '잘못된 카테고리입니다.' }, 400);
   if (!title || !content) return json({ ok: false, error: '제목과 내용을 입력해주세요.' }, 400);
+  if (title.length > 200) return json({ ok: false, error: '제목은 200자 이내로 입력해주세요.' }, 400);
+  if (content.length > 20000) return json({ ok: false, error: '내용은 20,000자 이내로 입력해주세요.' }, 400);
   if (category === 'lecture' && !externalUrl) return json({ ok: false, error: '강의는 수강 링크(외부 URL)를 입력해야 합니다.' }, 400);
   if (imageData && imageData.length > 2_000_000) return json({ ok: false, error: '이미지 용량이 너무 큽니다. (최대 약 1.5MB)' }, 400);
+  if (imageData && !isValidAttachmentDataUri(imageData)) return json({ ok: false, error: '첨부 파일 형식이 올바르지 않습니다. (이미지 또는 PDF만 가능)' }, 400);
   if (thumbData && thumbData.length > 150_000) return json({ ok: false, error: '미리보기 이미지 생성에 실패했습니다.' }, 400);
+  if (thumbData && !isValidImageDataUri(thumbData)) return json({ ok: false, error: '미리보기 이미지 형식이 올바르지 않습니다.' }, 400);
 
   let authorType, authorId;
   const isAdmin = await getIsAdmin(request, env);
@@ -535,6 +539,15 @@ async function handleCreatePost(request, env) {
   ).bind(category, title, content, imageData, thumbData, minGrade, externalUrl, authorType, authorId, Date.now()).run();
 
   return json({ ok: true, id: result.meta.last_row_id });
+}
+
+// 게시글 첨부(image_data)/미리보기(thumb_data)가 실제로 base64 이미지·PDF data URI인지 확인
+// (업로드 UI를 거치지 않고 API를 직접 호출해서 임의의 data: URI를 넣는 걸 막기 위한 방어적 검증)
+function isValidImageDataUri(str) {
+  return typeof str === 'string' && /^data:image\/[a-z0-9.+-]+[;,]/i.test(str);
+}
+function isValidAttachmentDataUri(str) {
+  return typeof str === 'string' && /^data:(image\/[a-z0-9.+-]+|application\/pdf)[;,]/i.test(str);
 }
 
 // 강의(lecture) 카드의 "수강하러가기" 버튼이 이동할 외부 링크 검증
@@ -567,6 +580,8 @@ async function handleUpdatePost(request, env) {
   const title = (body.title || '').trim();
   const content = (body.content || '').trim();
   if (!id || !title || !content) return json({ ok: false, error: '제목과 내용을 입력해주세요.' }, 400);
+  if (title.length > 200) return json({ ok: false, error: '제목은 200자 이내로 입력해주세요.' }, 400);
+  if (content.length > 20000) return json({ ok: false, error: '내용은 20,000자 이내로 입력해주세요.' }, 400);
 
   const post = await env.DB.prepare('SELECT id, category, external_url, min_grade FROM posts WHERE id = ?').bind(id).first();
   if (!post) return json({ ok: false, error: '게시글을 찾을 수 없습니다.' }, 404);
@@ -593,6 +608,7 @@ async function handleCreateComment(request, env) {
   const postId = Number(body.post_id);
   const content = (body.content || '').trim();
   if (!postId || !content) return json({ ok: false, error: '내용을 입력해주세요.' }, 400);
+  if (content.length > 3000) return json({ ok: false, error: '댓글은 3,000자 이내로 입력해주세요.' }, 400);
 
   const isAdmin = await getIsAdmin(request, env);
   let authorType, authorId;
@@ -998,6 +1014,10 @@ async function handleReferralApply(request, env) {
   if (!walletAddress) return json({ ok: false, error: 'USDT(TRC20) 지갑 주소를 입력해주세요.' }, 400);
   if (!telegramId) return json({ ok: false, error: '텔레그램 아이디를 입력해주세요.' }, 400);
   if (!activityPlan) return json({ ok: false, error: '활동 계획을 입력해주세요.' }, 400);
+  if (walletAddress.length > 200) return json({ ok: false, error: '지갑 주소가 너무 깁니다.' }, 400);
+  if (telegramId.length > 100) return json({ ok: false, error: '텔레그램 아이디가 너무 깁니다.' }, 400);
+  if (activityPlan.length > 3000) return json({ ok: false, error: '활동 계획은 3,000자 이내로 입력해주세요.' }, 400);
+  if (notes.length > 3000) return json({ ok: false, error: '기타사항은 3,000자 이내로 입력해주세요.' }, 400);
 
   await env.DB.prepare(
     'INSERT INTO referral_applications (email, wallet_address, telegram_id, activity_plan, notes, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)'
@@ -1156,6 +1176,8 @@ async function handleReferralWithdraw(request, env) {
 
   if (!telegramId) return json({ ok: false, error: '텔레그램 아이디를 입력해주세요.' }, 400);
   if (!walletAddress) return json({ ok: false, error: 'USDT(TRC20) 지갑 주소를 입력해주세요.' }, 400);
+  if (telegramId.length > 100) return json({ ok: false, error: '텔레그램 아이디가 너무 깁니다.' }, 400);
+  if (walletAddress.length > 200) return json({ ok: false, error: '지갑 주소가 너무 깁니다.' }, 400);
   if (!amount || amount < REFERRAL_MIN_WITHDRAW_KRW) {
     return json({ ok: false, error: `최소 출금 금액은 ${REFERRAL_MIN_WITHDRAW_KRW.toLocaleString()}원입니다.` }, 400);
   }
