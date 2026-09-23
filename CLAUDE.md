@@ -486,6 +486,17 @@ portal.html의 `.welcome-splash`/`.welcome-splash-text`도 동일한 패턴으�
 ### 다음에 볼 것
 - 이 프로젝트에서 세 번째로 나온 패턴("의도는 좋았는데 접근성/조건부 CSS가 핵심 콘텐츠를 통째로 숨겨버림") — 앞으로 `prefers-reduced-motion`이나 비슷한 조건부 미디어쿼리를 추가할 때는 "애니메이션만 끄는지" vs "durationless라도 좋으니 최종 상태는 보여주는지"를 구분해서 후자로 작성할 것
 
+## 19-1단계: 모바일 "하얀 화면" 진짜 원인 2건 추가 수정 (2026-09-23)
+
+19단계 배포 직후 사용자가 실제 모바일로 확인해보니 여전히 "하얀 화면이 뜨는데 첫 문구(Welcome to TEAM SIXX)가 안 보인다"고 재보고함 — `prefers-reduced-motion` 수정과는 다른 원인이었음. 코드를 다시 훑어서 두 가지 실제 원인을 찾아 수정:
+
+1. **`html` 엘리먼트에 배경색이 없었음**: `body{ background: radial-gradient(...) }`는 6개 페이지 전부에 있었지만, **`html{ scroll-behavior:smooth; }`에는 `background`가 전혀 없었음** — 브라우저 기본값은 흰색. 모바일 사파리/크롬에서 스크롤 바운스(iOS의 고무줄 오버스크롤)나 동적 주소창 접힘/펼침으로 뷰포트 높이가 바뀔 때 `body` 바깥 영역(=`html`의 배경)이 순간적으로 드러나는데, 이게 흰색이었던 것. `.intro-word`의 텍스트 색(`--cyan: #d7d9dc`, 거의 흰색에 가까운 밝은 회색)이 이 흰 배경 위에서는 명암 대비가 거의 없어서 "글씨가 안 보인다"는 증상과 정확히 일치함. **고침**: 6개 파일 전부 `html{ background: var(--bg); }` 추가.
+2. **구글 폰트를 `@import`로 불러오고 있었음**: `<style>` 블록 맨 첫 줄이 `@import url('https://fonts.googleapis.com/css2?...')`였음 — CSS `@import`는 렌더링 차단(render-blocking) 리소스라서, 이 요청이 끝나야(성공/실패/타임아웃 불문) 브라우저가 페이지를 그리기 시작함. 모바일 데이터망이 느리거나, 통신사/공유기 DNS 필터링, 광고 차단 확장 등으로 `fonts.googleapis.com` 접속이 지연되면 그 시간 동안 화면 전체가 백지(브라우저 기본 흰 배경) 상태로 멈춰있고, 인트로 스플래시의 애니메이션 타이머(`animation-delay`)는 실제로 화면에 그려지기 시작한 시점부터 카운트되기 때문에 타이밍이 꼬일 수 있음. **고침**: `@import`를 제거하고 `<link rel="preload" as="style" ... onload="this.rel='stylesheet'">` + `<noscript>` 폴백 패턴으로 교체 — 폰트 CSS를 비동기로 가져오면서 렌더링을 절대 막지 않도록 함(폰트가 늦게 와도 시스템 폴백 폰트로 즉시 렌더링되고, 로드되면 자연스럽게 교체됨). 6개 파일 전부 동일하게 수정.
+
+로컬 `wrangler dev` + Playwright(iPhone 뷰포트)로 확인: `document.documentElement`의 `background-color`가 로드 즉시 `rgb(9,9,11)`(어두운 색)로 적용되는 것 확인, 콘솔 에러 없음, 스크린샷상 텍스트가 정상적으로 보임. `node --check` + `wrangler deploy --dry-run` 검증 후 배포.
+
+**교훈**: `body`에만 배경을 주고 `html`은 빼먹는 실수는 데스크톱에서는 절대 안 드러남(스크롤 바운스가 없어서) — 모바일 전용 버그를 코드 리뷰만으로 잡으려면 "이 페이지가 모바일 사파리의 오버스크롤/동적 뷰포트 상황에서도 똑같이 보일까?"를 별도로 점검해야 함. 폰트나 외부 스타일시트를 `@import`로 넣는 습관도 이 프로젝트 전체에서 지양할 것 — 항상 `<link rel="preload">` 비동기 패턴 사용.
+
 ## 환경변수 목록 (Cloudflare 대시보드 Settings > Variables and Secrets)
 
 ```
