@@ -84,6 +84,12 @@
   .tabs-menu-btn{ display:none; width:42px; height:42px; flex-shrink:0; border-radius:8px; border:1px solid var(--line); background:rgba(255,255,255,0.03); flex-direction:column; align-items:center; justify-content:center; gap:5px; cursor:pointer; }
   .tabs-menu-btn span{ display:block; width:18px; height:2px; background:var(--text); border-radius:2px; }
 
+  /* 로그인(스터디룸 UID 등록)이 끝나기 전에는 사이드바/햄버거 메뉴 자체가 안 보여야 함 —
+     #tabs가 hidden 속성을 갖고 있어도 위의 display:flex 규칙들이 그걸 덮어써버려서
+     로그인 전에도 메뉴가 보이던 버그가 있었음. body 클래스 하나로 확실하게 제어. */
+  body:not(.studyroom-active) #tabs,
+  body:not(.studyroom-active) .tabs-menu-btn{ display:none !important; }
+
   @media (min-width:861px){
     #tabs{
       position:fixed; left:0; top:65px; bottom:0; z-index:40;
@@ -94,7 +100,7 @@
     }
     #tabs .tab-link, #tabs .icon-btn{ width:100%; text-align:left; justify-content:flex-start; padding:13px 16px; font-size:1rem; border-radius:10px; }
     #tabs .tabs-divider{ height:1px; background:var(--line); margin:10px 2px; flex-shrink:0; }
-    #gated-content, #promo-wrap{ margin-left:240px; }
+    body.studyroom-active #gated-content, body.studyroom-active #promo-wrap{ margin-left:240px; }
   }
 
   @media (max-width:860px){
@@ -584,6 +590,7 @@
 
   function unlock(mode){
     viewMode = mode || 'member';
+    document.body.classList.add('studyroom-active');
     authGate.hidden = true; uidGate.hidden = true; content.hidden = false; tabs.hidden = false;
     profileBtn.hidden = viewMode === 'admin';
     adminLink.hidden = viewMode !== 'admin';
@@ -619,9 +626,13 @@
       .catch(function(){});
   }
   function showUidGate(){
+    document.body.classList.remove('studyroom-active');
     authGate.hidden = true; uidGate.hidden = false; content.hidden = true; tabs.hidden = true;
   }
-  function lock(){ authGate.hidden = false; uidGate.hidden = true; content.hidden = true; tabs.hidden = true; }
+  function lock(){
+    document.body.classList.remove('studyroom-active');
+    authGate.hidden = false; uidGate.hidden = true; content.hidden = true; tabs.hidden = true;
+  }
 
   // ── 로그인/회원가입 탭 ──
   authTabs.forEach(function(tab){
