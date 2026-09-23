@@ -53,6 +53,9 @@
     .intro-word{ animation:none; clip-path:none; }
     .intro-tag{ animation:none; opacity:1; }
   }
+  @media (max-width:860px){
+    .intro-splash{ display:none !important; }
+  }
 
   .welcome-splash{
     position:fixed; inset:0; z-index:250;
@@ -73,6 +76,9 @@
   @media (prefers-reduced-motion: reduce){
     .welcome-splash{ animation:none; }
     .welcome-splash-text{ animation:none; clip-path:none; }
+  }
+  @media (max-width:860px){
+    .welcome-splash{ display:none !important; }
   }
 
   header{ position:sticky; top:0; z-index:50; }
@@ -555,10 +561,16 @@
 
 <script>
 (function(){
-  setTimeout(function(){ var s = document.getElementById('intro-splash'); if(s) s.hidden = true; }, 4450);
+  (function(){
+    var s = document.getElementById('intro-splash');
+    if(window.matchMedia('(max-width:860px)').matches){ if(s) s.hidden = true; }
+    else { setTimeout(function(){ if(s) s.hidden = true; }, 4450); }
+  })();
 
   // 왼쪽→오른쪽으로 서서히 드러나는(wipe) 환영 문구 → 잠시 유지 → 사라지면서 뒤의 화면(대시보드)이 보임
+  // 모바일에서는 애니메이션 없이 곧바로 대시보드로 넘어감
   function showWelcomeSplash(name, onDone){
+    if(window.matchMedia('(max-width:860px)').matches){ if(onDone) onDone(); return; }
     var splash = document.getElementById('welcome-splash');
     var text = document.getElementById('welcome-splash-text');
     text.textContent = '환영합니다, ' + name + '님';

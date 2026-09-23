@@ -71,6 +71,9 @@
     .intro-word{ animation:none; clip-path:none; }
     .intro-tag{ animation:none; opacity:1; }
   }
+  @media (max-width:860px){
+    .intro-splash{ display:none !important; }
+  }
   img{ max-width:100%; display:block; }
 
   /* background grid + glow */
@@ -560,7 +563,9 @@
 
 <script>
   (function(){
-    setTimeout(function(){ var s = document.getElementById('intro-splash'); if(s) s.hidden = true; }, 4450);
+    var s = document.getElementById('intro-splash');
+    if(window.matchMedia('(max-width:860px)').matches){ if(s) s.hidden = true; }
+    else { setTimeout(function(){ if(s) s.hidden = true; }, 4450); }
   })();
   (function(){
     var btn = document.getElementById('menu-btn');

@@ -497,6 +497,16 @@ portal.html의 `.welcome-splash`/`.welcome-splash-text`도 동일한 패턴으�
 
 **교훈**: `body`에만 배경을 주고 `html`은 빼먹는 실수는 데스크톱에서는 절대 안 드러남(스크롤 바운스가 없어서) — 모바일 전용 버그를 코드 리뷰만으로 잡으려면 "이 페이지가 모바일 사파리의 오버스크롤/동적 뷰포트 상황에서도 똑같이 보일까?"를 별도로 점검해야 함. 폰트나 외부 스타일시트를 `@import`로 넣는 습관도 이 프로젝트 전체에서 지양할 것 — 항상 `<link rel="preload">` 비동기 패턴 사용.
 
+## 19-2단계: 모바일에서는 인트로/환영 스플래시 자체를 완전히 생략 (2026-09-23)
+
+19-1단계에서 원인 2건을 고쳤지만, 사용자가 "그냥 모바일에서는 애니메이션 없애고 바로 뜨게 해줘라"고 요청 — 모바일에서 스플래시가 제대로 뜨는지 계속 씨름하는 대신, 아예 모바일에서는 스플래시 자체를 생략하고 실제 콘텐츠가 곧바로 보이도록 단순화함(데스크톱은 기존 wipe 리빌 애니메이션 그대로 유지).
+
+- **CSS**: index.html/portal.html의 `.intro-splash`, portal.html의 `.welcome-splash`에 프로젝트 기존 모바일 기준(`max-width:860px`, 사이드바/햄버거 전환 기준과 동일)으로 `display:none !important;`를 추가 — JS가 실행되기 전에도 CSS만으로 화면에 아예 그려지지 않도록 함(깜빡임 없음).
+- **JS**: `window.matchMedia('(max-width:860px)').matches`로 모바일 여부를 확인해서,
+  - 인트로 스플래시(index.html/portal.html 둘 다): 모바일이면 기존 4450ms 대기 없이 `hidden = true`를 즉시 실행.
+  - 로그인 환영 스플래시(`showWelcomeSplash()`, portal.html): 모바일이면 애니메이션 시작조차 안 하고 콜백(`onDone`, 즉 `unlock('member')`)을 곧바로 호출 — 이 함수는 원래 스플래시가 다 끝난 뒤에야 대시보드를 열어주는 구조(11단계)라, CSS로만 스플래시를 숨기고 JS 타이머를 그대로 뒀다면 모바일에서 화면이 4초 넘게 멈춘 것처럼 보였을 것 — JS도 함께 우회해야 실제로 "바로 뜨는" 효과가 남.
+- 로컬 `wrangler dev` + Playwright로 확인: 모바일 뷰포트(iPhone 13)에서 페이지 로드 200ms 만에 `#intro-splash`가 `hidden:true, display:none` 상태이고 실제 히어로 콘텐츠가 바로 보이는 것 확인, 데스크톱(1440px)에서는 같은 시점에 여전히 스플래시가 `display:flex`로 정상 재생 중인 것도 함께 확인 — 두 환경이 서로 영향 안 주는 것 검증.
+
 ## 환경변수 목록 (Cloudflare 대시보드 Settings > Variables and Secrets)
 
 ```
