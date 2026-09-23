@@ -465,6 +465,27 @@ public/admin.html       관리자 전용 (게시판 글쓰기/수정/삭제, 회
 ### 다음에 볼 것
 - "권한 해제" 후 재신청하면 다시 `pending`부터 시작하는 정상적인 심사 플로우를 타는데, 이 왕복(승인→해제→재신청→재승인)을 여러 번 반복했을 때 `referral_applications` 테이블에 신청 이력이 계속 누적되는 구조라 — 지금은 문제 없지만 아주 나중에 특정 회원이 이 과정을 비정상적으로 반복하면 admin.html "파트너 신청 관리" 목록이 그 사람 이력으로 길어질 수 있음. 지금은 딱히 손댈 필요 없음(이력 자체가 감사 기록으로 유용함).
 
+## 19단계: 모바일에서 인트로/환영 스플래시가 아예 안 뜨던 버그 수정 (2026-09-23)
+
+사용자가 "모바일에서는 왜 사이트 처음 들어가면 뜨는 애니메이션이 안뜨지?"라고 질문 — 실제 원인을 코드로 확인하고 바로 고침.
+
+**원인**: index.html/portal.html의 `#intro-splash`(최초 진입 스플래시)와 portal.html의 `#welcome-splash`(로그인 환영 화면) 둘 다 `@media (prefers-reduced-motion: reduce){ .intro-splash{ animation:none; opacity:0; visibility:hidden; } }` 규칙을 갖고 있었음(8단계에서 접근성 배려로 추가). 문제는 "애니메이션만 끄기"가 아니라 **`opacity:0; visibility:hidden`으로 스플래시 전체를 완전히 숨겨버리는** 방식이었다는 것 — 이 미디어쿼리가 매칭되면 텍스트/배경이 통째로 안 보이게 됨.
+
+`prefers-reduced-motion: reduce`는 데스크톱보다 모바일에서 훨씬 자주 매칭됨 — 대표적으로 **iOS는 저전력 모드(배터리 절약 모드)가 켜져 있으면 실제 "동작 줄이기" 손쉬운 사용 설정과 무관하게 WebKit이 `prefers-reduced-motion: reduce`를 자동으로 true로 평가**하고, 안드로이드도 일부 기기의 배터리 절약 모드에서 비슷하게 동작함. 트레이딩 사이트를 모바일 데이터로 보는 사용자들은 저전력 모드를 켜두는 경우가 흔해서, 실제로는 "리듀스 모션 접근성 설정을 켠 사람"이 아니라 그냥 배터리 아끼려던 일반 모바일 사용자 상당수가 스플래시를 아예 못 보고 있었을 가능성이 높음. 로컬에서 Playwright로 iPhone 뷰포트 + `prefers-reduced-motion: reduce` 에뮬레이션을 걸어 직접 재현 확인함(고치기 전엔 `opacity:0/visibility:hidden`으로 완전히 안 보임 → 고친 후 텍스트가 즉시 나타나는 것까지 스크린샷으로 확인).
+
+**고친 방법**: "스플래시를 숨기는" 대신 "애니메이션만 끄고 최종 상태(다 드러난 모습)를 즉시 보여주는" 방식으로 교체 — 접근성 취지(불필요한 모션 제거)는 그대로 지키면서 콘텐츠 자체는 계속 보이게 함.
+```css
+@media (prefers-reduced-motion: reduce){
+  .intro-splash{ animation:none; }
+  .intro-word{ animation:none; clip-path:none; }
+  .intro-tag{ animation:none; opacity:1; }
+}
+```
+portal.html의 `.welcome-splash`/`.welcome-splash-text`도 동일한 패턴으로 수정. JS의 `setTimeout(...).hidden = true` 타이머는 그대로 유지되므로, 리듀스 모션 환경에서도 스플래시가 (움직임 없이) 나타났다가 정해진 시간 뒤 사라지는 흐름 자체는 유지됨.
+
+### 다음에 볼 것
+- 이 프로젝트에서 세 번째로 나온 패턴("의도는 좋았는데 접근성/조건부 CSS가 핵심 콘텐츠를 통째로 숨겨버림") — 앞으로 `prefers-reduced-motion`이나 비슷한 조건부 미디어쿼리를 추가할 때는 "애니메이션만 끄는지" vs "durationless라도 좋으니 최종 상태는 보여주는지"를 구분해서 후자로 작성할 것
+
 ## 환경변수 목록 (Cloudflare 대시보드 Settings > Variables and Secrets)
 
 ```

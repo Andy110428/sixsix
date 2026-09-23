@@ -63,7 +63,11 @@
   @keyframes introOut{ from{ opacity:1; visibility:visible; } to{ opacity:0; visibility:hidden; pointer-events:none; } }
   @keyframes introWipe{ to{ clip-path: inset(0 0% 0 0); } }
   @keyframes introTagFade{ to{ opacity:1; } }
-  @media (prefers-reduced-motion: reduce){ .intro-splash{ animation:none; opacity:0; visibility:hidden; } }
+  @media (prefers-reduced-motion: reduce){
+    .intro-splash{ animation:none; }
+    .intro-word{ animation:none; clip-path:none; }
+    .intro-tag{ animation:none; opacity:1; }
+  }
   img{ max-width:100%; display:block; }
 
   /* background grid + glow */
