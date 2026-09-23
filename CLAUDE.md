@@ -410,6 +410,20 @@ public/admin.html       관리자 전용 (게시판 글쓰기/수정/삭제, 회
 - `posts.external_url` 검증은 `http(s)://`로 시작하는지만 확인함 — 실제로 접속 가능한 주소인지까지는 서버가 확인 안 함(관리자가 오타/깨진 링크를 넣으면 그대로 저장됨)
 - 등급 제한(`min_grade`) 걸린 강의 카드는 자물쇠 플레이스홀더로 표시되는데, 실제 등급 시스템으로 막힌 강의를 실제로 만들어서 화면으로 확인하지는 않음(로직상 카드 렌더링 분기만 코드 리뷰로 확인) — 필요하면 실제로 등급 낮은 계정으로 확인해볼 것
 
+## 16단계: 로그인 전에도 사이드바 메뉴가 보이던 버그 수정 (2026-09-23)
+
+사용자가 "스터디룸 이동해서 로그인하기 전엔 메뉴들이 안 떴으면 좋겠다"고 요청 — 실제로 로그인 전(로그인 폼 화면, 회원가입 직후 UID 미등록 게이트 화면)에도 왼쪽 메뉴(데스크톱 사이드바)/햄버거 버튼(모바일)이 그대로 노출되고 있던 진짜 버그였음.
+
+**원인**: JS(`lock()`/`showUidGate()`)는 처음부터 `#tabs`에 `hidden` 속성을 정확히 걸고 있었는데, CSS가 이걸 다시 덮어쓰고 있었음.
+- 데스크톱(`@media (min-width:861px)`): 13단계에서 사이드바를 만들 때 넣은 `#tabs{ display:flex !important; ... }`가 무조건 적용되면서, 브라우저 기본 스타일(`[hidden]{ display:none }`, `!important` 아님)을 author 쪽 `!important` 선언이 그냥 이겨버림 — `hidden` 속성 자체는 살아있지만 화면엔 계속 떠 있었음.
+- 모바일(`@media (max-width:860px)`): `!important`는 없었지만, 미디어쿼리 밖의 기본 규칙 `.tabs{ display:flex; ... }`가 이미 author 우선순위로 UA의 `[hidden]` 규칙을 이겨버리는 상태였음. 모바일에서 그나마 안 보였던 건 `.tabs`가 `.open` 클래스 없이는 `opacity:0; visibility:hidden;`이라 우연히 가려져 있었던 것뿐 — 정작 햄버거 버튼(`#tabs-menu-btn`)은 `hidden` 속성이 아예 없는 별개 요소라 로그인 여부와 무관하게 항상 노출되고 있었고, 눌러버리면(`.open` 토글) 로그인 전에도 전체 메뉴가 드러날 수 있는 상태였음.
+
+**고친 방법**: `hidden` 속성과 CSS 캐스케이드를 계속 힘겨루기 시키는 대신, `body.studyroom-active`라는 단일 상태 클래스를 새로 도입 — `unlock()`/`lock()`/`showUidGate()`가 이 클래스를 켜고 끄는 걸로 통일하고, `body:not(.studyroom-active) #tabs, body:not(.studyroom-active) .tabs-menu-btn{ display:none !important; }` 한 줄로 두 요소(데스크톱 사이드바 + 모바일 햄버거 버튼) 모두를 화면 크기와 무관하게 확실히 숨김. 13단계 때 사이드바 폭만큼 본문을 밀어주던 `#gated-content`/`#promo-wrap`의 `margin-left:240px`도 같은 클래스가 있을 때만 적용되도록 바꿔서, 로그인 전에 (공개로 노출되는) 추천인 프로모 카드가 사이드바 없이 240px 빈 여백만 먹는 어색한 레이아웃이 되는 것도 같이 방지함.
+- 로컬에서 Playwright로 데스크톱(1440px)/모바일(390px) 둘 다 로그인 전 화면을 스크린샷·`display` 값으로 확인해서 완전히 안 보이는 것 확인, 회원가입 직후 UID 미등록 상태에서도 계속 안 보이는 것 확인, UID 등록 후 새로고침하면 정상적으로 다시 나타나는 것까지 확인 후 배포함.
+
+### 다음에 볼 것
+- 이 프로젝트에서 `display:flex !important`나 무조건 적용되는 `display` 규칙을 요소에 걸 때는, 그 요소가 `hidden` 속성으로 토글되는 대상인지 먼저 확인해야 함 — 필요하면 이번처럼 상태를 나타내는 body/부모 클래스를 만들어서 그 클래스 기준으로 `display:none !important`를 명시적으로 얹어주는 패턴을 재사용할 것
+
 ## 환경변수 목록 (Cloudflare 대시보드 Settings > Variables and Secrets)
 
 ```
