@@ -51,6 +51,8 @@
 //   GET  /api/admin/referral/issuers          추천인 코드 발급자 전체 현황
 //   GET  /api/admin/referral/applications     파트너 신청 목록
 //   POST /api/admin/referral/applications/update  파트너 신청 승인/거절
+//   GET  /api/admin/referral/partners         현재 승인됐거나 권한 해제된 파트너 현황 (등록 회원 목록)
+//   POST /api/admin/referral/partners/revoke  승인된 파트너 권한 해제 (이메일 기준, 코드/실적 이력은 유지)
 //   GET  /api/admin/gate-rebate-raw           Gate.io 파트너 리베이트 API 원본 응답 확인 (베타)
 //   GET  /api/admin/referral/withdrawals / POST /api/admin/referral/withdrawals/update
 //   GET  /api/admin/economic-events / POST .../create / .../update / .../delete
@@ -120,6 +122,8 @@ export default {
       if (path === '/api/admin/referral/issuers' && method === 'GET') return await handleAdminReferralIssuers(request, env);
       if (path === '/api/admin/referral/applications' && method === 'GET') return await handleAdminListApplications(request, env);
       if (path === '/api/admin/referral/applications/update' && method === 'POST') return await handleAdminUpdateApplication(request, env);
+      if (path === '/api/admin/referral/partners' && method === 'GET') return await handleAdminListPartners(request, env);
+      if (path === '/api/admin/referral/partners/revoke' && method === 'POST') return await handleAdminRevokePartner(request, env);
       if (path === '/api/admin/gate-rebate-raw' && method === 'GET') return await handleAdminGateRebateRaw(request, env);
       if (path === '/api/admin/referral/withdrawals' && method === 'GET') return await handleAdminListWithdrawals(request, env);
       if (path === '/api/admin/referral/withdrawals/update' && method === 'POST') return await handleAdminUpdateWithdrawal(request, env);
@@ -161,10 +165,17 @@ async function handleSignup(request, env) {
   if (existing) return json({ ok: false, error: '이미 가입된 이메일입니다. 로그인해주세요.' }, 409);
 
   // 추천인 코드가 있으면 소유자를 미리 확인해둠 (가입 완료 후 referral_signups에 기록)
+  // 소유자가 현재 승인된 파트너가 아니면(권한 해제됨 등) 적립하지 않음 — 권한 해제가 실제로 새 적립을 막도록
   let referralOwnerEmail = null;
   if (referralCode) {
-    const codeRow = await env.DB.prepare('SELECT owner_email FROM referral_codes WHERE code = ?').bind(referralCode).first();
-    if (codeRow && codeRow.owner_email !== email) referralOwnerEmail = codeRow.owner_email;
+    const codeRow = await env.DB.prepare(
+      `SELECT referral_codes.owner_email, members.referral_partner_status
+       FROM referral_codes LEFT JOIN members ON members.email = referral_codes.owner_email
+       WHERE referral_codes.code = ?`
+    ).bind(referralCode).first();
+    if (codeRow && codeRow.owner_email !== email && codeRow.referral_partner_status === 'approved') {
+      referralOwnerEmail = codeRow.owner_email;
+    }
   }
 
   const { salt, hash } = await hashPassword(password);
@@ -1058,6 +1069,48 @@ async function handleAdminUpdateApplication(request, env) {
   await env.DB.prepare('UPDATE referral_applications SET status = ?, reviewed_at = ? WHERE id = ?').bind(status, Date.now(), id).run();
   await env.DB.prepare('UPDATE members SET referral_partner_status = ? WHERE email = ?').bind(status, app.email).run();
 
+  return json({ ok: true });
+}
+
+// 현재 승인됐거나(approved) 과거에 권한이 해제된(revoked) 추천인 파트너 전체 현황 — admin.html "파트너 현황" 패널용
+async function handleAdminListPartners(request, env) {
+  const isAdmin = await getIsAdmin(request, env);
+  if (!isAdmin) return json({ ok: false, error: '관리자만 사용할 수 있습니다.' }, 403);
+
+  const rows = await env.DB.prepare(
+    `SELECT members.email, members.nickname, members.referral_partner_status,
+      referral_codes.code,
+      (SELECT wallet_address FROM referral_applications WHERE referral_applications.email = members.email ORDER BY referral_applications.id DESC LIMIT 1) AS wallet_address,
+      (SELECT telegram_id FROM referral_applications WHERE referral_applications.email = members.email ORDER BY referral_applications.id DESC LIMIT 1) AS telegram_id,
+      (SELECT COUNT(*) FROM referral_signups WHERE referral_signups.owner_email = members.email AND referral_signups.qualified = 1) AS referred_count,
+      (SELECT COUNT(*) FROM referral_signups WHERE referral_signups.owner_email = members.email AND referral_signups.qualified = 0) AS pending_count,
+      (SELECT COALESCE(SUM(reward_krw),0) FROM referral_signups WHERE referral_signups.owner_email = members.email AND referral_signups.qualified = 1) AS total_earned_krw
+     FROM members
+     LEFT JOIN referral_codes ON referral_codes.owner_email = members.email
+     WHERE members.referral_partner_status IN ('approved', 'revoked')
+     ORDER BY members.referral_partner_status ASC, members.email ASC LIMIT 300`
+  ).all();
+
+  return json({ ok: true, partners: rows.results || [] });
+}
+
+// 승인된 추천인 파트너의 권한을 해제 — 코드/실적 이력은 그대로 남기고 앞으로의 신규 발급/출금/대시보드 접근만 막음.
+// 재신청하면(referral.html) 다시 심사 대상이 됨.
+async function handleAdminRevokePartner(request, env) {
+  const isAdmin = await getIsAdmin(request, env);
+  if (!isAdmin) return json({ ok: false, error: '관리자만 사용할 수 있습니다.' }, 403);
+
+  const body = await safeJson(request);
+  const email = (body.email || '').trim().toLowerCase();
+  if (!email) return json({ ok: false, error: '이메일을 입력해주세요.' }, 400);
+
+  const member = await env.DB.prepare('SELECT referral_partner_status FROM members WHERE email = ?').bind(email).first();
+  if (!member) return json({ ok: false, error: '해당 이메일로 가입된 계정이 없습니다.' }, 404);
+  if (member.referral_partner_status !== 'approved') {
+    return json({ ok: false, error: '현재 승인된 파트너만 권한을 해제할 수 있습니다.' }, 400);
+  }
+
+  await env.DB.prepare("UPDATE members SET referral_partner_status = 'revoked' WHERE email = ?").bind(email).run();
   return json({ ok: true });
 }
 

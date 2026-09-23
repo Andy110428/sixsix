@@ -263,7 +263,7 @@
 <script>
 (function(){
   var statusLabel = { pending:'대기중', approved:'승인됨', rejected:'거절됨', paid:'지급완료' };
-  var partnerStatusLabel = { none:'미신청', pending:'심사중', approved:'승인됨', rejected:'거절됨' };
+  var partnerStatusLabel = { none:'미신청', pending:'심사중', approved:'승인됨', rejected:'거절됨', revoked:'권한 해제됨' };
 
   function showResult(el, text, kind){ el.hidden = false; el.textContent = text; el.className = 'result-box ' + kind; }
   function clearResult(el){ el.hidden = true; }
@@ -325,7 +325,7 @@
     } else {
       var badge = document.getElementById('apply-status-badge');
       badge.textContent = partnerStatusLabel[status] || status;
-      badge.className = 'status-badge' + (status === 'rejected' ? ' rejected' : '');
+      badge.className = 'status-badge' + ((status === 'rejected' || status === 'revoked') ? ' rejected' : '');
       document.getElementById('apply-panel').hidden = false;
     }
   }

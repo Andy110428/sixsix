@@ -103,6 +103,7 @@
   .app-status.pending{ color:var(--amber); border-color:rgba(199,204,209,0.35); }
   .app-status.approved{ color:var(--cyan); border-color:rgba(215,217,220,0.35); }
   .app-status.rejected{ color:var(--danger); border-color:rgba(255,92,122,0.35); }
+  .app-status.revoked{ color:var(--danger); border-color:rgba(255,92,122,0.35); }
 
   footer{ border-top:1px solid var(--line); padding:28px 0; }
   .footer-row{ display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; }
@@ -209,6 +210,12 @@
     <h2>추천인 파트너 신청 관리</h2>
     <p class="panel-note">회원이 referral.html에서 "파트너 신청하기"를 누르면 여기 올라와요. 승인해야 추천인 코드 발급/대시보드를 쓸 수 있어요.</p>
     <div id="applications-list"></div>
+  </div>
+
+  <div class="panel">
+    <h2>파트너 현황 (권한 관리)</h2>
+    <p class="panel-note">승인된 추천인 파트너 전체 목록이에요. 필요하면 "권한 해제"로 즉시 자격을 뺏을 수 있어요 — 기존 코드/실적 이력은 그대로 남고, 그 순간부터 새로 발급·출금·대시보드 이용이 막혀요. 재신청하면 다시 심사 대상이 돼요.</p>
+    <div id="partners-list"></div>
   </div>
 
   <div class="panel">
@@ -341,7 +348,7 @@
 
   function unlock(){
     gate.hidden = true; dashboard.hidden = false; logoutBtn.hidden = false;
-    loadAllLists(); loadStats(); loadIssuers(); loadWithdrawals(); loadApplications(); loadEvents();
+    loadAllLists(); loadStats(); loadIssuers(); loadWithdrawals(); loadApplications(); loadPartners(); loadEvents();
   }
   function lock(){ gate.hidden = false; dashboard.hidden = true; logoutBtn.hidden = true; }
 
@@ -396,7 +403,7 @@
   var memberVolumeResult = document.getElementById('member-volume-result');
   var foundEmail = null;
 
-  var partnerStatusLabel = { none:'미신청', pending:'심사중', approved:'승인됨', rejected:'거절됨' };
+  var partnerStatusLabel = { none:'미신청', pending:'심사중', approved:'승인됨', rejected:'거절됨', revoked:'권한 해제됨' };
 
   var memberInfoGrid = document.getElementById('member-info-grid');
   function infoBox(label, value){
@@ -541,9 +548,47 @@
             btn.addEventListener('click', async function(){
               await fetch('/api/admin/referral/applications/update', { method:'POST', credentials:'same-origin', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ id: a.id, status: status }) });
               loadApplications();
+              loadPartners();
             });
             actions.appendChild(btn);
           });
+          row.appendChild(actions);
+        }
+        el.appendChild(row);
+      });
+    } catch(e){ el.innerHTML = '<div class="empty-note">불러오기에 실패했습니다.</div>'; }
+  }
+
+  async function loadPartners(){
+    var el = document.getElementById('partners-list');
+    try{
+      var res = await fetch('/api/admin/referral/partners', { credentials:'same-origin' });
+      var data = await res.json();
+      var list = (data.ok && data.partners) ? data.partners : [];
+      if(list.length === 0){ el.innerHTML = '<div class="empty-note">승인된 추천인 파트너가 없습니다.</div>'; return; }
+      el.innerHTML = '';
+      list.forEach(function(p){
+        var row = document.createElement('div');
+        row.className = 'app-row';
+        row.innerHTML =
+          '<div><span class="app-status ' + p.referral_partner_status + '">' + (partnerStatusLabel[p.referral_partner_status] || p.referral_partner_status) + '</span> ' +
+          (p.nickname ? escapeHtml(p.nickname) + ' · ' : '') + escapeHtml(p.email) + (p.code ? ' · 코드 ' + escapeHtml(p.code) : ' · 코드 미발급') + '</div>' +
+          '<div style="color:var(--text-dim);">텔레그램: ' + escapeHtml(p.telegram_id || '-') + ' · 지갑(USDT-TRC20): ' + escapeHtml(p.wallet_address || '-') + '</div>' +
+          '<div style="color:var(--text-dim);">확정 ' + p.referred_count + '명 · 대기 ' + p.pending_count + '명 · 적립 ' + Number(p.total_earned_krw).toLocaleString() + '원</div>';
+        if(p.referral_partner_status === 'approved'){
+          var actions = document.createElement('div');
+          actions.style.cssText = 'display:flex; gap:8px; margin-top:4px;';
+          var revokeBtn = document.createElement('button');
+          revokeBtn.className = 'btn btn-ghost';
+          revokeBtn.style.width = 'auto';
+          revokeBtn.textContent = '권한 해제';
+          revokeBtn.addEventListener('click', async function(){
+            if(!confirm(p.email + '의 추천인 파트너 권한을 해제할까요? 코드/실적 이력은 남고, 새 발급·출금·대시보드 이용만 막힙니다.')) return;
+            await fetch('/api/admin/referral/partners/revoke', { method:'POST', credentials:'same-origin', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ email: p.email }) });
+            loadPartners();
+            loadApplications();
+          });
+          actions.appendChild(revokeBtn);
           row.appendChild(actions);
         }
         el.appendChild(row);
