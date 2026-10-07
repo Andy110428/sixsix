@@ -3,7 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>TEAM SIXX — 비공개 코인 선물 스터디방</title>
+<title>TEAM SIXX — 거래소 수수료 페이백</title>
+<meta name="description" content="Gate.io 전용 링크로 가입하면 거래 수수료의 일부를 페이백 받을 수 있습니다. UID 확인 후 텔레그램 전용방에 가입하세요.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" onload="this.onload=null;this.rel='stylesheet'">
@@ -11,418 +12,167 @@
 <style>
 
   :root{
-    --bg: #09090b;
-    --bg-soft: #101014;
-    --panel: #151519;
-    --line: rgba(255,255,255,0.08);
+    --bg: #07070a;
+    --panel: #121216;
+    --panel-soft: #0c0c10;
+    --line: rgba(255,255,255,0.09);
     --text: #f4f3f1;
-    --text-dim: #96938d;
-    --cyan: #d7d9dc;
-    --violet: #5b6270;
-    --amber: #c7ccd1;
+    --text-dim: #93918d;
+    --accent-a: #38bdf8;
+    --accent-b: #a855f7;
+    --accent-c: #ec4899;
+    --good: #4ade80;
+    --gold: #eab308;
     --danger: #ff5c7a;
+    --radius: 16px;
   }
-
   *{ box-sizing: border-box; }
-  [hidden]{ display:none !important; }
   html{ scroll-behavior: smooth; background: var(--bg); }
   body{
     margin:0;
-    background: radial-gradient(ellipse 120% 55% at 50% -8%, #1b1b20 0%, #101013 42%, var(--bg) 100%);
-    background-attachment: fixed;
+    background: var(--bg);
     color: var(--text);
     font-family: 'Inter', sans-serif;
     line-height: 1.6;
     -webkit-font-smoothing: antialiased;
   }
-  h1,h2,h3{
-    font-family: 'Sora', sans-serif;
-    margin: 0;
-    letter-spacing: -0.01em;
-  }
-  .mono{ font-family: 'JetBrains Mono', monospace; }
-  a{ color: inherit; text-decoration: none; }
-
-  .intro-splash{
-    position:fixed; inset:0; z-index:300;
-    background:linear-gradient(165deg,#000 0%, #0a0a0c 50%, #18181d 100%);
-    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:16px;
-    animation: introOut .6s ease 3.8s forwards;
-  }
-  .intro-word{
-    font-family:'Sora',sans-serif; font-weight:800; letter-spacing:0.01em;
-    font-size:clamp(1.7rem, 6.5vw, 3.2rem);
-    text-align:center; max-width:90vw;
-    color: var(--cyan);
-    text-shadow: 0 0 22px rgba(215,217,220,0.4);
-    clip-path: inset(0 100% 0 0);
-    animation: introWipe 1.4s cubic-bezier(.65,0,.35,1) forwards;
-  }
-  .intro-tag{
-    font-family:'JetBrains Mono',monospace; font-size:0.85rem; letter-spacing:0.04em; color:var(--text-dim);
-    opacity:0;
-    animation: introTagFade 1s ease 1.1s forwards;
-  }
-  @keyframes introOut{ from{ opacity:1; visibility:visible; } to{ opacity:0; visibility:hidden; pointer-events:none; } }
-  @keyframes introWipe{ to{ clip-path: inset(0 0% 0 0); } }
-  @keyframes introTagFade{ to{ opacity:1; } }
-  @media (prefers-reduced-motion: reduce){
-    .intro-splash{ animation:none; }
-    .intro-word{ animation:none; clip-path:none; }
-    .intro-tag{ animation:none; opacity:1; }
-  }
-  @media (max-width:860px){
-    .intro-splash{ display:none !important; }
-  }
+  h1,h2,h3{ font-family:'Sora',sans-serif; margin:0; letter-spacing:-0.01em; }
+  .mono{ font-family:'JetBrains Mono', monospace; }
+  a{ color:inherit; text-decoration:none; }
   img{ max-width:100%; display:block; }
 
-  /* background grid + glow */
-  .bg-grid{
-    position: fixed;
-    inset: 0;
-    z-index: -2;
-    background-image:
-      linear-gradient(rgba(255,255,255,0.035) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(255,255,255,0.035) 1px, transparent 1px);
-    background-size: 64px 64px;
-    mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, black 40%, transparent 90%);
+  .grad-text{
+    background: linear-gradient(90deg, var(--accent-a), var(--accent-b) 55%, var(--accent-c));
+    -webkit-background-clip: text; background-clip: text; color: transparent;
   }
-  .bg-glow{
-    position: fixed;
-    z-index: -1;
-    filter: blur(120px);
-    opacity: 0.35;
-    border-radius: 50%;
-    pointer-events: none;
+  .grad-btn{
+    background: linear-gradient(90deg, var(--accent-a), var(--accent-b));
+    color:#06060a; border:none; font-weight:700;
   }
-  .glow-1{ width: 560px; height: 560px; top: -180px; left: -120px; background: var(--cyan); opacity: 0.16; }
-  .glow-2{ width: 640px; height: 640px; top: 20%; right: -220px; background: var(--violet); opacity: 0.12; }
+  .grad-btn:hover{ filter: brightness(1.08); }
+  .grad-border{ position:relative; }
 
-  .wrap{ max-width: 1080px; margin: 0 auto; padding: 0 24px; }
+  .bg-grid{ position:fixed; inset:0; z-index:-2; background-image:linear-gradient(rgba(255,255,255,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.03) 1px,transparent 1px); background-size:64px 64px; mask-image:radial-gradient(ellipse 80% 55% at 50% 0%, black 35%, transparent 90%); }
+  .bg-glow{ position:fixed; z-index:-1; filter:blur(130px); opacity:0.22; border-radius:50%; pointer-events:none; }
+  .glow-1{ width:560px; height:560px; top:-200px; left:-160px; background:var(--accent-a); }
+  .glow-2{ width:620px; height:620px; top:10%; right:-220px; background:var(--accent-b); }
 
-  /* nav */
-  header{
-    position: sticky; top: 0; z-index: 50;
-    backdrop-filter: blur(14px);
-    background: rgba(6,8,13,0.7);
-    border-bottom: 1px solid var(--line);
+  .wrap{ max-width:1180px; margin:0 auto; padding:0 24px; }
+
+  .reveal{ opacity:0; transform: translateY(24px); transition: opacity .7s cubic-bezier(.16,.84,.44,1), transform .7s cubic-bezier(.16,.84,.44,1); }
+  .reveal.is-visible{ opacity:1; transform: translateY(0); }
+
+  /* header */
+  header{ position:sticky; top:0; z-index:50; }
+  header::before{ content:''; position:absolute; inset:0; z-index:-1; backdrop-filter:blur(14px); background:rgba(7,7,10,0.72); border-bottom:1px solid var(--line); }
+  .nav{ display:flex; align-items:center; justify-content:space-between; padding:16px 24px; max-width:1180px; margin:0 auto; gap:12px; position:relative; }
+  .brand{ display:flex; align-items:center; gap:10px; font-weight:700; font-size:1.05rem; flex-shrink:0; }
+  .brand .mark{ width:30px; height:30px; border-radius:9px; background:linear-gradient(135deg, var(--accent-a), var(--accent-b)); display:flex; align-items:center; justify-content:center; font-family:'Sora',sans-serif; font-weight:800; color:#06060a; font-size:0.95rem; }
+  .nav-links{ display:flex; gap:26px; align-items:center; }
+  .nav-links a{ font-size:0.92rem; color:var(--text-dim); font-weight:600; }
+  .nav-links a:hover{ color:var(--text); }
+  .nav-cta{ display:flex; align-items:center; gap:10px; }
+  .btn{ display:inline-flex; align-items:center; justify-content:center; gap:6px; padding:11px 20px; border-radius:10px; font-size:0.92rem; font-weight:700; cursor:pointer; transition: filter .15s ease, border-color .15s ease, transform .15s ease; white-space:nowrap; }
+  .btn-primary{ background:linear-gradient(90deg, var(--accent-a), var(--accent-b)); color:#06060a; border:none; }
+  .btn-primary:hover{ filter:brightness(1.08); transform:translateY(-1px); }
+  .btn-ghost{ background:rgba(255,255,255,0.03); border:1px solid var(--line); color:var(--text); }
+  .btn-ghost:hover{ border-color:rgba(255,255,255,0.25); }
+  .btn-sm{ padding:8px 14px; font-size:0.84rem; }
+
+  .menu-btn{ display:none; width:42px; height:42px; border-radius:8px; border:1px solid var(--line); background:rgba(255,255,255,0.03); flex-direction:column; align-items:center; justify-content:center; gap:5px; cursor:pointer; }
+  .menu-btn span{ display:block; width:18px; height:2px; background:var(--text); border-radius:2px; transition:transform .15s ease, opacity .15s ease; }
+  .menu-btn[aria-expanded="true"] span:nth-child(1){ transform:translateY(7px) rotate(45deg); }
+  .menu-btn[aria-expanded="true"] span:nth-child(2){ opacity:0; }
+  .menu-btn[aria-expanded="true"] span:nth-child(3){ transform:translateY(-7px) rotate(-45deg); }
+  .menu-dropdown{ position:absolute; top:calc(100% + 10px); right:24px; min-width:220px; background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:8px; box-shadow:0 16px 40px -12px rgba(0,0,0,0.6); opacity:0; visibility:hidden; transform:translateY(-6px); transition:opacity .15s ease, transform .15s ease, visibility .15s; z-index:70; }
+  .menu-dropdown.open{ opacity:1; visibility:visible; transform:translateY(0); }
+  .menu-dropdown a{ display:block; padding:10px 12px; border-radius:8px; font-size:0.92rem; font-weight:600; color:var(--text-dim); }
+  .menu-dropdown a:hover{ color:var(--text); background:rgba(255,255,255,0.05); }
+
+  @media (max-width:860px){
+    .nav-links{ display:none; }
+    .nav-cta .btn span.txt{ display:none; }
+    .menu-btn{ display:flex; }
   }
-  .nav{
-    display:flex; align-items:center; justify-content:space-between;
-    padding: 16px 24px; max-width: 1080px; margin: 0 auto;
-  }
-  .brand{
-    font-weight: 600; font-size: 1rem;
-    letter-spacing: 0.04em;
-    color: var(--text-dim);
-  }
-  .nav-cta{
-    display:flex; gap:10px;
-  }
-  .btn{
-    display:inline-flex; align-items:center; justify-content:center; gap:8px;
-    padding: 10px 18px;
-    border-radius: 8px;
-    font-weight: 600;
-    font-size: 0.92rem;
-    cursor: pointer;
-    border: 1px solid var(--line);
-    transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease;
-    white-space: nowrap;
-  }
-  .btn:hover{ transform: translateY(-1px); }
-  .btn-primary{
-    background: linear-gradient(135deg, var(--cyan), #f2f1ee);
-    color: #071417;
-    border: none;
-    box-shadow: 0 4px 14px -6px rgba(215,217,220,0.35);
-  }
-  .btn-primary:hover{ box-shadow: 0 6px 18px -6px rgba(215,217,220,0.45); }
-  .btn-ghost{
-    background: rgba(255,255,255,0.03);
-    color: var(--text);
-  }
-  .btn-ghost:hover{ border-color: rgba(255,255,255,0.25); }
-  .btn-violet{
-    background: rgba(255,255,255,0.03);
-    color: var(--cyan);
-    border: 1px solid rgba(215,217,220,0.3);
-  }
-  .btn-block{ width:100%; padding: 14px 18px; font-size: 1rem; }
 
   /* hero */
-  .hero{
-    padding: 96px 0 64px;
-  }
-  .eyebrow{
-    display:block;
-    color: var(--violet);
-    font-size: 0.8rem;
-    font-family: 'JetBrains Mono', monospace;
-    letter-spacing: 0.08em;
-    margin-bottom: 18px;
-  }
+  .hero{ padding:88px 0 56px; text-align:center; }
+  .badge{ display:inline-flex; align-items:center; gap:8px; padding:7px 16px; border-radius:999px; border:1px solid var(--line); background:rgba(255,255,255,0.03); font-size:0.8rem; font-weight:600; color:var(--text-dim); margin-bottom:28px; }
+  .badge .dot{ width:7px; height:7px; border-radius:50%; background:var(--good); box-shadow:0 0 8px var(--good); }
+  .hero h1{ font-size:clamp(2.3rem, 6.5vw, 4rem); line-height:1.12; font-weight:800; }
+  .hero h1 .line2{ display:block; margin-top:6px; }
+  .hero-sub-badge{ display:inline-block; margin:22px 0 18px; padding:6px 14px; border-radius:999px; border:1px solid var(--line); font-size:0.74rem; font-weight:700; letter-spacing:0.06em; color:var(--text-dim); }
+  .hero p.desc{ max-width:620px; margin:0 auto 32px; color:var(--text-dim); font-size:1.02rem; }
+  .hero-actions{ display:flex; gap:12px; justify-content:center; flex-wrap:wrap; margin-bottom:40px; }
+  .hero-stats{ display:flex; gap:12px; justify-content:center; flex-wrap:wrap; }
+  .stat-chip{ padding:10px 18px; border-radius:999px; border:1px solid var(--line); background:rgba(255,255,255,0.03); font-size:0.84rem; font-weight:600; color:var(--text-dim); }
+  .stat-chip b{ color:var(--text); font-family:'JetBrains Mono',monospace; }
 
-  .hero h1{
-    font-size: clamp(2.1rem, 5vw, 3.4rem);
-    font-weight: 700;
-    max-width: 760px;
-    line-height: 1.18;
-  }
-  .hero h1 .grad{
-    background: linear-gradient(120deg, var(--cyan), var(--violet));
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
-  }
-  .hero p.sub{
-    margin-top: 22px;
-    color: var(--text-dim);
-    max-width: 560px;
-    font-size: 1.05rem;
-  }
-  .hero-actions{
-    margin-top: 36px;
-    display:flex; flex-wrap: wrap; gap: 14px;
-  }
-  .hero-actions .btn{ padding: 14px 24px; font-size: 0.98rem; }
-  .already-member{
-    margin-top: 18px;
-    font-size: 0.88rem;
-    color: var(--text-dim);
-  }
-  .already-member a{ color: var(--cyan); font-weight: 600; }
-  .already-member a:hover{ text-decoration: underline; }
+  section{ padding:72px 0; }
+  .sec-label{ font-family:'JetBrains Mono',monospace; font-size:0.78rem; letter-spacing:0.08em; color:var(--accent-a); margin-bottom:10px; }
+  .sec-head{ text-align:center; max-width:560px; margin:0 auto 44px; }
+  .sec-head h2{ font-size:clamp(1.6rem, 4vw, 2.3rem); margin-bottom:10px; }
+  .sec-head p{ color:var(--text-dim); font-size:0.96rem; }
 
-  /* 첫 화면 부드럽게 등장 */
-  @keyframes fadeInUp{ from{ opacity:0; transform:translateY(16px);} to{ opacity:1; transform:translateY(0);} }
-  .hero .eyebrow{ animation: fadeInUp .7s ease both; }
-  .hero h1{ animation: fadeInUp .7s ease .08s both; }
-  .hero p.sub{ animation: fadeInUp .7s ease .16s both; }
-  .hero .hero-actions{ animation: fadeInUp .7s ease .24s both; }
-  .hero .already-member{ animation: fadeInUp .7s ease .32s both; }
+  /* exchanges */
+  .ex-grid{ display:grid; grid-template-columns:1fr 1fr; gap:22px; }
+  @media (max-width:760px){ .ex-grid{ grid-template-columns:1fr; } }
+  .ex-card{ background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); padding:28px; display:flex; flex-direction:column; gap:16px; transition: transform .2s ease, border-color .2s ease; }
+  .ex-card:hover{ transform:translateY(-3px); border-color:rgba(255,255,255,0.2); }
+  .ex-card.soon{ border-style:dashed; opacity:0.72; }
+  .ex-pill{ display:inline-flex; align-self:flex-start; padding:4px 11px; border-radius:999px; font-size:0.72rem; font-weight:700; letter-spacing:0.03em; border:1px solid; }
+  .ex-pill.active{ color:var(--accent-a); border-color:rgba(56,189,248,0.35); background:rgba(56,189,248,0.08); }
+  .ex-pill.soon{ color:var(--text-dim); border-color:var(--line); background:rgba(255,255,255,0.03); }
+  .ex-card h3{ font-size:1.5rem; color:var(--accent-a); }
+  .ex-card.soon h3{ color:var(--text); }
+  .ex-card .desc{ color:var(--text-dim); font-size:0.9rem; margin-top:-8px; }
+  .ex-divider{ height:1px; background:var(--line); }
+  .ex-row{ display:flex; justify-content:space-between; align-items:center; font-size:0.9rem; }
+  .ex-row .label{ color:var(--text-dim); }
+  .ex-row .val{ font-family:'JetBrains Mono',monospace; font-weight:700; color:var(--gold); }
+  .ex-row .val.muted{ color:var(--text-dim); font-weight:600; font-family:'Inter',sans-serif; }
+  .ex-link-box{ display:flex; gap:8px; }
+  .ex-link-box input{ flex:1; min-width:0; background:var(--panel-soft); border:1px solid var(--line); border-radius:8px; padding:10px 12px; color:var(--text-dim); font-family:'JetBrains Mono',monospace; font-size:0.78rem; }
+  .ex-actions{ display:flex; gap:8px; flex-wrap:wrap; }
+  .ex-actions .btn{ flex:1; }
 
-  /* 스크롤하면 부드럽게 나타나는 요소 */
-  .reveal{ opacity:0; transform: translateY(26px); transition: opacity .8s cubic-bezier(.16,.84,.44,1), transform .8s cubic-bezier(.16,.84,.44,1); }
-  .reveal.is-visible{ opacity:1; transform: translateY(0); }
-  .req-grid .req-card:nth-child(2){ transition-delay:.1s; }
-  .contact-grid .contact-card:nth-child(2){ transition-delay:.1s; }
-  .steps .step:nth-child(2){ transition-delay:.08s; }
-  .steps .step:nth-child(3){ transition-delay:.16s; }
+  /* how it works */
+  .how-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:20px; }
+  @media (max-width:860px){ .how-grid{ grid-template-columns:1fr; } }
+  .how-card{ background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); padding:26px; transition: transform .2s ease; }
+  .how-card:hover{ transform:translateY(-3px); }
+  .how-num{ width:34px; height:34px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-family:'Sora',sans-serif; font-weight:800; font-size:0.95rem; background:linear-gradient(135deg, var(--accent-a), var(--accent-b)); color:#06060a; margin-bottom:16px; }
+  .how-card h3{ font-size:1.08rem; margin-bottom:8px; }
+  .how-card p{ color:var(--text-dim); font-size:0.88rem; }
 
-  /* section shared */
-  section{ padding: 88px 0; scroll-margin-top: 90px; }
-  .section-head{ max-width: 620px; margin-bottom: 48px; }
-  .section-head .kicker{
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 0.82rem;
-    color: var(--violet);
-    margin-bottom: 12px;
-    display:block;
-  }
-  .section-head h2{
-    font-size: clamp(1.6rem, 3.4vw, 2.2rem);
-    font-weight: 700;
-  }
-  .section-head p{ color: var(--text-dim); margin-top: 14px; font-size: 1rem; }
+  /* verify + telegram */
+  .verify-card{ background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); padding:36px; max-width:560px; margin:0 auto; }
+  .verify-step{ margin-bottom:22px; }
+  .verify-step label{ display:block; font-size:0.84rem; font-weight:600; color:var(--text-dim); margin-bottom:8px; }
+  .verify-row{ display:flex; gap:10px; }
+  .verify-row input{ flex:1; min-width:0; background:var(--panel-soft); border:1px solid var(--line); border-radius:10px; padding:12px 14px; color:var(--text); font-family:'JetBrains Mono',monospace; font-size:0.95rem; }
+  .verify-row input:focus{ outline:none; border-color:rgba(56,189,248,0.5); }
+  .verify-result{ margin-top:12px; padding:12px 14px; border-radius:10px; font-size:0.86rem; border:1px solid var(--line); display:none; }
+  .verify-result.show{ display:block; }
+  .verify-result.ok{ color:var(--good); border-color:rgba(74,222,128,0.35); background:rgba(74,222,128,0.07); }
+  .verify-result.bad{ color:var(--danger); border-color:rgba(255,92,122,0.35); background:rgba(255,92,122,0.07); }
+  #telegram-step{ padding-top:22px; border-top:1px solid var(--line); }
+  #telegram-step[hidden]{ display:none; }
 
-  /* requirements */
-  .req-grid{
-    display:grid; grid-template-columns: 1fr 1fr; gap: 24px;
-  }
-  .req-card{
-    background: rgba(255,255,255,0.035);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    border: 1px solid rgba(255,255,255,0.08);
-    border-radius: 16px;
-    padding: 32px;
-    position: relative;
-    overflow: hidden;
-    transition: border-color .2s ease, transform .2s ease;
-  }
-  .req-card:hover{ border-color: rgba(255,255,255,0.16); transform: translateY(-2px); }
-  .req-card::before{
-    content:'';
-    position:absolute; top:-40%; right:-30%;
-    width: 220px; height: 220px;
-    background: radial-gradient(circle, rgba(215,217,220,0.08), transparent 70%);
-  }
-  .req-card .num{
-    font-family: 'JetBrains Mono', monospace;
-    color: var(--cyan);
-    font-size: 0.85rem;
-    margin-bottom: 16px;
-    display:block;
-  }
-  .req-card h3{ font-size: 1.25rem; margin-bottom: 10px; }
-  .req-card p{ color: var(--text-dim); font-size: 0.95rem; }
-  .req-card .value{
-    font-family: 'Sora', sans-serif;
-    font-size: 2rem;
-    font-weight: 700;
-    margin: 14px 0 6px;
-    color: var(--text);
-  }
-  .req-card .value small{ font-size: 1rem; color: var(--text-dim); font-weight: 500; }
+  /* faq */
+  .faq-item{ background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:20px 22px; margin-bottom:12px; }
+  .faq-item h3{ font-size:0.98rem; margin-bottom:8px; }
+  .faq-item p{ color:var(--text-dim); font-size:0.88rem; margin:0; }
 
-  /* steps */
-  .steps{
-    counter-reset: step;
-    display:flex; flex-direction: column;
-  }
-  .step{
-    display:grid; grid-template-columns: 56px 1fr; gap: 20px;
-    padding: 28px 0;
-    border-top: 1px solid var(--line);
-  }
-  .step:last-child{ border-bottom: 1px solid var(--line); }
-  .step .idx{
-    font-family: 'JetBrains Mono', monospace;
-    color: var(--violet);
-    font-size: 1.1rem;
-    padding-top: 2px;
-  }
-  .step h3{ font-size: 1.08rem; margin-bottom: 8px; }
-  .step p{ color: var(--text-dim); font-size: 0.95rem; }
-  .step .btn{ margin-top: 14px; }
-  .steps-compact .step{ padding: 18px 0; align-items: center; }
-  .steps-compact .step h3{ margin-bottom: 0; font-size: 1rem; font-weight: 600; }
+  footer{ border-top:1px solid var(--line); padding:36px 0; text-align:center; color:var(--text-dim); font-size:0.82rem; }
+  footer a{ color:var(--text-dim); font-weight:600; }
+  footer a:hover{ color:var(--text); }
 
-  /* contact */
-  .contact-grid{
-    display:grid; grid-template-columns: 1fr 1fr; gap: 24px;
-  }
-  .contact-card{
-    background: rgba(255,255,255,0.035);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    border: 1px solid rgba(255,255,255,0.08);
-    border-radius: 16px;
-    padding: 32px;
-    transition: border-color .2s ease, transform .2s ease;
-  }
-  .contact-card:hover{ border-color: rgba(255,255,255,0.16); transform: translateY(-2px); }
-  .contact-card .icon{
-    width: 44px; height: 44px;
-    border-radius: 10px;
-    display:flex; align-items:center; justify-content:center;
-    margin-bottom: 18px;
-    font-size: 1.3rem;
-  }
-  .contact-card.channel .icon{ background: rgba(215,217,220,0.12); color: var(--cyan); }
-  .contact-card.support .icon{ background: rgba(91,98,112,0.14); color: var(--violet); }
-  .contact-card h3{ font-size: 1.15rem; margin-bottom: 10px; }
-  .contact-card p{ color: var(--text-dim); font-size: 0.95rem; margin-bottom: 20px; }
-
-  /* footer */
-  footer{
-    border-top: 1px solid var(--line);
-    padding: 40px 0;
-  }
-  .footer-row{
-    display:flex; justify-content: space-between; align-items:center;
-    flex-wrap: wrap; gap: 16px;
-  }
-  .footer-row .fbrand{ font-weight: 700; }
-  .footer-row .disclaimer{ color: var(--text-dim); font-size: 0.82rem; max-width: 520px; }
-
-  /* floating telegram button */
-  .float-tg{
-    position: fixed;
-    right: 22px; bottom: 22px;
-    z-index: 60;
-    width: 58px; height: 58px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, var(--cyan), #f2f1ee);
-    display:flex; align-items:center; justify-content:center;
-    box-shadow: 0 6px 20px -6px rgba(215,217,220,0.45);
-    font-size: 1.5rem;
-    color: #071417;
-    transition: transform .15s ease;
-  }
-  .float-tg:hover{ transform: scale(1.08); }
-
-  @media (max-width: 860px){
-    .req-grid, .contact-grid{ grid-template-columns: 1fr; }
-    .nav-cta .btn span.txt{ display:none; }
-    section{ padding: 64px 0; }
-  }
-
-  /* header menu (hamburger + dropdown) */
-  .nav-menu{ position: relative; }
-  .menu-btn{
-    width: 42px; height: 42px;
-    border-radius: 8px;
-    border: 1px solid var(--line);
-    background: rgba(255,255,255,0.03);
-    display:flex; flex-direction: column; align-items:center; justify-content:center;
-    gap: 5px;
-    cursor: pointer;
-  }
-  .menu-btn:hover{ border-color: rgba(255,255,255,0.25); }
-  .menu-btn span{
-    display:block; width: 18px; height: 2px;
-    background: var(--text);
-    border-radius: 2px;
-    transition: transform .15s ease, opacity .15s ease;
-  }
-  .menu-btn[aria-expanded="true"] span:nth-child(1){ transform: translateY(7px) rotate(45deg); }
-  .menu-btn[aria-expanded="true"] span:nth-child(2){ opacity: 0; }
-  .menu-btn[aria-expanded="true"] span:nth-child(3){ transform: translateY(-7px) rotate(-45deg); }
-  .menu-dropdown{
-    position: absolute; top: calc(100% + 10px); right: 0;
-    min-width: 220px;
-    background: var(--panel);
-    border: 1px solid var(--line);
-    border-radius: 12px;
-    padding: 8px;
-    box-shadow: 0 16px 40px -12px rgba(0,0,0,0.6);
-    opacity: 0; visibility: hidden; transform: translateY(-6px);
-    transition: opacity .15s ease, transform .15s ease, visibility .15s;
-    z-index: 70;
-  }
-  .menu-dropdown.open{ opacity: 1; visibility: visible; transform: translateY(0); }
-  .menu-dropdown a{
-    display:block;
-    padding: 10px 12px;
-    border-radius: 8px;
-    font-size: 0.92rem;
-    color: var(--text);
-  }
-  .menu-dropdown a:hover{ background: rgba(255,255,255,0.05); }
-  .menu-dropdown .menu-divider{
-    height: 1px; background: var(--line); margin: 6px 4px;
-  }
-  .menu-dropdown .menu-cta{
-    color: var(--cyan);
-    font-weight: 600;
-  }
-  .menu-dropdown .menu-member{
-    color: var(--text);
-    font-weight: 600;
-    background: rgba(215,217,220,0.08);
-  }
-
-  .referral-banner{ display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; background:rgba(255,255,255,0.03); border:1px solid var(--line); border-radius:14px; padding:18px 22px; transition:border-color .2s ease, transform .2s ease; }
-  .referral-banner:hover{ border-color:rgba(215,217,220,0.3); transform:translateY(-1px); }
-  .referral-banner .kicker{ font-family:'JetBrains Mono',monospace; font-size:0.7rem; color:var(--violet); letter-spacing:0.06em; }
-  .referral-banner h3{ font-size:1.05rem; margin:4px 0 2px; }
-  .referral-banner p{ color:var(--text-dim); font-size:0.84rem; margin:0; }
-  .rank-widget{ background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:18px 20px; max-width:340px; margin:24px auto 0; }
-  .rank-widget h3{ font-size:0.86rem; color:var(--text-dim); font-weight:600; margin:0 0 10px; }
-  .rank-row{ display:flex; justify-content:space-between; align-items:center; padding:6px 0; font-size:0.82rem; border-top:1px solid rgba(255,255,255,0.05); }
-  .rank-row:first-of-type{ border-top:none; }
-  .rank-vol{ font-family:'JetBrains Mono',monospace; color:var(--cyan); }
-  .rank-empty{ color:var(--text-dim); font-size:0.8rem; text-align:center; padding:8px 0; }
+  .float-tg{ position:fixed; right:22px; bottom:22px; width:54px; height:54px; border-radius:50%; background:linear-gradient(135deg, var(--accent-a), var(--accent-b)); display:flex; align-items:center; justify-content:center; font-size:1.4rem; box-shadow:0 10px 30px -8px rgba(56,189,248,0.5); z-index:40; transition:transform .15s ease; }
+  .float-tg:hover{ transform:scale(1.08); }
 </style>
 </head>
 <body>
-
-<div id="intro-splash" class="intro-splash">
-  <div class="intro-word">Welcome to TEAM SIXX</div>
-  <div class="intro-tag">코인 선물 프라이빗 스터디룸</div>
-</div>
 
 <div class="bg-grid"></div>
 <div class="bg-glow glow-1"></div>
@@ -430,203 +180,305 @@
 
 <header>
   <div class="nav">
-    <a class="brand" href="index.html">TEAM SIXX</a>
-        <div class="nav-menu">
-      <button type="button" class="menu-btn" id="menu-btn" aria-label="메뉴 열기" aria-expanded="false">
-        <span></span><span></span><span></span>
-      </button>
-      <div class="menu-dropdown" id="menu-dropdown">
-        <a href="index.html">홈</a>
-        <a href="requirements.html">입장 조건</a>
-        <a href="join.html">입장 방법 안내</a>
-        <a href="referral.html">추천인 프로그램</a>
-        <div class="menu-divider"></div>
-        <a href="portal.html" class="menu-member">🔒 스터디룸 바로가기</a>
-        <div class="menu-divider"></div>
-        <a href="https://t.me/+qUg3b7kZ24hjNWZl" target="_blank" rel="noopener" class="menu-cta">텔레그램 채널 ↗</a>
-        <a href="https://t.me/team_sixx" target="_blank" rel="noopener">고객센터 문의 ↗</a>
-      </div>
+    <a class="brand" href="#top"><span class="mark">S</span>TEAM SIXX</a>
+    <nav class="nav-links">
+      <a href="#how">이용 방법</a>
+      <a href="#exchanges">거래소</a>
+      <a href="#verify">UID 확인</a>
+      <a href="#faq">FAQ</a>
+    </nav>
+    <div class="nav-cta">
+      <a class="btn btn-ghost btn-sm" href="https://t.me/team_sixx" target="_blank" rel="noopener"><span class="txt">텔레그램</span> ✈</a>
+      <a class="btn btn-primary btn-sm" href="#exchanges"><span class="txt">가입하기</span> →</a>
+      <button class="menu-btn" id="menu-btn" aria-expanded="false" aria-label="메뉴"><span></span><span></span><span></span></button>
+    </div>
+    <div class="menu-dropdown" id="menu-dropdown">
+      <a href="#how">이용 방법</a>
+      <a href="#exchanges">거래소</a>
+      <a href="#verify">UID 확인</a>
+      <a href="#faq">FAQ</a>
+      <a href="https://t.me/team_sixx" target="_blank" rel="noopener">텔레그램 문의 ↗</a>
     </div>
   </div>
 </header>
 
-<section class="hero">
-  <div class="wrap">
-    <span class="eyebrow">PRIVATE STUDY ROOM</span>
-    <h1><span class="grad">SIXX</span>와 함께하는<br>코인 선물 트레이딩 공부</h1>
-    <p class="sub">협력 거래소 하나, 최소 시드 하나. 그 정도의 책임감 있는 사람들과만 함께합니다.</p>
-    <div class="hero-actions">
-      <a class="btn btn-primary" href="requirements.html">입장 조건 확인하기</a>
-      <a class="btn btn-ghost" href="https://t.me/+qUg3b7kZ24hjNWZl" target="_blank" rel="noopener">텔레그램 채널 ↗</a>
-    </div>
-    <div class="already-member">이미 가입하셨나요? <a href="portal.html">스터디룸 바로가기 →</a></div>
-  </div>
-</section>
+<main id="top">
 
-<section id="req-teaser">
-  <div class="wrap">
-    <div class="section-head reveal">
-      <span class="kicker">ENTRY REQUIREMENTS</span>
-      <h2>입장 조건</h2>
-    </div>
-    <div class="req-grid">
-      <div class="req-card reveal">
-        <span class="num">조건 01</span>
-        <h3>Gate.io 전용 링크로 가입</h3>
+  <section class="hero">
+    <div class="wrap">
+      <div class="badge"><span class="dot"></span> 현재 가입 모집중</div>
+      <h1>전용 링크로 가입하고<span class="line2 grad-text">수수료 페이백 받기</span></h1>
+      <div class="hero-sub-badge">EXCHANGE CASHBACK PROGRAM</div>
+      <p class="desc">TEAM SIXX 전용 링크로 거래소에 새로 가입하면 거래 수수료의 일부를 페이백 받을 수 있어요. UID 확인 후 전용 텔레그램방에서 자세한 안내를 받아보세요.</p>
+      <div class="hero-actions">
+        <a class="btn btn-primary" href="#exchanges">가입하러 가기 →</a>
+        <a class="btn btn-ghost" href="#verify">UID 확인하기</a>
       </div>
-      <div class="req-card reveal">
-        <span class="num">조건 02</span>
-        <h3>최소 시드 보유</h3>
-        <div class="value">$700<small>+</small></div>
+      <div class="hero-stats">
+        <div class="stat-chip"><b>20%</b> 페이백율 (Gate.io)</div>
+        <div class="stat-chip"><b>1개</b> 지원 거래소 · 확장 예정</div>
+        <div class="stat-chip">전용 <b>텔레그램</b> 커뮤니티</div>
       </div>
     </div>
-    <div class="hero-actions" style="margin-top:24px;">
-      <a class="btn btn-ghost" href="requirements.html">자세히 보기 ↗</a>
-    </div>
-  </div>
-</section>
+  </section>
 
-<section id="join-teaser">
-  <div class="wrap">
-    <div class="section-head reveal">
-      <span class="kicker">HOW TO JOIN</span>
-      <h2>입장까지 3단계</h2>
-    </div>
-    <div class="steps steps-compact">
-      <div class="step reveal">
-        <div class="idx mono">01</div>
-        <div><h3>전용 링크로 Gate.io 가입</h3></div>
+  <section id="exchanges">
+    <div class="wrap">
+      <div class="sec-head reveal">
+        <div class="sec-label">— EXCHANGES</div>
+        <h2>지원 거래소</h2>
+        <p>아래 전용 링크로 새로 가입해야 페이백 대상이 됩니다. 기존 계정은 인정되지 않아요.</p>
       </div>
-      <div class="step reveal">
-        <div class="idx mono">02</div>
-        <div><h3>최소 시드 $700 이상 예치</h3></div>
-      </div>
-      <div class="step reveal">
-        <div class="idx mono">03</div>
-        <div><h3>UID + 예치 스크린샷을 @team_sixx 에게 전송</h3></div>
+      <div class="ex-grid">
+        <div class="ex-card reveal">
+          <span class="ex-pill active">크립토 거래소</span>
+          <h3>Gate.io</h3>
+          <p class="desc">글로벌 코인 현물·선물 거래소</p>
+          <div class="ex-divider"></div>
+          <div class="ex-row"><span class="label">페이백율</span><span class="val">20%</span></div>
+          <div class="ex-row"><span class="label">정산 방식</span><span class="val muted">가입 확인 후 텔레그램 안내</span></div>
+          <div class="ex-link-box">
+            <input type="text" readonly id="gate-link" value="https://www.gate.com/signup?ref_type=103&ref=TEAMSIXX">
+            <button class="btn btn-ghost btn-sm" id="copy-gate-link">복사</button>
+          </div>
+          <div class="ex-actions">
+            <a class="btn btn-primary" href="https://www.gate.com/signup?ref_type=103&ref=TEAMSIXX" target="_blank" rel="noopener">가입하기 →</a>
+            <a class="btn btn-ghost" href="#verify">UID 확인</a>
+          </div>
+        </div>
+        <div class="ex-card soon reveal">
+          <span class="ex-pill soon">준비중</span>
+          <h3>다른 메이저 거래소</h3>
+          <p class="desc">더 좋은 조건의 파트너십을 준비하고 있어요. 곧 추가될 예정입니다.</p>
+          <div class="ex-divider"></div>
+          <div class="ex-row"><span class="label">페이백율</span><span class="val muted">협의중</span></div>
+          <div class="ex-row"><span class="label">정산 방식</span><span class="val muted">추후 공지</span></div>
+          <div class="ex-link-box">
+            <input type="text" readonly value="준비중입니다" disabled>
+          </div>
+          <div class="ex-actions">
+            <button class="btn btn-ghost" disabled>준비중</button>
+          </div>
+        </div>
       </div>
     </div>
-    <div class="hero-actions" style="margin-top:32px;">
-      <a class="btn btn-primary" href="join.html">자세히 보기 ↗</a>
-    </div>
-  </div>
-</section>
+  </section>
 
-<section id="referral-teaser" style="padding:48px 0;">
-  <div class="wrap">
-    <a href="referral.html" class="referral-banner reveal">
-      <div>
-        <span class="kicker">REFERRAL PARTNER</span>
-        <h3>추천인 파트너로 USDT 받기</h3>
-        <p>승인 후 코드 발급 → 가입자 거래량 $100k 달성 시 건당 2만원(USDT-TRC20)</p>
+  <section id="how">
+    <div class="wrap">
+      <div class="sec-head reveal">
+        <div class="sec-label">— HOW IT WORKS</div>
+        <h2>이용 방법</h2>
+        <p>세 단계면 끝나요.</p>
       </div>
-      <span class="btn btn-ghost" style="width:auto; flex-shrink:0;">알아보기 ↗</span>
-    </a>
+      <div class="how-grid">
+        <div class="how-card reveal">
+          <div class="how-num">1</div>
+          <h3>전용 링크로 가입</h3>
+          <p>위 거래소 카드의 전용 링크로 새 계정을 만들어주세요. 기존 계정·타 경로 가입은 인정되지 않아요.</p>
+        </div>
+        <div class="how-card reveal">
+          <div class="how-num">2</div>
+          <h3>UID 확인</h3>
+          <p>가입 후 발급된 UID를 아래에서 입력하면 전용 링크로 가입됐는지 바로 확인해드려요.</p>
+        </div>
+        <div class="how-card reveal">
+          <div class="how-num">3</div>
+          <h3>텔레그램 전용방 신청</h3>
+          <p>확인이 끝나면 텔레그램 아이디를 입력해 신청하세요. 운영자에게 바로 알림이 가고, 개별 안내해드려요.</p>
+        </div>
+      </div>
+    </div>
+  </section>
 
-    <div class="rank-widget reveal" id="rank-widget">
-      <h3>🏆 거래량 랭킹 TOP 5</h3>
-      <div id="rank-widget-list"></div>
+  <section id="verify">
+    <div class="wrap">
+      <div class="sec-head reveal">
+        <div class="sec-label">— VERIFY</div>
+        <h2>UID 확인 &amp; 텔레그램 신청</h2>
+        <p>Gate.io UID를 입력하면 전용 링크 가입 여부를 바로 확인해드립니다.</p>
+      </div>
+      <div class="verify-card reveal">
+        <div class="verify-step">
+          <label for="uid-input">① Gate.io UID</label>
+          <div class="verify-row">
+            <input type="text" id="uid-input" inputmode="numeric" placeholder="예: 12345678">
+            <button class="btn btn-primary" id="verify-btn">확인하기</button>
+          </div>
+          <div class="verify-result" id="verify-result"></div>
+        </div>
+        <div id="telegram-step" hidden>
+          <label for="tg-input">② 텔레그램 아이디</label>
+          <div class="verify-row">
+            <input type="text" id="tg-input" placeholder="예: @yourid">
+            <button class="btn btn-primary" id="tg-submit-btn">신청하기</button>
+          </div>
+          <div class="verify-result" id="tg-result"></div>
+        </div>
+      </div>
     </div>
-  </div>
-</section>
+  </section>
 
-<section id="contact">
-  <div class="wrap">
-    <div class="section-head reveal">
-      <span class="kicker">GET IN TOUCH</span>
-      <h2>채널 / 문의</h2>
-    </div>
-    <div class="contact-grid">
-      <div class="contact-card channel reveal">
-        <div class="icon">✈</div>
-        <h3>텔레그램 채널</h3>
-        <a class="btn btn-primary btn-block" href="https://t.me/+qUg3b7kZ24hjNWZl" target="_blank" rel="noopener">채널 입장하기 ↗</a>
+  <section id="faq">
+    <div class="wrap">
+      <div class="sec-head reveal">
+        <div class="sec-label">— FAQ</div>
+        <h2>자주 묻는 질문</h2>
       </div>
-      <div class="contact-card support reveal">
-        <div class="icon">💬</div>
-        <h3>고객센터 / 입장 문의</h3>
-        <a class="btn btn-violet btn-block" href="https://t.me/team_sixx" target="_blank" rel="noopener">@team_sixx 문의하기 ↗</a>
+      <div style="max-width:720px; margin:0 auto;">
+        <div class="faq-item reveal">
+          <h3>페이백 요율이 얼마인가요?</h3>
+          <p>현재 Gate.io는 20%이며, 앞으로 더 상향될 예정입니다. 다른 거래소가 추가되면 거래소별로 요율이 다를 수 있어요.</p>
+        </div>
+        <div class="faq-item reveal">
+          <h3>이미 거래소 계정이 있는데 가입할 수 있나요?</h3>
+          <p>전용 링크로 새로 가입한 계정만 인정됩니다. 기존 계정이나 다른 경로로 가입한 계정은 확인이 불가해요.</p>
+        </div>
+        <div class="faq-item reveal">
+          <h3>UID는 어디서 확인하나요?</h3>
+          <p>거래소 앱/웹의 계정 정보 메뉴에서 확인할 수 있어요. <a href="https://www.gate.com/help/guide/functional_guidelines/43847/how-to-find-my-gate.io-user-id" target="_blank" rel="noopener" style="color:var(--accent-a); text-decoration:underline;">Gate.io 공식 가이드 보기 ↗</a></p>
+        </div>
+        <div class="faq-item reveal">
+          <h3>다른 거래소도 지원하나요?</h3>
+          <p>현재는 Gate.io만 지원하고, 다른 메이저 거래소도 준비 중이에요. 추가되는 대로 이 페이지에 반영할게요.</p>
+        </div>
+        <div class="faq-item reveal">
+          <h3>텔레그램 신청 후 얼마나 걸리나요?</h3>
+          <p>신청 즉시 운영자에게 알림이 가고, 확인되는 대로 텔레그램으로 개별 연락드려요.</p>
+        </div>
       </div>
     </div>
-  </div>
-</section>
+  </section>
+
+</main>
 
 <footer>
-  <div class="wrap footer-row">
-    <div class="fbrand">TEAM SIXX</div>
-    <div class="disclaimer">본 콘텐츠는 투자 권유가 아니며, 선물거래는 원금 손실 위험이 있습니다. 모든 투자 판단과 책임은 본인에게 있습니다.</div>
+  <div class="wrap">
+    © TEAM SIXX · 문의 <a href="https://t.me/team_sixx" target="_blank" rel="noopener">텔레그램 ↗</a>
   </div>
 </footer>
 
 <a class="float-tg" href="https://t.me/team_sixx" target="_blank" rel="noopener" aria-label="텔레그램 문의">✈</a>
 
-
 <script>
-  (function(){
-    var s = document.getElementById('intro-splash');
-    if(window.matchMedia('(max-width:860px)').matches){ if(s) s.hidden = true; }
-    else { setTimeout(function(){ if(s) s.hidden = true; }, 4450); }
-  })();
-  (function(){
-    var btn = document.getElementById('menu-btn');
-    var dropdown = document.getElementById('menu-dropdown');
-    if(!btn || !dropdown) return;
-
-    function closeMenu(){
-      dropdown.classList.remove('open');
-      btn.setAttribute('aria-expanded', 'false');
-    }
-    function toggleMenu(e){
-      e.stopPropagation();
-      var isOpen = dropdown.classList.toggle('open');
-      btn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
-    }
-    btn.addEventListener('click', toggleMenu);
+(function(){
+  var btn = document.getElementById('menu-btn');
+  var dropdown = document.getElementById('menu-dropdown');
+  if(btn && dropdown){
+    btn.addEventListener('click', function(){
+      var open = dropdown.classList.toggle('open');
+      btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    });
     document.addEventListener('click', function(e){
-      if(dropdown.classList.contains('open') && !dropdown.contains(e.target) && e.target !== btn){
-        closeMenu();
+      if(!dropdown.contains(e.target) && !btn.contains(e.target)){
+        dropdown.classList.remove('open');
+        btn.setAttribute('aria-expanded', 'false');
       }
     });
-    document.addEventListener('keydown', function(e){
-      if(e.key === 'Escape') closeMenu();
-    });
     dropdown.querySelectorAll('a').forEach(function(a){
-      a.addEventListener('click', closeMenu);
-    });
-  })();
-
-  (function(){
-    var el = document.getElementById('rank-widget-list');
-    if(!el) return;
-    function escapeHtml(s){
-      return String(s).replace(/[&<>"']/g, function(c){ return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]; });
-    }
-    fetch('/api/rankings').then(function(res){ return res.json(); }).then(function(data){
-      var list = (data.ok && data.rankings) ? data.rankings.slice(0, 5) : [];
-      if(list.length === 0){ el.innerHTML = '<div class="rank-empty">아직 참여자가 없어요.</div>'; return; }
-      el.innerHTML = list.map(function(r){
-        return '<div class="rank-row"><span>' + r.rank + '. ' + escapeHtml(r.label) + '</span><span class="rank-vol">$' + Number(r.trading_volume).toLocaleString() + '</span></div>';
-      }).join('');
-    }).catch(function(){ el.innerHTML = ''; });
-  })();
-
-  (function(){
-    var items = document.querySelectorAll('.reveal');
-    if(!items.length) return;
-    if(!('IntersectionObserver' in window)){
-      items.forEach(function(el){ el.classList.add('is-visible'); });
-      return;
-    }
-    var observer = new IntersectionObserver(function(entries){
-      entries.forEach(function(entry){
-        if(entry.isIntersecting){
-          entry.target.classList.add('is-visible');
-          observer.unobserve(entry.target);
-        }
+      a.addEventListener('click', function(){
+        dropdown.classList.remove('open');
+        btn.setAttribute('aria-expanded', 'false');
       });
-    }, { threshold: 0.15, rootMargin: '0px 0px -40px 0px' });
-    items.forEach(function(el){ observer.observe(el); });
-  })();
+    });
+  }
+})();
+
+(function(){
+  var reveals = document.querySelectorAll('.reveal');
+  if(!('IntersectionObserver' in window)){
+    reveals.forEach(function(el){ el.classList.add('is-visible'); });
+    return;
+  }
+  var io = new IntersectionObserver(function(entries){
+    entries.forEach(function(entry){
+      if(entry.isIntersecting){
+        entry.target.classList.add('is-visible');
+        io.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.12 });
+  reveals.forEach(function(el){ io.observe(el); });
+})();
+
+(function(){
+  var copyBtn = document.getElementById('copy-gate-link');
+  var linkInput = document.getElementById('gate-link');
+  if(!copyBtn || !linkInput) return;
+  copyBtn.addEventListener('click', function(){
+    linkInput.select();
+    linkInput.setSelectionRange(0, 99999);
+    var done = function(){ copyBtn.textContent = '복사됨!'; setTimeout(function(){ copyBtn.textContent = '복사'; }, 1500); };
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(linkInput.value).then(done).catch(function(){ document.execCommand('copy'); done(); });
+    } else {
+      document.execCommand('copy'); done();
+    }
+  });
+})();
+
+(function(){
+  var uidInput = document.getElementById('uid-input');
+  var verifyBtn = document.getElementById('verify-btn');
+  var verifyResult = document.getElementById('verify-result');
+  var telegramStep = document.getElementById('telegram-step');
+  var tgInput = document.getElementById('tg-input');
+  var tgSubmitBtn = document.getElementById('tg-submit-btn');
+  var tgResult = document.getElementById('tg-result');
+  var verifiedUid = null;
+
+  function showResult(el, ok, text){
+    el.textContent = text;
+    el.className = 'verify-result show ' + (ok ? 'ok' : 'bad');
+  }
+
+  verifyBtn.addEventListener('click', function(){
+    var uid = (uidInput.value || '').trim();
+    if(!uid){ showResult(verifyResult, false, 'UID를 입력해주세요.'); return; }
+    verifyBtn.disabled = true;
+    verifyBtn.textContent = '확인 중...';
+    telegramStep.hidden = true;
+    verifiedUid = null;
+    fetch('/api/check-uid?uid=' + encodeURIComponent(uid), { credentials:'same-origin' })
+      .then(function(res){ return res.json(); })
+      .then(function(data){
+        if(data.ok && data.status === 'direct_referral'){
+          showResult(verifyResult, true, '✅ ' + data.message);
+          verifiedUid = uid;
+          telegramStep.hidden = false;
+        } else {
+          showResult(verifyResult, false, '❌ ' + (data.message || data.error || '확인할 수 없습니다.'));
+        }
+      })
+      .catch(function(){ showResult(verifyResult, false, '❌ 확인 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.'); })
+      .finally(function(){ verifyBtn.disabled = false; verifyBtn.textContent = '확인하기'; });
+  });
+
+  tgSubmitBtn.addEventListener('click', function(){
+    var tg = (tgInput.value || '').trim();
+    if(!verifiedUid){ showResult(tgResult, false, '먼저 UID 확인을 완료해주세요.'); return; }
+    if(!tg){ showResult(tgResult, false, '텔레그램 아이디를 입력해주세요.'); return; }
+    tgSubmitBtn.disabled = true;
+    tgSubmitBtn.textContent = '신청 중...';
+    fetch('/api/telegram-join', {
+      method:'POST', credentials:'same-origin',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ uid: verifiedUid, telegram_id: tg })
+    })
+      .then(function(res){ return res.json(); })
+      .then(function(data){
+        if(data.ok){
+          showResult(tgResult, true, '✅ 신청이 접수됐습니다! 곧 텔레그램으로 연락드릴게요.');
+          tgInput.value = '';
+        } else {
+          showResult(tgResult, false, '❌ ' + (data.error || '신청 중 오류가 발생했습니다.'));
+        }
+      })
+      .catch(function(){ showResult(tgResult, false, '❌ 신청 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.'); })
+      .finally(function(){ tgSubmitBtn.disabled = false; tgSubmitBtn.textContent = '신청하기'; });
+  });
+})();
 </script>
+
 </body>
 </html>
