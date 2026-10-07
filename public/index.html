@@ -12,28 +12,28 @@
 <style>
 
   :root{
-    --bg: #07070a;
-    --panel: #121216;
-    --panel-soft: #0c0c10;
+    --bg: #07080a;
+    --panel: #121416;
+    --panel-soft: #0c0e10;
     --line: rgba(255,255,255,0.09);
-    --text: #f4f3f1;
-    --text-dim: #93918d;
-    --accent-a: #38bdf8;
-    --accent-b: #a855f7;
-    --accent-c: #ec4899;
+    --text: #f6f5f2;
+    --text-dim: #9b9994;
+    --accent-a: #34d399;
+    --accent-b: #22c3b6;
+    --accent-c: #2dd4ec;
     --good: #4ade80;
-    --gold: #eab308;
+    --gold: #f0b429;
     --danger: #ff5c7a;
-    --radius: 16px;
+    --radius: 18px;
   }
   *{ box-sizing: border-box; }
-  html{ scroll-behavior: smooth; background: var(--bg); }
+  html{ scroll-behavior: smooth; background: var(--bg); font-size:17px; }
   body{
     margin:0;
     background: var(--bg);
     color: var(--text);
     font-family: 'Inter', sans-serif;
-    line-height: 1.6;
+    line-height: 1.65;
     -webkit-font-smoothing: antialiased;
   }
   h1,h2,h3{ font-family:'Sora',sans-serif; margin:0; letter-spacing:-0.01em; }
@@ -55,7 +55,7 @@
   .bg-grid{ position:fixed; inset:0; z-index:-2; background-image:linear-gradient(rgba(255,255,255,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.03) 1px,transparent 1px); background-size:64px 64px; mask-image:radial-gradient(ellipse 80% 55% at 50% 0%, black 35%, transparent 90%); }
   .bg-glow{ position:fixed; z-index:-1; filter:blur(130px); opacity:0.22; border-radius:50%; pointer-events:none; }
   .glow-1{ width:560px; height:560px; top:-200px; left:-160px; background:var(--accent-a); }
-  .glow-2{ width:620px; height:620px; top:10%; right:-220px; background:var(--accent-b); }
+  .glow-2{ width:620px; height:620px; top:10%; right:-220px; background:var(--accent-c); }
 
   .wrap{ max-width:1180px; margin:0 auto; padding:0 24px; }
 
@@ -68,16 +68,16 @@
   .nav{ display:flex; align-items:center; justify-content:space-between; padding:16px 24px; max-width:1180px; margin:0 auto; gap:12px; position:relative; }
   .brand{ display:flex; align-items:center; gap:10px; font-weight:700; font-size:1.05rem; flex-shrink:0; }
   .brand .mark{ width:30px; height:30px; border-radius:9px; background:linear-gradient(135deg, var(--accent-a), var(--accent-b)); display:flex; align-items:center; justify-content:center; font-family:'Sora',sans-serif; font-weight:800; color:#06060a; font-size:0.95rem; }
-  .nav-links{ display:flex; gap:26px; align-items:center; }
-  .nav-links a{ font-size:0.92rem; color:var(--text-dim); font-weight:600; }
+  .nav-links{ display:flex; gap:28px; align-items:center; }
+  .nav-links a{ font-size:1rem; color:var(--text-dim); font-weight:600; }
   .nav-links a:hover{ color:var(--text); }
   .nav-cta{ display:flex; align-items:center; gap:10px; }
-  .btn{ display:inline-flex; align-items:center; justify-content:center; gap:6px; padding:11px 20px; border-radius:10px; font-size:0.92rem; font-weight:700; cursor:pointer; transition: filter .15s ease, border-color .15s ease, transform .15s ease; white-space:nowrap; }
-  .btn-primary{ background:linear-gradient(90deg, var(--accent-a), var(--accent-b)); color:#06060a; border:none; }
+  .btn{ display:inline-flex; align-items:center; justify-content:center; gap:6px; padding:12px 22px; border-radius:999px; font-size:1rem; font-weight:700; cursor:pointer; transition: filter .15s ease, border-color .15s ease, transform .15s ease; white-space:nowrap; }
+  .btn-primary{ background:linear-gradient(90deg, var(--accent-a), var(--accent-c)); color:#04120d; border:none; }
   .btn-primary:hover{ filter:brightness(1.08); transform:translateY(-1px); }
   .btn-ghost{ background:rgba(255,255,255,0.03); border:1px solid var(--line); color:var(--text); }
-  .btn-ghost:hover{ border-color:rgba(255,255,255,0.25); }
-  .btn-sm{ padding:8px 14px; font-size:0.84rem; }
+  .btn-ghost:hover{ border-color:rgba(255,255,255,0.3); }
+  .btn-sm{ padding:9px 16px; font-size:0.9rem; }
 
   .menu-btn{ display:none; width:42px; height:42px; border-radius:8px; border:1px solid var(--line); background:rgba(255,255,255,0.03); flex-direction:column; align-items:center; justify-content:center; gap:5px; cursor:pointer; }
   .menu-btn span{ display:block; width:18px; height:2px; background:var(--text); border-radius:2px; transition:transform .15s ease, opacity .15s ease; }
@@ -96,79 +96,89 @@
   }
 
   /* hero */
-  .hero{ padding:88px 0 56px; text-align:center; }
-  .badge{ display:inline-flex; align-items:center; gap:8px; padding:7px 16px; border-radius:999px; border:1px solid var(--line); background:rgba(255,255,255,0.03); font-size:0.8rem; font-weight:600; color:var(--text-dim); margin-bottom:28px; }
+  .hero{ padding:92px 0 60px; text-align:center; }
+  .badge{ display:inline-flex; align-items:center; gap:8px; padding:8px 18px; border-radius:999px; border:1px solid var(--line); background:rgba(255,255,255,0.03); font-size:0.9rem; font-weight:600; color:var(--text-dim); margin-bottom:30px; }
   .badge .dot{ width:7px; height:7px; border-radius:50%; background:var(--good); box-shadow:0 0 8px var(--good); }
-  .hero h1{ font-size:clamp(2.3rem, 6.5vw, 4rem); line-height:1.12; font-weight:800; }
-  .hero h1 .line2{ display:block; margin-top:6px; }
-  .hero-sub-badge{ display:inline-block; margin:22px 0 18px; padding:6px 14px; border-radius:999px; border:1px solid var(--line); font-size:0.74rem; font-weight:700; letter-spacing:0.06em; color:var(--text-dim); }
-  .hero p.desc{ max-width:620px; margin:0 auto 32px; color:var(--text-dim); font-size:1.02rem; }
-  .hero-actions{ display:flex; gap:12px; justify-content:center; flex-wrap:wrap; margin-bottom:40px; }
+  .hero h1{ font-size:clamp(2.5rem, 6.5vw, 4.3rem); line-height:1.14; font-weight:800; }
+  .hero h1 .line2{ display:block; margin-top:8px; }
+  .hero-sub-badge{ display:inline-block; margin:24px 0 20px; padding:7px 16px; border-radius:999px; border:1px solid var(--line); font-size:0.8rem; font-weight:700; letter-spacing:0.06em; color:var(--text-dim); }
+  .hero p.desc{ max-width:660px; margin:0 auto 34px; color:var(--text-dim); font-size:1.14rem; }
+  .hero-actions{ display:flex; gap:14px; justify-content:center; flex-wrap:wrap; margin-bottom:42px; }
   .hero-stats{ display:flex; gap:12px; justify-content:center; flex-wrap:wrap; }
-  .stat-chip{ padding:10px 18px; border-radius:999px; border:1px solid var(--line); background:rgba(255,255,255,0.03); font-size:0.84rem; font-weight:600; color:var(--text-dim); }
+  .stat-chip{ padding:11px 20px; border-radius:999px; border:1px solid var(--line); background:rgba(255,255,255,0.03); font-size:0.94rem; font-weight:600; color:var(--text-dim); }
   .stat-chip b{ color:var(--text); font-family:'JetBrains Mono',monospace; }
 
-  section{ padding:72px 0; }
-  .sec-label{ font-family:'JetBrains Mono',monospace; font-size:0.78rem; letter-spacing:0.08em; color:var(--accent-a); margin-bottom:10px; }
-  .sec-head{ text-align:center; max-width:560px; margin:0 auto 44px; }
-  .sec-head h2{ font-size:clamp(1.6rem, 4vw, 2.3rem); margin-bottom:10px; }
-  .sec-head p{ color:var(--text-dim); font-size:0.96rem; }
+  section{ padding:76px 0; }
+  .sec-label{ font-family:'JetBrains Mono',monospace; font-size:0.84rem; letter-spacing:0.08em; color:var(--accent-a); margin-bottom:12px; }
+  .sec-head{ text-align:center; max-width:600px; margin:0 auto 46px; }
+  .sec-head h2{ font-size:clamp(1.8rem, 4vw, 2.5rem); margin-bottom:12px; }
+  .sec-head p{ color:var(--text-dim); font-size:1.08rem; }
+
+  /* benefits */
+  .benefit-grid{ display:grid; grid-template-columns:1fr 1fr; gap:22px; }
+  @media (max-width:760px){ .benefit-grid{ grid-template-columns:1fr; } }
+  .benefit-card{ background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); padding:32px; border-left:3px solid var(--accent-a); transition: transform .2s ease, border-color .2s ease; }
+  .benefit-card:nth-child(2){ border-left-color: var(--accent-c); }
+  .benefit-card:hover{ transform:translateY(-3px); }
+  .benefit-icon{ font-size:2rem; margin-bottom:14px; }
+  .benefit-card h3{ font-size:1.3rem; margin-bottom:10px; }
+  .benefit-card p{ color:var(--text-dim); font-size:1.02rem; margin:0; }
 
   /* exchanges */
   .ex-grid{ display:grid; grid-template-columns:1fr 1fr; gap:22px; }
   @media (max-width:760px){ .ex-grid{ grid-template-columns:1fr; } }
-  .ex-card{ background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); padding:28px; display:flex; flex-direction:column; gap:16px; transition: transform .2s ease, border-color .2s ease; }
+  .ex-card{ background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); padding:30px; display:flex; flex-direction:column; gap:17px; transition: transform .2s ease, border-color .2s ease; }
   .ex-card:hover{ transform:translateY(-3px); border-color:rgba(255,255,255,0.2); }
   .ex-card.soon{ border-style:dashed; opacity:0.72; }
-  .ex-pill{ display:inline-flex; align-self:flex-start; padding:4px 11px; border-radius:999px; font-size:0.72rem; font-weight:700; letter-spacing:0.03em; border:1px solid; }
-  .ex-pill.active{ color:var(--accent-a); border-color:rgba(56,189,248,0.35); background:rgba(56,189,248,0.08); }
+  .ex-pill{ display:inline-flex; align-self:flex-start; padding:5px 13px; border-radius:999px; font-size:0.8rem; font-weight:700; letter-spacing:0.02em; border:1px solid; }
+  .ex-pill.active{ color:var(--accent-a); border-color:rgba(52,211,153,0.35); background:rgba(52,211,153,0.1); }
   .ex-pill.soon{ color:var(--text-dim); border-color:var(--line); background:rgba(255,255,255,0.03); }
-  .ex-card h3{ font-size:1.5rem; color:var(--accent-a); }
+  .ex-card h3{ font-size:1.6rem; color:var(--accent-a); }
   .ex-card.soon h3{ color:var(--text); }
-  .ex-card .desc{ color:var(--text-dim); font-size:0.9rem; margin-top:-8px; }
+  .ex-card .desc{ color:var(--text-dim); font-size:1rem; margin-top:-8px; }
   .ex-divider{ height:1px; background:var(--line); }
-  .ex-row{ display:flex; justify-content:space-between; align-items:center; font-size:0.9rem; }
+  .ex-row{ display:flex; justify-content:space-between; align-items:center; font-size:1rem; }
   .ex-row .label{ color:var(--text-dim); }
   .ex-row .val{ font-family:'JetBrains Mono',monospace; font-weight:700; color:var(--gold); }
   .ex-row .val.muted{ color:var(--text-dim); font-weight:600; font-family:'Inter',sans-serif; }
   .ex-link-box{ display:flex; gap:8px; }
-  .ex-link-box input{ flex:1; min-width:0; background:var(--panel-soft); border:1px solid var(--line); border-radius:8px; padding:10px 12px; color:var(--text-dim); font-family:'JetBrains Mono',monospace; font-size:0.78rem; }
+  .ex-link-box input{ flex:1; min-width:0; background:var(--panel-soft); border:1px solid var(--line); border-radius:10px; padding:11px 13px; color:var(--text-dim); font-family:'JetBrains Mono',monospace; font-size:0.84rem; }
   .ex-actions{ display:flex; gap:8px; flex-wrap:wrap; }
   .ex-actions .btn{ flex:1; }
 
   /* how it works */
   .how-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:20px; }
   @media (max-width:860px){ .how-grid{ grid-template-columns:1fr; } }
-  .how-card{ background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); padding:26px; transition: transform .2s ease; }
+  .how-card{ background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); padding:28px; transition: transform .2s ease; }
   .how-card:hover{ transform:translateY(-3px); }
-  .how-num{ width:34px; height:34px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-family:'Sora',sans-serif; font-weight:800; font-size:0.95rem; background:linear-gradient(135deg, var(--accent-a), var(--accent-b)); color:#06060a; margin-bottom:16px; }
-  .how-card h3{ font-size:1.08rem; margin-bottom:8px; }
-  .how-card p{ color:var(--text-dim); font-size:0.88rem; }
+  .how-num{ width:36px; height:36px; border-radius:11px; display:flex; align-items:center; justify-content:center; font-family:'Sora',sans-serif; font-weight:800; font-size:1rem; background:linear-gradient(135deg, var(--accent-a), var(--accent-c)); color:#04120d; margin-bottom:18px; }
+  .how-card h3{ font-size:1.18rem; margin-bottom:9px; }
+  .how-card p{ color:var(--text-dim); font-size:0.98rem; }
 
   /* verify + telegram */
-  .verify-card{ background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); padding:36px; max-width:560px; margin:0 auto; }
-  .verify-step{ margin-bottom:22px; }
-  .verify-step label{ display:block; font-size:0.84rem; font-weight:600; color:var(--text-dim); margin-bottom:8px; }
+  .verify-card{ background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); padding:38px; max-width:580px; margin:0 auto; }
+  .verify-step{ margin-bottom:24px; }
+  .verify-step label{ display:block; font-size:0.94rem; font-weight:600; color:var(--text-dim); margin-bottom:9px; }
   .verify-row{ display:flex; gap:10px; }
-  .verify-row input{ flex:1; min-width:0; background:var(--panel-soft); border:1px solid var(--line); border-radius:10px; padding:12px 14px; color:var(--text); font-family:'JetBrains Mono',monospace; font-size:0.95rem; }
-  .verify-row input:focus{ outline:none; border-color:rgba(56,189,248,0.5); }
-  .verify-result{ margin-top:12px; padding:12px 14px; border-radius:10px; font-size:0.86rem; border:1px solid var(--line); display:none; }
+  .verify-row input{ flex:1; min-width:0; background:var(--panel-soft); border:1px solid var(--line); border-radius:12px; padding:13px 15px; color:var(--text); font-family:'JetBrains Mono',monospace; font-size:1.02rem; }
+  .verify-row input:focus{ outline:none; border-color:rgba(52,211,153,0.5); }
+  .verify-result{ margin-top:12px; padding:13px 15px; border-radius:10px; font-size:0.94rem; border:1px solid var(--line); display:none; }
   .verify-result.show{ display:block; }
   .verify-result.ok{ color:var(--good); border-color:rgba(74,222,128,0.35); background:rgba(74,222,128,0.07); }
   .verify-result.bad{ color:var(--danger); border-color:rgba(255,92,122,0.35); background:rgba(255,92,122,0.07); }
-  #telegram-step{ padding-top:22px; border-top:1px solid var(--line); }
+  #telegram-step{ padding-top:24px; border-top:1px solid var(--line); }
   #telegram-step[hidden]{ display:none; }
 
   /* faq */
-  .faq-item{ background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:20px 22px; margin-bottom:12px; }
-  .faq-item h3{ font-size:0.98rem; margin-bottom:8px; }
-  .faq-item p{ color:var(--text-dim); font-size:0.88rem; margin:0; }
+  .faq-item{ background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:22px 24px; margin-bottom:12px; }
+  .faq-item h3{ font-size:1.08rem; margin-bottom:9px; }
+  .faq-item p{ color:var(--text-dim); font-size:0.98rem; margin:0; }
 
-  footer{ border-top:1px solid var(--line); padding:36px 0; text-align:center; color:var(--text-dim); font-size:0.82rem; }
+  footer{ border-top:1px solid var(--line); padding:38px 0; text-align:center; color:var(--text-dim); font-size:0.9rem; }
   footer a{ color:var(--text-dim); font-weight:600; }
   footer a:hover{ color:var(--text); }
 
-  .float-tg{ position:fixed; right:22px; bottom:22px; width:54px; height:54px; border-radius:50%; background:linear-gradient(135deg, var(--accent-a), var(--accent-b)); display:flex; align-items:center; justify-content:center; font-size:1.4rem; box-shadow:0 10px 30px -8px rgba(56,189,248,0.5); z-index:40; transition:transform .15s ease; }
+  .float-tg{ position:fixed; right:22px; bottom:22px; width:56px; height:56px; border-radius:50%; background:linear-gradient(135deg, var(--accent-a), var(--accent-c)); display:flex; align-items:center; justify-content:center; font-size:1.45rem; box-shadow:0 10px 30px -8px rgba(52,211,153,0.5); z-index:40; transition:transform .15s ease; }
   .float-tg:hover{ transform:scale(1.08); }
 </style>
 </head>
@@ -182,6 +192,7 @@
   <div class="nav">
     <a class="brand" href="#top"><span class="mark">S</span>TEAM SIXX</a>
     <nav class="nav-links">
+      <a href="#benefits">혜택</a>
       <a href="#how">이용 방법</a>
       <a href="#exchanges">거래소</a>
       <a href="#verify">UID 확인</a>
@@ -193,6 +204,7 @@
       <button class="menu-btn" id="menu-btn" aria-expanded="false" aria-label="메뉴"><span></span><span></span><span></span></button>
     </div>
     <div class="menu-dropdown" id="menu-dropdown">
+      <a href="#benefits">혜택</a>
       <a href="#how">이용 방법</a>
       <a href="#exchanges">거래소</a>
       <a href="#verify">UID 확인</a>
@@ -207,17 +219,39 @@
   <section class="hero">
     <div class="wrap">
       <div class="badge"><span class="dot"></span> 현재 가입 모집중</div>
-      <h1>전용 링크로 가입하고<span class="line2 grad-text">수수료 페이백 받기</span></h1>
-      <div class="hero-sub-badge">EXCHANGE CASHBACK PROGRAM</div>
-      <p class="desc">TEAM SIXX 전용 링크로 거래소에 새로 가입하면 거래 수수료의 일부를 페이백 받을 수 있어요. UID 확인 후 전용 텔레그램방에서 자세한 안내를 받아보세요.</p>
+      <h1>전용 링크로 가입하고<span class="line2 grad-text">페이백 + 비공개 커뮤니티</span></h1>
+      <div class="hero-sub-badge">EXCHANGE CASHBACK &amp; PRIVATE COMMUNITY</div>
+      <p class="desc">TEAM SIXX 전용 링크로 거래소에 새로 가입하면 거래 수수료의 일부를 정기적으로 페이백 받고, 인증된 분들만 입장할 수 있는 비공개 텔레그램 커뮤니티에도 들어올 수 있어요.</p>
       <div class="hero-actions">
         <a class="btn btn-primary" href="#exchanges">가입하러 가기 →</a>
-        <a class="btn btn-ghost" href="#verify">UID 확인하기</a>
+        <a class="btn btn-ghost" href="#verify">비공개 텔레그램 입장 신청</a>
       </div>
       <div class="hero-stats">
         <div class="stat-chip"><b>20%</b> 페이백율 (Gate.io)</div>
-        <div class="stat-chip"><b>1개</b> 지원 거래소 · 확장 예정</div>
-        <div class="stat-chip">전용 <b>텔레그램</b> 커뮤니티</div>
+        <div class="stat-chip"><b>정기 정산</b> · 주기적으로 지급</div>
+        <div class="stat-chip">🔒 <b>비공개</b> 텔레그램 커뮤니티</div>
+      </div>
+    </div>
+  </section>
+
+  <section id="benefits">
+    <div class="wrap">
+      <div class="sec-head reveal">
+        <div class="sec-label">— BENEFITS</div>
+        <h2>두 가지 혜택</h2>
+        <p>페이백만 받는 게 아니라, 인증된 분들만 들어올 수 있는 공간에도 입장하게 돼요.</p>
+      </div>
+      <div class="benefit-grid">
+        <div class="benefit-card reveal">
+          <div class="benefit-icon">💰</div>
+          <h3>수수료 페이백</h3>
+          <p>전용 링크로 가입하면 거래 수수료의 일부를 돌려받아요. 현재 Gate.io 20%이고, 앞으로 더 올릴 예정이에요. 일정 주기로 정기 정산돼요.</p>
+        </div>
+        <div class="benefit-card reveal">
+          <div class="benefit-icon">🔒</div>
+          <h3>비공개 텔레그램 커뮤니티 입장</h3>
+          <p>가입이 확인된 분들만 들어올 수 있는 전용 텔레그램방이에요. 페이백 정산 안내는 물론, 운영자와 직접 소통할 수 있는 공간이에요.</p>
+        </div>
       </div>
     </div>
   </section>
@@ -236,7 +270,7 @@
           <p class="desc">글로벌 코인 현물·선물 거래소</p>
           <div class="ex-divider"></div>
           <div class="ex-row"><span class="label">페이백율</span><span class="val">20%</span></div>
-          <div class="ex-row"><span class="label">정산 방식</span><span class="val muted">가입 확인 후 텔레그램 안내</span></div>
+          <div class="ex-row"><span class="label">정산 방식</span><span class="val muted">정기 정산 (주기적으로 지급)</span></div>
           <div class="ex-link-box">
             <input type="text" readonly id="gate-link" value="https://www.gate.com/signup?ref_type=103&ref=TEAMSIXX">
             <button class="btn btn-ghost btn-sm" id="copy-gate-link">복사</button>
@@ -284,8 +318,8 @@
         </div>
         <div class="how-card reveal">
           <div class="how-num">3</div>
-          <h3>텔레그램 전용방 신청</h3>
-          <p>확인이 끝나면 텔레그램 아이디를 입력해 신청하세요. 운영자에게 바로 알림이 가고, 개별 안내해드려요.</p>
+          <h3>비공개 텔레그램 입장 신청</h3>
+          <p>확인이 끝나면 텔레그램 아이디를 입력해 신청하세요. 운영자에게 바로 알림이 가고, 비공개 커뮤니티 입장과 페이백 정산을 개별 안내해드려요.</p>
         </div>
       </div>
     </div>
@@ -295,8 +329,8 @@
     <div class="wrap">
       <div class="sec-head reveal">
         <div class="sec-label">— VERIFY</div>
-        <h2>UID 확인 &amp; 텔레그램 신청</h2>
-        <p>Gate.io UID를 입력하면 전용 링크 가입 여부를 바로 확인해드립니다.</p>
+        <h2>UID 확인 &amp; 비공개 텔레그램 입장 신청</h2>
+        <p>Gate.io UID를 입력하면 전용 링크 가입 여부를 바로 확인해드립니다. 확인되면 비공개 텔레그램 커뮤니티 입장을 신청할 수 있어요.</p>
       </div>
       <div class="verify-card reveal">
         <div class="verify-step">
@@ -331,6 +365,10 @@
           <p>현재 Gate.io는 20%이며, 앞으로 더 상향될 예정입니다. 다른 거래소가 추가되면 거래소별로 요율이 다를 수 있어요.</p>
         </div>
         <div class="faq-item reveal">
+          <h3>페이백은 언제 받나요?</h3>
+          <p>매번 즉시 지급되는 게 아니라 일정 주기(정기 정산)로 모아서 지급돼요. 정확한 일정은 비공개 텔레그램 커뮤니티에서 안내해드려요.</p>
+        </div>
+        <div class="faq-item reveal">
           <h3>이미 거래소 계정이 있는데 가입할 수 있나요?</h3>
           <p>전용 링크로 새로 가입한 계정만 인정됩니다. 기존 계정이나 다른 경로로 가입한 계정은 확인이 불가해요.</p>
         </div>
@@ -343,8 +381,8 @@
           <p>현재는 Gate.io만 지원하고, 다른 메이저 거래소도 준비 중이에요. 추가되는 대로 이 페이지에 반영할게요.</p>
         </div>
         <div class="faq-item reveal">
-          <h3>텔레그램 신청 후 얼마나 걸리나요?</h3>
-          <p>신청 즉시 운영자에게 알림이 가고, 확인되는 대로 텔레그램으로 개별 연락드려요.</p>
+          <h3>비공개 텔레그램 입장 신청 후 얼마나 걸리나요?</h3>
+          <p>신청 즉시 운영자에게 알림이 가고, 확인되는 대로 텔레그램으로 개별 연락드리고 입장을 도와드려요.</p>
         </div>
       </div>
     </div>
