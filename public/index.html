@@ -28,6 +28,7 @@
   }
   *{ box-sizing: border-box; }
   html{ scroll-behavior: smooth; background: var(--bg); font-size:17px; }
+  @media (max-width:640px){ html{ font-size:15px; } }
   body{
     margin:0;
     background: var(--bg);
@@ -107,6 +108,14 @@
   .hero-stats{ display:flex; gap:12px; justify-content:center; flex-wrap:wrap; }
   .stat-chip{ padding:11px 20px; border-radius:999px; border:1px solid var(--line); background:rgba(255,255,255,0.03); font-size:0.94rem; font-weight:600; color:var(--text-dim); }
   .stat-chip b{ color:var(--text); font-family:'JetBrains Mono',monospace; }
+  @media (max-width:640px){
+    .hero{ padding:64px 0 44px; }
+    .hero h1{ font-size:clamp(1.9rem, 8vw, 2.6rem); }
+    .hero p.desc{ font-size:1rem; }
+    .badge{ font-size:0.82rem; padding:7px 15px; }
+    .hero-sub-badge{ font-size:0.7rem; padding:6px 13px; }
+    .stat-chip{ font-size:0.84rem; padding:9px 15px; }
+  }
 
   section{ padding:76px 0; }
   .sec-label{ font-family:'JetBrains Mono',monospace; font-size:0.84rem; letter-spacing:0.08em; color:var(--accent-a); margin-bottom:12px; }
@@ -124,12 +133,25 @@
   .benefit-card h3{ font-size:1.3rem; margin-bottom:10px; }
   .benefit-card p{ color:var(--text-dim); font-size:1.02rem; margin:0; }
 
+  /* promo banner — 이미 가입한 사람용 지름길 */
+  .promo-wrap{ padding:0 0 76px; }
+  .promo-banner{ display:flex; align-items:center; justify-content:space-between; gap:20px; flex-wrap:wrap; background:linear-gradient(90deg, rgba(52,211,153,0.1), rgba(45,212,236,0.08)); border:1px solid rgba(52,211,153,0.3); border-radius:var(--radius); padding:26px 30px; transition: transform .2s ease, border-color .2s ease; }
+  .promo-banner:hover{ transform:translateY(-2px); border-color:rgba(52,211,153,0.5); }
+  .promo-text{ display:flex; align-items:center; gap:16px; }
+  .promo-icon{ font-size:1.8rem; flex-shrink:0; }
+  .promo-text h3{ font-size:1.14rem; margin-bottom:4px; }
+  .promo-text p{ color:var(--text-dim); font-size:0.96rem; margin:0; }
+  .promo-btn{ flex-shrink:0; }
+  @media (max-width:520px){ .promo-banner{ flex-direction:column; align-items:stretch; text-align:center; } .promo-text{ flex-direction:column; } .promo-btn{ width:100%; } }
+
   /* exchanges */
-  .ex-grid{ display:grid; grid-template-columns:1fr 1fr; gap:22px; }
+  .ex-grid{ display:grid; grid-template-columns:1.6fr 1fr; gap:22px; align-items:start; }
   @media (max-width:760px){ .ex-grid{ grid-template-columns:1fr; } }
   .ex-card{ background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); padding:30px; display:flex; flex-direction:column; gap:17px; transition: transform .2s ease, border-color .2s ease; }
   .ex-card:hover{ transform:translateY(-3px); border-color:rgba(255,255,255,0.2); }
-  .ex-card.soon{ border-style:dashed; opacity:0.72; }
+  .ex-card.soon{ border-style:dashed; opacity:0.6; padding:22px 24px; gap:10px; }
+  .ex-card.soon h3{ font-size:1.1rem; }
+  .ex-card.soon .desc{ font-size:0.88rem; margin-top:0; }
   .ex-pill{ display:inline-flex; align-self:flex-start; padding:5px 13px; border-radius:999px; font-size:0.8rem; font-weight:700; letter-spacing:0.02em; border:1px solid; }
   .ex-pill.active{ color:var(--accent-a); border-color:rgba(52,211,153,0.35); background:rgba(52,211,153,0.1); }
   .ex-pill.soon{ color:var(--text-dim); border-color:var(--line); background:rgba(255,255,255,0.03); }
@@ -234,6 +256,21 @@
     </div>
   </section>
 
+  <section class="promo-wrap">
+    <div class="wrap">
+      <a class="promo-banner reveal" href="#verify">
+        <div class="promo-text">
+          <span class="promo-icon">📨</span>
+          <div>
+            <h3>이미 거래소에 가입하셨나요?</h3>
+            <p>UID만 확인되면 바로 비공개 채널 입장을 신청할 수 있어요.</p>
+          </div>
+        </div>
+        <span class="btn btn-primary promo-btn">채널 입장 신청하기 →</span>
+      </a>
+    </div>
+  </section>
+
   <section id="benefits">
     <div class="wrap">
       <div class="sec-head reveal">
@@ -284,15 +321,6 @@
           <span class="ex-pill soon">준비중</span>
           <h3>다른 메이저 거래소</h3>
           <p class="desc">더 좋은 조건의 파트너십을 준비하고 있어요. 곧 추가될 예정입니다.</p>
-          <div class="ex-divider"></div>
-          <div class="ex-row"><span class="label">페이백율</span><span class="val muted">협의중</span></div>
-          <div class="ex-row"><span class="label">정산 방식</span><span class="val muted">추후 공지</span></div>
-          <div class="ex-link-box">
-            <input type="text" readonly value="준비중입니다" disabled>
-          </div>
-          <div class="ex-actions">
-            <button class="btn btn-ghost" disabled>준비중</button>
-          </div>
         </div>
       </div>
     </div>
