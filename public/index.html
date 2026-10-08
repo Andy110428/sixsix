@@ -158,6 +158,9 @@
   .ex-card h3{ font-size:1.6rem; color:var(--accent-a); }
   .ex-card.soon h3{ color:var(--text); }
   .ex-card .desc{ color:var(--text-dim); font-size:1rem; margin-top:-8px; }
+  .ex-head{ display:flex; align-items:center; gap:14px; }
+  .ex-logo{ width:46px; height:46px; border-radius:12px; overflow:hidden; flex-shrink:0; box-shadow:0 3px 14px rgba(21,87,255,0.28); }
+  .ex-logo svg{ display:block; width:100%; height:100%; }
   .ex-divider{ height:1px; background:var(--line); }
   .ex-row{ display:flex; justify-content:space-between; align-items:center; font-size:1rem; }
   .ex-row .label{ color:var(--text-dim); }
@@ -302,8 +305,25 @@
       </div>
       <div class="ex-grid">
         <div class="ex-card reveal">
-          <span class="ex-pill active">크립토 거래소</span>
-          <h3>Gate.io</h3>
+          <div class="ex-head">
+            <div class="ex-logo" aria-hidden="true">
+              <svg viewBox="0 0 48 48" width="46" height="46">
+                <defs>
+                  <linearGradient id="gateGrad" x1="0" y1="0" x2="48" y2="48">
+                    <stop offset="0" stop-color="#1557ff"/>
+                    <stop offset="1" stop-color="#17d492"/>
+                  </linearGradient>
+                </defs>
+                <rect width="48" height="48" rx="12" fill="url(#gateGrad)"/>
+                <path d="M26 11a13 13 0 1 0 11.3 19.4" stroke="#fff" stroke-width="4.2" stroke-linecap="round" fill="none"/>
+                <circle cx="31.6" cy="23.6" r="3.4" fill="#fff"/>
+              </svg>
+            </div>
+            <div>
+              <span class="ex-pill active">크립토 거래소</span>
+              <h3>Gate.io</h3>
+            </div>
+          </div>
           <p class="desc">글로벌 코인 현물·선물 거래소</p>
           <div class="ex-divider"></div>
           <div class="ex-row"><span class="label">페이백율</span><span class="val">50%</span></div>
