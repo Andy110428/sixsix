@@ -68,7 +68,8 @@
   header::before{ content:''; position:absolute; inset:0; z-index:-1; backdrop-filter:blur(14px); background:rgba(7,7,10,0.72); border-bottom:1px solid var(--line); }
   .nav{ display:flex; align-items:center; justify-content:space-between; padding:16px 24px; max-width:1180px; margin:0 auto; gap:12px; position:relative; }
   .brand{ display:flex; align-items:center; gap:10px; font-weight:700; font-size:1.05rem; flex-shrink:0; }
-  .brand .mark{ width:30px; height:30px; border-radius:9px; background:linear-gradient(135deg, var(--accent-a), var(--accent-b)); display:flex; align-items:center; justify-content:center; font-family:'Sora',sans-serif; font-weight:800; color:#06060a; font-size:0.95rem; }
+  .brand .mark{ width:30px; height:30px; border-radius:9px; background:linear-gradient(135deg, var(--accent-a), var(--accent-b)); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .brand .mark svg{ display:block; }
   .nav-links{ display:flex; gap:28px; align-items:center; }
   .nav-links a{ font-size:1rem; color:var(--text-dim); font-weight:600; }
   .nav-links a:hover{ color:var(--text); }
@@ -186,25 +187,25 @@
   .feed-amount{ font-family:'JetBrains Mono',monospace; font-weight:700; color:var(--accent-a); white-space:nowrap; font-size:0.98rem; }
   .feed-empty{ color:var(--text-dim); font-size:0.92rem; text-align:center; padding:34px 0; }
 
-  /* 누적 페이백 결과 — 전체화면 전용 뷰("다른 페이지로 넘어간 느낌") */
-  .payback-result-view{ position:fixed; inset:0; z-index:200; background:var(--bg); overflow-y:auto; }
-  .payback-result-view::before{ content:''; position:fixed; inset:0; z-index:-1; background:radial-gradient(ellipse 70% 45% at 50% -8%, rgba(52,211,153,0.14), transparent 62%); }
-  .prv-inner{ max-width:560px; margin:0 auto; padding:26px 20px 60px; }
-  .prv-back{ display:inline-flex; align-items:center; gap:6px; background:none; border:none; color:var(--text-dim); font-size:0.95rem; font-weight:700; cursor:pointer; padding:10px 4px; margin-bottom:22px; font-family:'Inter',sans-serif; }
-  .prv-back:hover{ color:var(--text); }
-  .prv-card{ background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); padding:38px 26px; text-align:center; }
-  .prv-exchange{ display:inline-flex; align-items:center; gap:10px; background:var(--panel-soft); border:1px solid var(--line); border-radius:999px; padding:7px 18px 7px 7px; margin-bottom:24px; }
+  /* 누적 페이백 조회 — 버튼 누르면 뜨는 모달 */
+  .payback-cta{ display:flex; flex-direction:column; align-items:flex-start; }
+  .payback-cta p{ color:var(--text-dim); font-size:0.98rem; margin:0 0 20px; }
+  .payback-modal-backdrop{ position:fixed; inset:0; z-index:200; background:rgba(5,6,8,0.74); backdrop-filter:blur(6px); display:flex; align-items:center; justify-content:center; padding:20px; overflow-y:auto; }
+  .payback-modal-backdrop[hidden]{ display:none; }
+  .payback-modal{ position:relative; width:100%; max-width:440px; background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); padding:32px 26px; margin:auto; }
+  .payback-modal h3{ font-size:1.15rem; margin-bottom:18px; }
+  .payback-modal-close{ position:absolute; top:16px; right:16px; width:32px; height:32px; border-radius:50%; border:1px solid var(--line); background:rgba(255,255,255,0.04); color:var(--text-dim); font-size:1rem; cursor:pointer; display:flex; align-items:center; justify-content:center; }
+  .payback-modal-close:hover{ color:var(--text); border-color:rgba(255,255,255,0.3); }
+  .prv-result-wrap{ margin-top:22px; text-align:center; }
+  .prv-exchange{ display:inline-flex; align-items:center; gap:10px; background:var(--panel-soft); border:1px solid var(--line); border-radius:999px; padding:7px 18px 7px 7px; margin-bottom:20px; }
   .prv-exchange svg, .prv-exchange img{ display:block; border-radius:9px; }
   .prv-exchange span{ font-weight:700; font-size:0.96rem; }
-  .prv-uid{ color:var(--text-dim); font-size:0.92rem; font-family:'JetBrains Mono',monospace; }
-  .prv-amount{ font-family:'JetBrains Mono',monospace; font-weight:800; font-size:clamp(2.3rem, 9vw, 3.2rem); color:var(--accent-a); margin:14px 0 4px; line-height:1.1; }
-  .prv-amount .unit{ font-size:1.05rem; color:var(--text-dim); font-weight:700; margin-left:8px; }
-  .prv-period{ color:var(--text-dim); font-size:0.86rem; }
-  .prv-hint{ color:var(--text-dim); font-size:0.94rem; margin-top:22px; padding-top:22px; border-top:1px solid var(--line); }
-  .prv-retry-row{ display:flex; gap:10px; margin-top:22px; }
-  .prv-retry-row input{ flex:1; min-width:0; background:var(--panel-soft); border:1px solid var(--line); border-radius:12px; padding:13px 15px; color:var(--text); font-family:'JetBrains Mono',monospace; font-size:1rem; }
-  .prv-retry-row input:focus{ outline:none; border-color:rgba(52,211,153,0.5); }
-  @media (max-width:520px){ .prv-card{ padding:30px 20px; } .prv-retry-row{ flex-direction:column; } }
+  .prv-uid{ color:var(--text-dim); font-size:0.9rem; font-family:'JetBrains Mono',monospace; }
+  .prv-amount{ font-family:'JetBrains Mono',monospace; font-weight:800; font-size:clamp(1.9rem, 8vw, 2.6rem); color:var(--accent-a); margin:12px 0 4px; line-height:1.1; }
+  .prv-amount .unit{ font-size:0.96rem; color:var(--text-dim); font-weight:700; margin-left:7px; }
+  .prv-period{ color:var(--text-dim); font-size:0.84rem; }
+  .prv-hint{ color:var(--text-dim); font-size:0.9rem; margin-top:18px; padding-top:18px; border-top:1px solid var(--line); }
+  @media (max-width:480px){ .payback-modal{ padding:26px 20px; } }
 
   /* how it works */
   .how-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:20px; }
@@ -229,10 +230,14 @@
   #telegram-step{ padding-top:24px; border-top:1px solid var(--line); }
   #telegram-step[hidden]{ display:none; }
 
-  /* faq */
-  .faq-item{ background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:22px 24px; margin-bottom:12px; }
-  .faq-item h3{ font-size:1.08rem; margin-bottom:9px; }
-  .faq-item p{ color:var(--text-dim); font-size:0.98rem; margin:0; }
+  /* faq — 아코디언(details/summary) */
+  .faq-item{ background:var(--panel); border:1px solid var(--line); border-radius:14px; margin-bottom:12px; overflow:hidden; }
+  .faq-item summary{ list-style:none; cursor:pointer; padding:20px 24px; font-family:'Sora',sans-serif; font-size:1.08rem; font-weight:700; display:flex; justify-content:space-between; align-items:center; gap:14px; }
+  .faq-item summary::-webkit-details-marker{ display:none; }
+  .faq-item summary::after{ content:'+'; font-size:1.5rem; font-weight:400; color:var(--text-dim); flex-shrink:0; transition:transform .2s ease; }
+  .faq-item[open] summary::after{ transform:rotate(45deg); }
+  .faq-item summary:hover{ color:var(--accent-a); }
+  .faq-item p{ color:var(--text-dim); font-size:0.98rem; margin:0; padding:0 24px 20px; }
 
   footer{ border-top:1px solid var(--line); padding:38px 0; text-align:center; color:var(--text-dim); font-size:0.9rem; }
   footer a{ color:var(--text-dim); font-weight:600; }
@@ -250,7 +255,7 @@
 
 <header>
   <div class="nav">
-    <a class="brand" href="#top"><span class="mark">S</span>TEAM SIXX</a>
+    <a class="brand" href="#top"><span class="mark" aria-hidden="true"><svg viewBox="0 0 24 24" width="17" height="17"><circle cx="7" cy="7" r="2.6" fill="#06060a"/><circle cx="17" cy="17" r="2.6" fill="#06060a"/><path d="M18 6L6 18" stroke="#06060a" stroke-width="2.3" stroke-linecap="round"/></svg></span>TEAM SIXX</a>
     <nav class="nav-links">
       <a href="#benefits">혜택</a>
       <a href="#how">이용 방법</a>
@@ -436,16 +441,13 @@
         <p>UID로 지금까지 쌓인 누적 페이백을 확인하고, 다른 회원들의 실시간 페이백 내역도 볼 수 있어요.</p>
       </div>
       <div class="payback-grid">
-        <div class="payback-card reveal">
+        <div class="payback-card payback-cta reveal">
           <h3>누적 페이백 조회</h3>
-          <div class="verify-row">
-            <input type="text" id="payback-uid-input" inputmode="numeric" placeholder="예: 12345678">
-            <button class="btn btn-primary" id="payback-check-btn">조회하기</button>
-          </div>
-          <div id="payback-total-result"></div>
+          <p>내 UID로 지금까지 쌓인 누적 페이백을 바로 확인할 수 있어요.</p>
+          <button class="btn btn-primary" id="payback-open-btn">UID로 조회하기 →</button>
         </div>
         <div class="payback-card reveal">
-          <h3>실시간 페이백 피드</h3>
+          <h3>실시간 페이백 내역</h3>
           <div class="feed-list" id="payback-feed-list">
             <div class="feed-empty">불러오는 중...</div>
           </div>
@@ -454,14 +456,15 @@
     </div>
   </section>
 
-  <div class="payback-result-view" id="payback-result-view" hidden>
-    <div class="prv-inner">
-      <button class="prv-back" id="prv-back-btn">← 돌아가기</button>
-      <div class="prv-card" id="prv-card"></div>
-      <div class="prv-retry-row">
-        <input type="text" id="prv-uid-input" inputmode="numeric" placeholder="다른 UID로 다시 조회">
-        <button class="btn btn-primary btn-sm" id="prv-retry-btn">조회하기</button>
+  <div class="payback-modal-backdrop" id="payback-modal-backdrop" hidden>
+    <div class="payback-modal">
+      <button class="payback-modal-close" id="payback-modal-close" aria-label="닫기">✕</button>
+      <h3>누적 페이백 조회</h3>
+      <div class="verify-row">
+        <input type="text" id="payback-modal-uid-input" inputmode="numeric" placeholder="예: 12345678">
+        <button class="btn btn-primary" id="payback-modal-search-btn">조회하기</button>
       </div>
+      <div id="payback-modal-result"></div>
     </div>
   </div>
 
@@ -472,30 +475,30 @@
         <h2>자주 묻는 질문</h2>
       </div>
       <div style="max-width:720px; margin:0 auto;">
-        <div class="faq-item reveal">
-          <h3>페이백 요율이 얼마인가요?</h3>
+        <details class="faq-item reveal">
+          <summary>페이백 요율이 얼마인가요?</summary>
           <p>현재 Gate.io는 50%로, 게이트에서 제공해드릴 수 있는 최대 요율이자 업계 상위권 수준이에요. 다른 거래소가 추가되면 거래소별로 요율이 다를 수 있어요.</p>
-        </div>
-        <div class="faq-item reveal">
-          <h3>페이백은 언제 받나요?</h3>
+        </details>
+        <details class="faq-item reveal">
+          <summary>페이백은 언제 받나요?</summary>
           <p>매일 지급돼요. 보통 1시간 내외로 정산되지만, 시스템 상황에 따라 조금 더 빠르거나 늦어질 수 있어요. 정확한 지급 시각은 비공개 텔레그램 커뮤니티에서 안내해드려요.</p>
-        </div>
-        <div class="faq-item reveal">
-          <h3>이미 거래소 계정이 있는데 가입할 수 있나요?</h3>
+        </details>
+        <details class="faq-item reveal">
+          <summary>이미 거래소 계정이 있는데 가입할 수 있나요?</summary>
           <p>전용 링크로 새로 가입한 계정만 인정됩니다. 기존 계정이나 다른 경로로 가입한 계정은 확인이 불가해요.</p>
-        </div>
-        <div class="faq-item reveal">
-          <h3>UID는 어디서 확인하나요?</h3>
+        </details>
+        <details class="faq-item reveal">
+          <summary>UID는 어디서 확인하나요?</summary>
           <p>거래소 앱/웹의 계정 정보 메뉴에서 확인할 수 있어요. <a href="https://www.gate.com/help/guide/functional_guidelines/43847/how-to-find-my-gate.io-user-id" target="_blank" rel="noopener" style="color:var(--accent-a); text-decoration:underline;">Gate.io 공식 가이드 보기 ↗</a></p>
-        </div>
-        <div class="faq-item reveal">
-          <h3>다른 거래소도 지원하나요?</h3>
+        </details>
+        <details class="faq-item reveal">
+          <summary>다른 거래소도 지원하나요?</summary>
           <p>현재는 Gate.io만 지원하고, 다른 메이저 거래소도 준비 중이에요. 추가되는 대로 이 페이지에 반영할게요.</p>
-        </div>
-        <div class="faq-item reveal">
-          <h3>비공개 텔레그램 입장 신청 후 얼마나 걸리나요?</h3>
+        </details>
+        <details class="faq-item reveal">
+          <summary>비공개 텔레그램 입장 신청 후 얼마나 걸리나요?</summary>
           <p>신청 즉시 운영자에게 알림이 가고, 확인되는 대로 텔레그램으로 개별 연락드리고 입장을 도와드려요.</p>
-        </div>
+        </details>
       </div>
     </div>
   </section>
@@ -630,17 +633,15 @@
 })();
 
 (function(){
-  var uidInput = document.getElementById('payback-uid-input');
-  var btn = document.getElementById('payback-check-btn');
-  var resultEl = document.getElementById('payback-total-result');
-  var overlay = document.getElementById('payback-result-view');
-  var card = document.getElementById('prv-card');
-  var backBtn = document.getElementById('prv-back-btn');
-  var retryInput = document.getElementById('prv-uid-input');
-  var retryBtn = document.getElementById('prv-retry-btn');
-  if(!btn || !overlay) return;
+  var openBtn = document.getElementById('payback-open-btn');
+  var backdrop = document.getElementById('payback-modal-backdrop');
+  var closeBtn = document.getElementById('payback-modal-close');
+  var modalUidInput = document.getElementById('payback-modal-uid-input');
+  var searchBtn = document.getElementById('payback-modal-search-btn');
+  var resultEl = document.getElementById('payback-modal-result');
+  if(!openBtn || !backdrop) return;
 
-  var GATE_LOGO_HTML = '<img src="/gate-logo.png" width="30" height="30" alt="" loading="lazy">';
+  var GATE_LOGO_HTML = '<img src="/gate-logo.png" width="28" height="28" alt="" loading="lazy">';
 
   function formatAmount(n){
     return Number(n).toLocaleString('en-US', { minimumFractionDigits:2, maximumFractionDigits:2 });
@@ -652,36 +653,40 @@
     return '<div class="prv-exchange">' + GATE_LOGO_HTML + '<span>Gate.io</span></div>';
   }
 
-  function openOverlay(){
-    overlay.hidden = false;
+  function openModal(){
+    resultEl.innerHTML = '';
+    modalUidInput.value = '';
+    backdrop.hidden = false;
     document.body.style.overflow = 'hidden';
+    modalUidInput.focus();
   }
-  function closeOverlay(){
-    overlay.hidden = true;
+  function closeModal(){
+    backdrop.hidden = true;
     document.body.style.overflow = '';
   }
 
   function renderLoading(uid){
-    card.innerHTML = exchangeBadge()
+    resultEl.innerHTML = '<div class="prv-result-wrap">' + exchangeBadge()
       + '<div class="prv-uid">UID ' + escapeHtml(uid) + '</div>'
-      + '<div class="prv-hint" style="border-top:none; padding-top:0;">조회 중이에요. 활동 기간이 길면 몇 초 걸릴 수 있어요...</div>';
+      + '<div class="prv-hint" style="border-top:none; padding-top:0;">조회 중이에요. 활동 기간이 길면 몇 초 걸릴 수 있어요...</div></div>';
   }
   function renderResult(uid, data){
     var hint = data.total_usdt > 0 ? '2026.10.08부터 지금까지 쌓인 누적 페이백 추정액이에요.' : '2026.10.08 이후 아직 집계된 페이백 내역이 없어요.';
-    card.innerHTML = exchangeBadge()
+    resultEl.innerHTML = '<div class="prv-result-wrap">' + exchangeBadge()
       + '<div class="prv-uid">UID ' + escapeHtml(uid) + '</div>'
       + '<div class="prv-amount">' + formatAmount(data.total_usdt) + '<span class="unit">USDT</span></div>'
       + '<div class="prv-period">2026.10.08 ~ 지금</div>'
-      + '<div class="prv-hint">' + hint + '</div>';
+      + '<div class="prv-hint">' + hint + '</div></div>';
   }
   function renderError(uid, msg){
-    card.innerHTML = exchangeBadge()
+    resultEl.innerHTML = '<div class="prv-result-wrap">' + exchangeBadge()
       + '<div class="prv-uid">UID ' + escapeHtml(uid) + '</div>'
-      + '<div class="verify-result show bad" style="margin-top:22px;">❌ ' + escapeHtml(msg) + '</div>';
+      + '<div class="verify-result show bad" style="margin-top:18px;">❌ ' + escapeHtml(msg) + '</div></div>';
   }
 
-  function runQuery(uid){
-    openOverlay();
+  function runQuery(){
+    var uid = (modalUidInput.value || '').trim();
+    if(!uid){ resultEl.innerHTML = '<div class="verify-result show bad">UID를 입력해주세요.</div>'; return; }
     renderLoading(uid);
     fetch('/api/payback-total?uid=' + encodeURIComponent(uid), { credentials:'same-origin' })
       .then(function(res){ return res.json(); })
@@ -692,21 +697,13 @@
       .catch(function(){ renderError(uid, '조회 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.'); });
   }
 
-  btn.addEventListener('click', function(){
-    var uid = (uidInput.value || '').trim();
-    if(!uid){ resultEl.innerHTML = '<div class="verify-result show bad">UID를 입력해주세요.</div>'; return; }
-    resultEl.innerHTML = '';
-    retryInput.value = uid;
-    runQuery(uid);
-  });
-  retryBtn.addEventListener('click', function(){
-    var uid = (retryInput.value || '').trim();
-    if(!uid) { retryInput.focus(); return; }
-    runQuery(uid);
-  });
-  backBtn.addEventListener('click', closeOverlay);
+  openBtn.addEventListener('click', openModal);
+  closeBtn.addEventListener('click', closeModal);
+  backdrop.addEventListener('click', function(e){ if(e.target === backdrop) closeModal(); });
+  searchBtn.addEventListener('click', runQuery);
+  modalUidInput.addEventListener('keydown', function(e){ if(e.key === 'Enter') runQuery(); });
   document.addEventListener('keydown', function(e){
-    if(e.key === 'Escape' && !overlay.hidden) closeOverlay();
+    if(e.key === 'Escape' && !backdrop.hidden) closeModal();
   });
 })();
 
