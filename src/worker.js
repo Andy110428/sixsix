@@ -37,6 +37,10 @@
 // 유저 50% : 파트너(우리) 25% — Gate.io가 우리에게 지급하는 커미션 × 이 값 = 유저 누적 페이백 추정액
 const PAYBACK_RATIO = 2;
 
+// 2026-10-08 00:00 KST부터 페이백 요율이 20%→50%로 인상됨(20-4단계) — 그 이전 커미션에는
+// 지금 비율(PAYBACK_RATIO=2)을 적용하면 안 되므로, 페이백 집계는 이 시점부터만 계산함.
+const PAYBACK_START_SEC = 1791385200; // 2026-10-08T00:00:00+09:00
+
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
@@ -182,8 +186,9 @@ async function fetchPartnerCommissionHistory(uid, fromSec, toSec, offset, env) {
   return data.list || [];
 }
 
-// 가입 시점을 정확히 몰라도 되도록 30일 구간을 과거로 훑어가다가, 2구간(60일) 연속으로
-// 기록이 없으면 "그 이전엔 가입 전/활동 없음"으로 보고 중단함. 안전장치로 최대 24구간(약 2년)까지만 봄.
+// 30일 구간을 과거로 훑어가다가, 2구간(60일) 연속으로 기록이 없으면 "그 이전엔 활동 없음"으로
+// 보고 중단함. PAYBACK_START_SEC(50% 요율 적용 시작일) 이전으로는 절대 내려가지 않음 — 그
+// 이전 커미션은 20% 요율 시절 데이터라 지금 비율(PAYBACK_RATIO)을 적용하면 금액이 틀어짐.
 async function getUidPaybackTotal(uid, env) {
   const WINDOW_SEC = 30 * 24 * 3600;
   const MAX_WINDOWS = 24;
@@ -193,7 +198,8 @@ async function getUidPaybackTotal(uid, env) {
   let emptyStreak = 0;
 
   for (let w = 0; w < MAX_WINDOWS; w++) {
-    const windowStart = windowEnd - WINDOW_SEC;
+    if (windowEnd <= PAYBACK_START_SEC) break;
+    const windowStart = Math.max(windowEnd - WINDOW_SEC, PAYBACK_START_SEC);
     let offset = 0;
     let sawRecord = false;
     for (let p = 0; p < 5; p++) {
@@ -251,7 +257,7 @@ async function syncPaybackFeed(env) {
   for (const uid of uids) {
     try {
       const cursorRow = await env.DB.prepare(`SELECT last_checked FROM payback_cursor WHERE uid = ?`).bind(uid).first();
-      const since = cursorRow ? cursorRow.last_checked : now - 24 * 3600;
+      const since = cursorRow ? cursorRow.last_checked : Math.max(now - 24 * 3600, PAYBACK_START_SEC);
       const list = await fetchPartnerCommissionHistory(uid, since, now, 0, env);
 
       for (const item of list) {
