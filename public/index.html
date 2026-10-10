@@ -229,6 +229,14 @@
   .verify-result.bad{ color:var(--danger); border-color:rgba(255,92,122,0.35); background:rgba(255,92,122,0.07); }
   #telegram-step{ padding-top:24px; border-top:1px solid var(--line); }
   #telegram-step[hidden]{ display:none; }
+  .step-desc{ color:var(--text-dim); font-size:0.9rem; margin:0 0 12px; }
+  .choice-row{ display:flex; gap:10px; }
+  .choice-btn{ flex:1; padding:13px; border-radius:12px; border:1px solid var(--line); background:var(--panel-soft); color:var(--text); font-weight:700; font-size:1.05rem; font-family:'Sora',sans-serif; cursor:pointer; transition:border-color .15s ease, background .15s ease, color .15s ease; }
+  .choice-btn:hover{ border-color:rgba(255,255,255,0.25); }
+  .choice-btn.selected{ border-color:rgba(52,211,153,0.5); background:rgba(52,211,153,0.12); color:var(--accent-a); }
+  .choice-btn.deny.selected{ border-color:rgba(255,92,122,0.5); background:rgba(255,92,122,0.1); color:var(--danger); }
+  #tg-id-step{ margin-top:22px; padding-top:22px; border-top:1px solid var(--line); }
+  #tg-id-step[hidden]{ display:none; }
 
   /* faq — 아코디언(details/summary) */
   .faq-item{ background:var(--panel); border:1px solid var(--line); border-radius:14px; margin-bottom:12px; overflow:hidden; }
@@ -422,12 +430,24 @@
           <div class="verify-result" id="verify-result"></div>
         </div>
         <div id="telegram-step" hidden>
-          <label for="tg-input">② 텔레그램 아이디</label>
-          <div class="verify-row">
-            <input type="text" id="tg-input" placeholder="예: @yourid">
-            <button class="btn btn-primary" id="tg-submit-btn">신청하기</button>
+          <div class="verify-step">
+            <label>② 시드 예치 여부</label>
+            <p class="step-desc">스터디방 입장은 시드 예치가 완료돼야 가능해요. 예치를 마치셨으면 O를 선택해주세요.</p>
+            <div class="choice-row">
+              <button type="button" class="choice-btn" id="seed-o-btn">O</button>
+              <button type="button" class="choice-btn deny" id="seed-x-btn">X</button>
+            </div>
+            <div class="verify-result" id="seed-x-result"></div>
           </div>
-          <div class="verify-result" id="tg-result"></div>
+          <div id="tg-id-step" hidden>
+            <label for="tg-input">③ 텔레그램 아이디</label>
+            <p class="step-desc">스터디방 입장을 원하시면 텔레그램 아이디를 입력해주세요.</p>
+            <div class="verify-row">
+              <input type="text" id="tg-input" placeholder="예: @yourid">
+              <button class="btn btn-primary" id="tg-submit-btn">신청하기</button>
+            </div>
+            <div class="verify-result" id="tg-result"></div>
+          </div>
         </div>
       </div>
     </div>
@@ -575,6 +595,10 @@
   var verifyBtn = document.getElementById('verify-btn');
   var verifyResult = document.getElementById('verify-result');
   var telegramStep = document.getElementById('telegram-step');
+  var seedOBtn = document.getElementById('seed-o-btn');
+  var seedXBtn = document.getElementById('seed-x-btn');
+  var seedXResult = document.getElementById('seed-x-result');
+  var tgIdStep = document.getElementById('tg-id-step');
   var tgInput = document.getElementById('tg-input');
   var tgSubmitBtn = document.getElementById('tg-submit-btn');
   var tgResult = document.getElementById('tg-result');
@@ -585,12 +609,33 @@
     el.className = 'verify-result show ' + (ok ? 'ok' : 'bad');
   }
 
+  function resetSeedChoice(){
+    seedOBtn.classList.remove('selected');
+    seedXBtn.classList.remove('selected');
+    seedXResult.className = 'verify-result';
+    tgIdStep.hidden = true;
+  }
+
+  seedOBtn.addEventListener('click', function(){
+    seedOBtn.classList.add('selected');
+    seedXBtn.classList.remove('selected');
+    seedXResult.className = 'verify-result';
+    tgIdStep.hidden = false;
+  });
+  seedXBtn.addEventListener('click', function(){
+    seedXBtn.classList.add('selected');
+    seedOBtn.classList.remove('selected');
+    tgIdStep.hidden = true;
+    showResult(seedXResult, false, '❌ 시드 예치 후 다시 신청해주세요.');
+  });
+
   verifyBtn.addEventListener('click', function(){
     var uid = (uidInput.value || '').trim();
     if(!uid){ showResult(verifyResult, false, 'UID를 입력해주세요.'); return; }
     verifyBtn.disabled = true;
     verifyBtn.textContent = '확인 중...';
     telegramStep.hidden = true;
+    resetSeedChoice();
     verifiedUid = null;
     fetch('/api/check-uid?uid=' + encodeURIComponent(uid), { credentials:'same-origin' })
       .then(function(res){ return res.json(); })
