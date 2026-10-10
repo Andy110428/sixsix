@@ -160,7 +160,7 @@
   .ex-card .desc{ color:var(--text-dim); font-size:1rem; margin-top:-8px; }
   .ex-head{ display:flex; align-items:center; gap:14px; }
   .ex-logo{ width:46px; height:46px; border-radius:12px; overflow:hidden; flex-shrink:0; box-shadow:0 3px 14px rgba(21,87,255,0.28); }
-  .ex-logo svg{ display:block; width:100%; height:100%; }
+  .ex-logo svg, .ex-logo img{ display:block; width:100%; height:100%; object-fit:cover; }
   .ex-divider{ height:1px; background:var(--line); }
   .ex-row{ display:flex; justify-content:space-between; align-items:center; font-size:1rem; }
   .ex-row .label{ color:var(--text-dim); }
@@ -194,7 +194,7 @@
   .prv-back:hover{ color:var(--text); }
   .prv-card{ background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); padding:38px 26px; text-align:center; }
   .prv-exchange{ display:inline-flex; align-items:center; gap:10px; background:var(--panel-soft); border:1px solid var(--line); border-radius:999px; padding:7px 18px 7px 7px; margin-bottom:24px; }
-  .prv-exchange svg{ display:block; border-radius:9px; }
+  .prv-exchange svg, .prv-exchange img{ display:block; border-radius:9px; }
   .prv-exchange span{ font-weight:700; font-size:0.96rem; }
   .prv-uid{ color:var(--text-dim); font-size:0.92rem; font-family:'JetBrains Mono',monospace; }
   .prv-amount{ font-family:'JetBrains Mono',monospace; font-weight:800; font-size:clamp(2.3rem, 9vw, 3.2rem); color:var(--accent-a); margin:14px 0 4px; line-height:1.1; }
@@ -344,17 +344,7 @@
         <div class="ex-card reveal">
           <div class="ex-head">
             <div class="ex-logo" aria-hidden="true">
-              <svg viewBox="0 0 48 48" width="46" height="46">
-                <defs>
-                  <linearGradient id="gateGrad" x1="0" y1="0" x2="48" y2="48">
-                    <stop offset="0" stop-color="#1557ff"/>
-                    <stop offset="1" stop-color="#17d492"/>
-                  </linearGradient>
-                </defs>
-                <rect width="48" height="48" rx="12" fill="url(#gateGrad)"/>
-                <path d="M26 11a13 13 0 1 0 11.3 19.4" stroke="#fff" stroke-width="4.2" stroke-linecap="round" fill="none"/>
-                <circle cx="31.6" cy="23.6" r="3.4" fill="#fff"/>
-              </svg>
+              <img src="/gate-logo.png" width="46" height="46" alt="" loading="lazy">
             </div>
             <div>
               <span class="ex-pill active">크립토 거래소</span>
@@ -650,12 +640,7 @@
   var retryBtn = document.getElementById('prv-retry-btn');
   if(!btn || !overlay) return;
 
-  var GATE_LOGO_SVG = '<svg viewBox="0 0 48 48" width="30" height="30">'
-    + '<defs><linearGradient id="gateGradPrv" x1="0" y1="0" x2="48" y2="48">'
-    + '<stop offset="0" stop-color="#1557ff"/><stop offset="1" stop-color="#17d492"/></linearGradient></defs>'
-    + '<rect width="48" height="48" rx="12" fill="url(#gateGradPrv)"/>'
-    + '<path d="M26 11a13 13 0 1 0 11.3 19.4" stroke="#fff" stroke-width="4.2" stroke-linecap="round" fill="none"/>'
-    + '<circle cx="31.6" cy="23.6" r="3.4" fill="#fff"/></svg>';
+  var GATE_LOGO_HTML = '<img src="/gate-logo.png" width="30" height="30" alt="" loading="lazy">';
 
   function formatAmount(n){
     return Number(n).toLocaleString('en-US', { minimumFractionDigits:2, maximumFractionDigits:2 });
@@ -664,7 +649,7 @@
     return String(s).replace(/[&<>"']/g, function(c){ return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]; });
   }
   function exchangeBadge(){
-    return '<div class="prv-exchange">' + GATE_LOGO_SVG + '<span>Gate.io</span></div>';
+    return '<div class="prv-exchange">' + GATE_LOGO_HTML + '<span>Gate.io</span></div>';
   }
 
   function openOverlay(){
