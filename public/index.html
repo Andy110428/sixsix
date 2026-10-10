@@ -176,9 +176,6 @@
   @media (max-width:860px){ .payback-grid{ grid-template-columns:1fr; } }
   .payback-card{ background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); padding:30px; min-width:0; }
   .payback-card h3{ font-size:1.1rem; margin-bottom:16px; }
-  .payback-total{ font-family:'JetBrains Mono',monospace; font-size:2.3rem; font-weight:700; color:var(--accent-a); margin-top:16px; }
-  .payback-total .unit{ font-size:1rem; color:var(--text-dim); font-weight:600; margin-left:7px; }
-  .payback-hint{ color:var(--text-dim); font-size:0.88rem; margin-top:10px; }
   .feed-list{ display:flex; flex-direction:column; gap:10px; max-height:420px; overflow-y:auto; }
   .feed-item{ display:flex; align-items:center; justify-content:space-between; gap:12px; padding:13px 15px; border:1px solid var(--line); border-radius:12px; background:var(--panel-soft); }
   .feed-left{ display:flex; align-items:center; gap:11px; min-width:0; }
@@ -188,6 +185,26 @@
   .feed-time{ color:var(--text-dim); font-size:0.78rem; margin-top:2px; }
   .feed-amount{ font-family:'JetBrains Mono',monospace; font-weight:700; color:var(--accent-a); white-space:nowrap; font-size:0.98rem; }
   .feed-empty{ color:var(--text-dim); font-size:0.92rem; text-align:center; padding:34px 0; }
+
+  /* 누적 페이백 결과 — 전체화면 전용 뷰("다른 페이지로 넘어간 느낌") */
+  .payback-result-view{ position:fixed; inset:0; z-index:200; background:var(--bg); overflow-y:auto; }
+  .payback-result-view::before{ content:''; position:fixed; inset:0; z-index:-1; background:radial-gradient(ellipse 70% 45% at 50% -8%, rgba(52,211,153,0.14), transparent 62%); }
+  .prv-inner{ max-width:560px; margin:0 auto; padding:26px 20px 60px; }
+  .prv-back{ display:inline-flex; align-items:center; gap:6px; background:none; border:none; color:var(--text-dim); font-size:0.95rem; font-weight:700; cursor:pointer; padding:10px 4px; margin-bottom:22px; font-family:'Inter',sans-serif; }
+  .prv-back:hover{ color:var(--text); }
+  .prv-card{ background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); padding:38px 26px; text-align:center; }
+  .prv-exchange{ display:inline-flex; align-items:center; gap:10px; background:var(--panel-soft); border:1px solid var(--line); border-radius:999px; padding:7px 18px 7px 7px; margin-bottom:24px; }
+  .prv-exchange svg{ display:block; border-radius:9px; }
+  .prv-exchange span{ font-weight:700; font-size:0.96rem; }
+  .prv-uid{ color:var(--text-dim); font-size:0.92rem; font-family:'JetBrains Mono',monospace; }
+  .prv-amount{ font-family:'JetBrains Mono',monospace; font-weight:800; font-size:clamp(2.3rem, 9vw, 3.2rem); color:var(--accent-a); margin:14px 0 4px; line-height:1.1; }
+  .prv-amount .unit{ font-size:1.05rem; color:var(--text-dim); font-weight:700; margin-left:8px; }
+  .prv-period{ color:var(--text-dim); font-size:0.86rem; }
+  .prv-hint{ color:var(--text-dim); font-size:0.94rem; margin-top:22px; padding-top:22px; border-top:1px solid var(--line); }
+  .prv-retry-row{ display:flex; gap:10px; margin-top:22px; }
+  .prv-retry-row input{ flex:1; min-width:0; background:var(--panel-soft); border:1px solid var(--line); border-radius:12px; padding:13px 15px; color:var(--text); font-family:'JetBrains Mono',monospace; font-size:1rem; }
+  .prv-retry-row input:focus{ outline:none; border-color:rgba(52,211,153,0.5); }
+  @media (max-width:520px){ .prv-card{ padding:30px 20px; } .prv-retry-row{ flex-direction:column; } }
 
   /* how it works */
   .how-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:20px; }
@@ -447,6 +464,17 @@
     </div>
   </section>
 
+  <div class="payback-result-view" id="payback-result-view" hidden>
+    <div class="prv-inner">
+      <button class="prv-back" id="prv-back-btn">← 돌아가기</button>
+      <div class="prv-card" id="prv-card"></div>
+      <div class="prv-retry-row">
+        <input type="text" id="prv-uid-input" inputmode="numeric" placeholder="다른 UID로 다시 조회">
+        <button class="btn btn-primary btn-sm" id="prv-retry-btn">조회하기</button>
+      </div>
+    </div>
+  </div>
+
   <section id="faq">
     <div class="wrap">
       <div class="sec-head reveal">
@@ -615,30 +643,85 @@
   var uidInput = document.getElementById('payback-uid-input');
   var btn = document.getElementById('payback-check-btn');
   var resultEl = document.getElementById('payback-total-result');
-  if(!btn) return;
+  var overlay = document.getElementById('payback-result-view');
+  var card = document.getElementById('prv-card');
+  var backBtn = document.getElementById('prv-back-btn');
+  var retryInput = document.getElementById('prv-uid-input');
+  var retryBtn = document.getElementById('prv-retry-btn');
+  if(!btn || !overlay) return;
+
+  var GATE_LOGO_SVG = '<svg viewBox="0 0 48 48" width="30" height="30">'
+    + '<defs><linearGradient id="gateGradPrv" x1="0" y1="0" x2="48" y2="48">'
+    + '<stop offset="0" stop-color="#1557ff"/><stop offset="1" stop-color="#17d492"/></linearGradient></defs>'
+    + '<rect width="48" height="48" rx="12" fill="url(#gateGradPrv)"/>'
+    + '<path d="M26 11a13 13 0 1 0 11.3 19.4" stroke="#fff" stroke-width="4.2" stroke-linecap="round" fill="none"/>'
+    + '<circle cx="31.6" cy="23.6" r="3.4" fill="#fff"/></svg>';
 
   function formatAmount(n){
     return Number(n).toLocaleString('en-US', { minimumFractionDigits:2, maximumFractionDigits:2 });
+  }
+  function escapeHtml(s){
+    return String(s).replace(/[&<>"']/g, function(c){ return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]; });
+  }
+  function exchangeBadge(){
+    return '<div class="prv-exchange">' + GATE_LOGO_SVG + '<span>Gate.io</span></div>';
+  }
+
+  function openOverlay(){
+    overlay.hidden = false;
+    document.body.style.overflow = 'hidden';
+  }
+  function closeOverlay(){
+    overlay.hidden = true;
+    document.body.style.overflow = '';
+  }
+
+  function renderLoading(uid){
+    card.innerHTML = exchangeBadge()
+      + '<div class="prv-uid">UID ' + escapeHtml(uid) + '</div>'
+      + '<div class="prv-hint" style="border-top:none; padding-top:0;">조회 중이에요. 활동 기간이 길면 몇 초 걸릴 수 있어요...</div>';
+  }
+  function renderResult(uid, data){
+    var hint = data.total_usdt > 0 ? '2026.10.08부터 지금까지 쌓인 누적 페이백 추정액이에요.' : '2026.10.08 이후 아직 집계된 페이백 내역이 없어요.';
+    card.innerHTML = exchangeBadge()
+      + '<div class="prv-uid">UID ' + escapeHtml(uid) + '</div>'
+      + '<div class="prv-amount">' + formatAmount(data.total_usdt) + '<span class="unit">USDT</span></div>'
+      + '<div class="prv-period">2026.10.08 ~ 지금</div>'
+      + '<div class="prv-hint">' + hint + '</div>';
+  }
+  function renderError(uid, msg){
+    card.innerHTML = exchangeBadge()
+      + '<div class="prv-uid">UID ' + escapeHtml(uid) + '</div>'
+      + '<div class="verify-result show bad" style="margin-top:22px;">❌ ' + escapeHtml(msg) + '</div>';
+  }
+
+  function runQuery(uid){
+    openOverlay();
+    renderLoading(uid);
+    fetch('/api/payback-total?uid=' + encodeURIComponent(uid), { credentials:'same-origin' })
+      .then(function(res){ return res.json(); })
+      .then(function(data){
+        if(data.ok){ renderResult(uid, data); }
+        else { renderError(uid, data.error || '조회 중 오류가 발생했습니다.'); }
+      })
+      .catch(function(){ renderError(uid, '조회 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.'); });
   }
 
   btn.addEventListener('click', function(){
     var uid = (uidInput.value || '').trim();
     if(!uid){ resultEl.innerHTML = '<div class="verify-result show bad">UID를 입력해주세요.</div>'; return; }
-    btn.disabled = true;
-    btn.textContent = '조회 중...';
-    resultEl.innerHTML = '<div class="verify-result show">조회 중이에요. 활동 기간이 길면 몇 초 걸릴 수 있어요...</div>';
-    fetch('/api/payback-total?uid=' + encodeURIComponent(uid), { credentials:'same-origin' })
-      .then(function(res){ return res.json(); })
-      .then(function(data){
-        if(data.ok){
-          var hint = data.total_usdt > 0 ? '지금까지 쌓인 누적 페이백 추정액이에요.' : '아직 집계된 페이백 내역이 없어요.';
-          resultEl.innerHTML = '<div class="payback-total">' + formatAmount(data.total_usdt) + '<span class="unit">USDT</span></div><div class="payback-hint">' + hint + '</div>';
-        } else {
-          resultEl.innerHTML = '<div class="verify-result show bad">❌ ' + (data.error || '조회 중 오류가 발생했습니다.') + '</div>';
-        }
-      })
-      .catch(function(){ resultEl.innerHTML = '<div class="verify-result show bad">❌ 조회 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.</div>'; })
-      .finally(function(){ btn.disabled = false; btn.textContent = '조회하기'; });
+    resultEl.innerHTML = '';
+    retryInput.value = uid;
+    runQuery(uid);
+  });
+  retryBtn.addEventListener('click', function(){
+    var uid = (retryInput.value || '').trim();
+    if(!uid) { retryInput.focus(); return; }
+    runQuery(uid);
+  });
+  backBtn.addEventListener('click', closeOverlay);
+  document.addEventListener('keydown', function(e){
+    if(e.key === 'Escape' && !overlay.hidden) closeOverlay();
   });
 })();
 
