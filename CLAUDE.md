@@ -582,6 +582,39 @@ portal.html의 `.welcome-splash`/`.welcome-splash-text`도 동일한 패턴으�
 - 사용자가 실제 Gate.io 로고 파일(이미지)을 직접 전달해주면, 지금의 자체 제작 SVG 배지를 그 파일로 교체하는 게 더 정확함 — 지금 배지는 "로고 자리"를 채우는 정직한 대안이지 진짜 로고가 아님.
 - 다른 거래소가 추가될 때도 같은 이유(네트워크 정책상 이미지 직접 확보 불가)로 실제 로고를 못 구하면, 이번과 같은 패턴(브랜드 톤 참고한 자체 제작 아이콘)을 재사용하면 됨.
 
+## 20-6단계: UID별 누적 페이백 조회 + 실시간 페이백 피드 (2026-10-10)
+
+사용자가 다른 페이백 플랫폼(tetherMaker.com) 스크린샷을 보여주며 "최대 환급률" 통계 + 실시간 지급 피드(마스킹된 UID, 거래소, 금액, 경과시간) 같은 걸 구현할 수 있는지 물어봄. 논의 과정에서 중요한 사실이 정리됨:
+
+**실제 운영 구조 확인**: 사용자 거래 수수료 중 우리가 받는 요율 75% 안에서 **50%p는 거래소(Gate.io)가 유저에게 직접 자동 지급**, **25%p는 우리 파트너 커미션으로 입금**, 나머지 25%p는 거래소가 가짐. 즉 유저 몫은 우리가 손대지 않고 거래소가 알아서 지급 중 — "거래소→우리→유저"로 우리가 재분배하는 구조가 **아님**. (처음엔 Claude가 "우리가 모아서 유저에게 송금해야 한다"고 잘못 가정하고 Gate.io 출금 API(`/withdrawals/push`, UID로 바로 송금 가능)까지 조사했었는데, 사용자가 바로잡아줌 — 이 조사 자체는 기록만 남기고 실제로는 사용 안 함.)
+
+**그래서 공식은 단순 곱셈**: 우리가 API로 조회 가능한 건 우리 몫(25%)뿐(`GET /rebate/partner/commission_history?user_id=UID`, 공식 GitHub SDK 문서 기준 — UID별 필터링 가능, 응답에 `commission_time`/`user_id`/`commission_amount`/`commission_asset`/`source` 포함, 요청 1회당 조회 기간 30일 제한). 유저 몫과 우리 몫의 비율이 50:25=2:1로 고정이므로:
+```
+유저 누적 페이백 = 우리가 받은 커미션(API 조회) × PAYBACK_RATIO(2)
+```
+이 비율이 바뀌면(Gate.io 파트너 대시보드 설정을 바꾸면) `src/worker.js` 맨 위 `PAYBACK_RATIO` 상수도 같이 고쳐야 함.
+
+**구현** (완전히 읽기 전용 — 출금 권한이나 자금 이동 로직 전혀 없음, 기존 Rebate 전용 `GATE_API_KEY` 그대로 사용):
+- `gateApiGet()` 공통 헬퍼로 기존 `checkGateReferral()`의 HMAC 서명 로직을 추출·재사용(중복 제거), `fetchPartnerCommissionHistory(uid, from, to, offset, env)` 신설.
+- `GET /api/payback-total?uid=` — 30일 구간을 과거로 훑어가며(`getUidPaybackTotal()`) 합산, 2구간(60일) 연속 기록이 없으면 "그 이전엔 활동 없음"으로 보고 중단(최대 24구간≈2년 안전장치). 합산 × `PAYBACK_RATIO` 반환.
+- `GET /api/payback-feed` — `payback_feed` 테이블에서 최근 20건 반환(공개, UID는 프론트에서 마스킹).
+- `known_uids` 테이블 신설 — `/api/check-uid`가 `direct_referral`을 확인할 때마다 UID를 기록(최초 발견 시각 포함). 실시간 피드 크론이 이 목록을 순회함.
+- `payback_feed`/`payback_cursor` 테이블 신설 — 15분마다 도는 `scheduled()` 크론(`syncPaybackFeed()`)이 `known_uids` 최대 200개를 순회하며 각자의 커서 이후 신규 커미션 레코드를 찾아 `payback_feed`에 적재(UNIQUE 제약으로 중복 방지), 커서 갱신. 개별 UID 조회 실패는 건너뛰고 계속 진행(레거시 `syncAllVolumes()` 패턴과 동일한 방어적 처리).
+- `wrangler.jsonc`에 `triggers.crons: ["*/15 * * * *"]` 재도입(20단계에서 스터디룸 거래량 동기화 크론을 지웠던 자리에 다른 용도로 다시 생김).
+- `public/index.html`에 `#payback` 섹션 신설(`#verify` 바로 다음) — UID 입력하면 누적 페이백 조회, 실시간 피드는 20초 폴링. 네비게이션에 "페이백 조회" 링크 추가(데스크톱 nav + 모바일 드롭다운 둘 다).
+
+**버그 발견 및 수정(배포 전)**: Playwright로 모바일(390px) 스크린샷 찍어보니 `.payback-card`가 뷰포트보다 넓게(404px vs 가용폭 342px) 렌더링돼 가로 스크롤이 생기는 게 보임 — 원인은 CSS Grid의 잘 알려진 함정인 `min-width:auto` 기본값(그리드 아이템은 기본적으로 내용의 min-content 크기 밑으로 줄어들지 않음, flexbox의 같은 문제와 동일 계열). `.payback-card`에 `min-width:0`을 추가해서 해결 — 수정 후 Playwright로 재확인해서 겹침/오버플로우 없는 것 확인.
+
+⚠️ **베타 — 실제 Gate.io 키로 검증 안 됨.** 이 프로젝트의 다른 모든 Gate.io 개인/파트너 데이터 연동(6·8·13단계)과 같은 종류의 리스크: `commission_history` 응답 필드 의미, `commission_amount`의 정확한 단위, 요청 기간 제한이 공식 문서(GitHub SDK 레퍼런스 기반, 이 세션은 `gate.com` 직접 접근이 막혀있어서 공식 API 레퍼런스 원문을 못 읽음) 그대로인지 확인 안 됨. **배포 후 실제로 커미션이 들어온 UID 하나를 골라서, Gate.io 파트너 대시보드에 찍힌 실제 수령액과 `/api/payback-total` 결과를 한 번 대조해보는 걸 강력 권장** — 사용자가 직접 확인해줘야 하는 부분(이 세션엔 실 키가 없음).
+
+로컬 `wrangler dev` + Playwright로 검증: `/api/payback-total`/`/api/payback-feed` 라우팅 정상 동작(로컬엔 `GATE_API_KEY` 없어서 payback-total은 "서버에 API 키가 설정되지 않았습니다" 에러로 구조만 확인), `known_uids`/`payback_feed`/`payback_cursor` 테이블이 `ensureSchema()`로 정상 생성되는 것 `wrangler d1 execute --local`로 확인, `#payback` 섹션 데스크톱/모바일 렌더링 확인(오버플로우 버그 수정 후 재확인). `node --check` + `wrangler deploy --dry-run` 검증 후 배포.
+
+### 다음에 볼 것
+- **사용자 확인 필요**: 실제 커미션 입금 하나 골라서 Gate.io 대시보드 실수령액 vs `/api/payback-total` 결과 대조 — 맞으면 안심, 안 맞으면 `commission_amount` 필드 해석이나 `PAYBACK_RATIO` 전제가 틀렸을 가능성.
+- Cloudflare 계정에 크론 트리거가 실제로 등록됐는지 대시보드(Workers → sixsix → Settings → Triggers)에서 확인 필요(이 세션은 Cloudflare API 인증이 없어서 확인 불가 — 14단계 때도 같은 제약).
+- `getUidPaybackTotal()`은 사용자가 UID를 입력할 때마다 최대 24구간×5페이지(최악의 경우 최대 120회 Gate API 호출)까지 돌 수 있어서, 오래된/활동 많은 UID는 조회가 느릴 수 있음 — 실사용 트래픽이 늘면 결과를 캐싱하는 걸 고려할 것(지금은 매번 라이브 계산).
+- 다른 거래소가 추가되면 그 거래소의 커미션 분배 비율이 다를 수 있어서, `PAYBACK_RATIO`를 거래소별로 분리해야 할 수 있음(지금은 Gate.io 전용 상수 하나).
+
 ## 환경변수 목록 (Cloudflare 대시보드 Settings > Variables and Secrets)
 
 ```
