@@ -229,6 +229,13 @@ async function handlePaybackTotal(request, env) {
     return json({ ok: false, error: 'UID는 숫자만 입력해주세요.' }, 400);
   }
   try {
+    const referral = await checkGateReferral(uid, env);
+    if (referral.status === 'not_found') {
+      return json({ ok: false, error: '존재하지 않는 UID예요. 다시 확인해주세요.' }, 404);
+    }
+    if (referral.status !== 'direct_referral') {
+      return json({ ok: false, error: '전용 링크로 가입된 계정이 아니에요. UID를 다시 확인해주세요.' }, 403);
+    }
     const total = await getUidPaybackTotal(uid, env);
     return json({ ok: true, uid, total_usdt: Math.round(total * 100) / 100 });
   } catch (err) {
