@@ -171,6 +171,24 @@
   .ex-actions{ display:flex; gap:8px; flex-wrap:wrap; }
   .ex-actions .btn{ flex:1; }
 
+  /* payback */
+  .payback-grid{ display:grid; grid-template-columns:1fr 1fr; gap:22px; align-items:start; }
+  @media (max-width:860px){ .payback-grid{ grid-template-columns:1fr; } }
+  .payback-card{ background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); padding:30px; min-width:0; }
+  .payback-card h3{ font-size:1.1rem; margin-bottom:16px; }
+  .payback-total{ font-family:'JetBrains Mono',monospace; font-size:2.3rem; font-weight:700; color:var(--accent-a); margin-top:16px; }
+  .payback-total .unit{ font-size:1rem; color:var(--text-dim); font-weight:600; margin-left:7px; }
+  .payback-hint{ color:var(--text-dim); font-size:0.88rem; margin-top:10px; }
+  .feed-list{ display:flex; flex-direction:column; gap:10px; max-height:420px; overflow-y:auto; }
+  .feed-item{ display:flex; align-items:center; justify-content:space-between; gap:12px; padding:13px 15px; border:1px solid var(--line); border-radius:12px; background:var(--panel-soft); }
+  .feed-left{ display:flex; align-items:center; gap:11px; min-width:0; }
+  .feed-avatar{ width:34px; height:34px; border-radius:50%; background:linear-gradient(135deg, var(--accent-a), var(--accent-c)); flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:0.86rem; font-weight:800; color:#04120d; font-family:'Sora',sans-serif; }
+  .feed-meta{ min-width:0; }
+  .feed-uid{ font-family:'JetBrains Mono',monospace; font-size:0.92rem; font-weight:700; }
+  .feed-time{ color:var(--text-dim); font-size:0.78rem; margin-top:2px; }
+  .feed-amount{ font-family:'JetBrains Mono',monospace; font-weight:700; color:var(--accent-a); white-space:nowrap; font-size:0.98rem; }
+  .feed-empty{ color:var(--text-dim); font-size:0.92rem; text-align:center; padding:34px 0; }
+
   /* how it works */
   .how-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:20px; }
   @media (max-width:860px){ .how-grid{ grid-template-columns:1fr; } }
@@ -221,6 +239,7 @@
       <a href="#how">이용 방법</a>
       <a href="#exchanges">거래소</a>
       <a href="#verify">UID 확인</a>
+      <a href="#payback">페이백 조회</a>
       <a href="#faq">FAQ</a>
     </nav>
     <div class="nav-cta">
@@ -233,6 +252,7 @@
       <a href="#how">이용 방법</a>
       <a href="#exchanges">거래소</a>
       <a href="#verify">UID 확인</a>
+      <a href="#payback">페이백 조회</a>
       <a href="#faq">FAQ</a>
       <a href="https://t.me/team_sixx" target="_blank" rel="noopener">텔레그램 문의 ↗</a>
     </div>
@@ -401,6 +421,32 @@
     </div>
   </section>
 
+  <section id="payback">
+    <div class="wrap">
+      <div class="sec-head reveal">
+        <div class="sec-label">— PAYBACK</div>
+        <h2>내 페이백 확인하기</h2>
+        <p>UID로 지금까지 쌓인 누적 페이백을 확인하고, 다른 회원들의 실시간 페이백 내역도 볼 수 있어요.</p>
+      </div>
+      <div class="payback-grid">
+        <div class="payback-card reveal">
+          <h3>누적 페이백 조회</h3>
+          <div class="verify-row">
+            <input type="text" id="payback-uid-input" inputmode="numeric" placeholder="예: 12345678">
+            <button class="btn btn-primary" id="payback-check-btn">조회하기</button>
+          </div>
+          <div id="payback-total-result"></div>
+        </div>
+        <div class="payback-card reveal">
+          <h3>실시간 페이백 피드</h3>
+          <div class="feed-list" id="payback-feed-list">
+            <div class="feed-empty">불러오는 중...</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <section id="faq">
     <div class="wrap">
       <div class="sec-head reveal">
@@ -563,6 +609,69 @@
       .catch(function(){ showResult(tgResult, false, '❌ 신청 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.'); })
       .finally(function(){ tgSubmitBtn.disabled = false; tgSubmitBtn.textContent = '신청하기'; });
   });
+})();
+
+(function(){
+  var uidInput = document.getElementById('payback-uid-input');
+  var btn = document.getElementById('payback-check-btn');
+  var resultEl = document.getElementById('payback-total-result');
+  if(!btn) return;
+
+  function formatAmount(n){
+    return Number(n).toLocaleString('en-US', { minimumFractionDigits:2, maximumFractionDigits:2 });
+  }
+
+  btn.addEventListener('click', function(){
+    var uid = (uidInput.value || '').trim();
+    if(!uid){ resultEl.innerHTML = '<div class="verify-result show bad">UID를 입력해주세요.</div>'; return; }
+    btn.disabled = true;
+    btn.textContent = '조회 중...';
+    resultEl.innerHTML = '<div class="verify-result show">조회 중이에요. 활동 기간이 길면 몇 초 걸릴 수 있어요...</div>';
+    fetch('/api/payback-total?uid=' + encodeURIComponent(uid), { credentials:'same-origin' })
+      .then(function(res){ return res.json(); })
+      .then(function(data){
+        if(data.ok){
+          var hint = data.total_usdt > 0 ? '지금까지 쌓인 누적 페이백 추정액이에요.' : '아직 집계된 페이백 내역이 없어요.';
+          resultEl.innerHTML = '<div class="payback-total">' + formatAmount(data.total_usdt) + '<span class="unit">USDT</span></div><div class="payback-hint">' + hint + '</div>';
+        } else {
+          resultEl.innerHTML = '<div class="verify-result show bad">❌ ' + (data.error || '조회 중 오류가 발생했습니다.') + '</div>';
+        }
+      })
+      .catch(function(){ resultEl.innerHTML = '<div class="verify-result show bad">❌ 조회 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.</div>'; })
+      .finally(function(){ btn.disabled = false; btn.textContent = '조회하기'; });
+  });
+})();
+
+(function(){
+  var listEl = document.getElementById('payback-feed-list');
+  if(!listEl) return;
+
+  function timeAgo(ts){
+    var diff = Math.floor(Date.now() / 1000) - ts;
+    if(diff < 60) return '방금 전';
+    if(diff < 3600) return Math.floor(diff / 60) + '분 전';
+    if(diff < 86400) return Math.floor(diff / 3600) + '시간 전';
+    return Math.floor(diff / 86400) + '일 전';
+  }
+  function maskUid(uid){
+    uid = String(uid);
+    if(uid.length <= 4) return uid;
+    return '*'.repeat(Math.max(uid.length - 4, 2)) + uid.slice(-4);
+  }
+  function render(items){
+    if(!items.length){ listEl.innerHTML = '<div class="feed-empty">아직 집계된 페이백 내역이 없어요.</div>'; return; }
+    listEl.innerHTML = items.map(function(it){
+      return '<div class="feed-item"><div class="feed-left"><div class="feed-avatar">G</div><div class="feed-meta"><div class="feed-uid">' + maskUid(it.uid) + '</div><div class="feed-time">Gate.io · ' + timeAgo(it.commission_time) + '</div></div></div><div class="feed-amount">+' + Number(it.amount_usdt).toFixed(2) + ' USDT</div></div>';
+    }).join('');
+  }
+  function load(){
+    fetch('/api/payback-feed', { credentials:'same-origin' })
+      .then(function(res){ return res.json(); })
+      .then(function(data){ render(data.items || []); })
+      .catch(function(){});
+  }
+  load();
+  setInterval(load, 20000);
 })();
 </script>
 
