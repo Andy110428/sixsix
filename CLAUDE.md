@@ -732,6 +732,23 @@ portal.html의 `.welcome-splash`/`.welcome-splash-text`도 동일한 패턴으�
 - 레퍼럴/알선 관련 법적 리스크는 이 세션에서 해소된 게 아니라 사용자가 자체적으로(또는 상담받은 바에 따라) 감수하기로 한 영역 — 코드/문구로 해결할 수 있는 문제가 아니라는 점을 분명히 인지하고 있을 것.
 - "시드 예치 = 본인 계좌"라는 사실이 이번에 명확해졌으니, 혹시 나중에 "② 시드 예치 여부" 단계 설명 문구에도 이 부분(운영자에게 돈을 보내는 게 아니라 본인 명의 계좌에 본인이 예치하는 것)을 명시하면 사용자 신뢰도와 설명의 정확성 둘 다에 도움이 될 수 있음 — 20-12단계에서 한 번 제안했었고 사용자가 이번엔 다른 요청(리스크 문구)을 먼저 처리해달라고 해서 보류된 상태.
 
+## 20-14단계: 실시간 페이백 피드 날짜가 "20737일 전"으로 뜨는 버그 수정 (2026-10-11)
+
+사용자가 실제 배포된 사이트의 "실시간 페이백 내역" 섹션 스크린샷을 보내줌 — 3건 전부 "Gate.io · 20737일 전"으로 표시되고 있었음(56년 전 = 거의 1970년 에포크 기준).
+
+**원인 조사**: `timeAgo()`는 `payback_feed.commission_time`(Gate.io `/rebate/partner/commission_history` 응답의 `commission_time` 필드를 그대로 저장한 값, 초 단위 Unix epoch)을 기준으로 "며칠 전"을 계산하고 있었음. 이 세션은 `gate.com` 공식 문서에 직접 접근할 수 없어서(egress 차단), GitHub의 공식 `gate/gateapi-python` SDK 리포지토리를 `add_repo`로 추가해 클론한 뒤 `gate_api/models/agency_commission.py`를 직접 확인함 — `commission_time` 필드명과 "Unix timestamp in seconds"라는 단위 설명 둘 다 기존 코드와 정확히 일치했음(필드명 오타나 단위 혼동이 아님). 즉 코드 쪽 필드 매핑은 공식 스펙과 맞게 짜여 있었는데도, 실제 운영 데이터에서 `commission_time` 값이 0에 가까운 값으로 들어와서(diff가 거의 "지금 시각 자체"가 되어 "20737일 전"으로 계산됨) 날짜가 깨진 것 — 20-6단계 기록에 적어뒀던 "베타, 실제 키로 응답 필드 검증 안 됨" 리스크가 실제로 처음 드러난 사례.
+
+**고친 방법**: Gate.io가 내려주는 `commission_time` 값의 신뢰성과 무관하게 날짜가 항상 정확하도록, 신뢰 가능한 필드로 교체함 — `payback_feed.created_at`은 우리 서버가 동기화할 때 직접 `Date.now()`로 기록하는 값이라 Gate.io 응답 품질과 상관없이 항상 올바름.
+- `src/worker.js`의 `handlePaybackFeed()`: `SELECT`에 `created_at` 추가, 정렬 기준도 `commission_time DESC`(불안정할 수 있음) → `id DESC`(삽입/동기화 순서 기준, 항상 안정적)로 변경.
+- `public/index.html`의 `timeAgo()`: 파라미터를 `commission_time`(초)에서 `created_at`(밀리초)으로 바꾸고, 렌더링 호출부도 `timeAgo(it.commission_time)` → `timeAgo(it.created_at)`로 수정. 음수 diff 방어 코드(`if(diff < 0) diff = 0`)도 추가.
+- `commission_time` 자체는 DB 컬럼/페이백 중복 방지(`UNIQUE` 제약)용으로는 계속 그대로 저장/사용 — 화면 표시에만 안 쓰는 것으로 범위를 좁힘(전체 데이터 모델을 바꾸지 않고 사용자에게 보이는 증상만 정확히 고치는 쪽을 선택함).
+
+`node --check` + `wrangler deploy --dry-run` 검증 후 배포.
+
+### 다음에 볼 것
+- `commission_time`이 왜 비정상적인 값으로 들어오는지(Gate.io 쪽 실제 원인)는 이번에도 끝내 확인 못 함 — 실 키로 직접 응답을 로깅해볼 수 있는 상황이 되면 원인을 더 파봐도 좋음. 지금 고친 방식은 "원인 불문하고 화면에 항상 정확한 날짜가 뜨게" 하는 우회 수정이라, 당장 운영에는 문제 없음.
+- 혹시 나중에 `commission_time`을 다시 신뢰해서 쓸 일이 생기면(예: 커미션 발생 시각 기준 집계), 이번에 확인한 공식 `AgencyCommission` 모델(필드명 `commission_time`, 초 단위, source `SPOT`/`FUTURES`)을 참고하면 됨 — 클론해둔 `/home/user/gate/gateapi-python` 경로에 전체 SDK 소스가 남아있음(이 세션 한정, 세션 종료 시 사라짐).
+
 ## 환경변수 목록 (Cloudflare 대시보드 Settings > Variables and Secrets)
 
 ```
