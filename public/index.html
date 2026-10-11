@@ -240,6 +240,8 @@
   .choice-btn.deny.selected{ border-color:rgba(255,92,122,0.5); background:rgba(255,92,122,0.1); color:var(--danger); }
   #tg-id-step{ margin-top:22px; padding-top:22px; border-top:1px solid var(--line); }
   #tg-id-step[hidden]{ display:none; }
+  #tg-link-wrap[hidden], #tg-manual-wrap[hidden]{ display:none; }
+  #tg-link-btn[aria-disabled="true"]{ opacity:0.55; pointer-events:none; }
 
   /* faq — 아코디언(details/summary) */
   .faq-item{ background:var(--panel); border:1px solid var(--line); border-radius:14px; margin-bottom:12px; overflow:hidden; }
@@ -444,11 +446,17 @@
               <div class="verify-result" id="seed-x-result"></div>
             </div>
             <div id="tg-id-step" hidden>
-              <label for="tg-input">③ 텔레그램 아이디</label>
-              <p class="step-desc">스터디방 입장을 원하시면 텔레그램 아이디를 입력해주세요.</p>
-              <div class="verify-row">
-                <input type="text" id="tg-input" placeholder="예: @yourid">
-                <button class="btn btn-primary" id="tg-submit-btn">신청하기</button>
+              <label>③ 텔레그램으로 신청</label>
+              <div id="tg-link-wrap">
+                <p class="step-desc">아래 버튼을 누르면 TEAM SIXX 봇 대화창이 열려요. <b>시작(Start)</b>만 누르면 신청 완료! 운영자 확인 후 봇이 초대 링크를 보내드려요.</p>
+                <a class="btn btn-primary" id="tg-link-btn" href="#" target="_blank" rel="noopener" aria-disabled="true">텔레그램으로 신청하기 →</a>
+              </div>
+              <div id="tg-manual-wrap" hidden>
+                <p class="step-desc">스터디방 입장을 원하시면 텔레그램 아이디를 입력해주세요.</p>
+                <div class="verify-row">
+                  <input type="text" id="tg-input" placeholder="예: @yourid">
+                  <button class="btn btn-primary" id="tg-submit-btn">신청하기</button>
+                </div>
               </div>
               <div class="verify-result" id="tg-result"></div>
             </div>
@@ -608,11 +616,52 @@
     tgIdStep.hidden = true;
   }
 
+  var tgLinkWrap = document.getElementById('tg-link-wrap');
+  var tgManualWrap = document.getElementById('tg-manual-wrap');
+  var tgLinkBtn = document.getElementById('tg-link-btn');
+  var tgLinkUid = null;
+
+  function showManualForm(){
+    tgLinkWrap.hidden = true;
+    tgManualWrap.hidden = false;
+  }
+
+  // 봇 딥링크를 받아옴 — 서버에 봇이 아직 설정 안 됐으면(fallback) 예전 @아이디 입력 방식으로 대체
+  function prepareTelegramLink(){
+    if(tgLinkUid === verifiedUid && tgLinkBtn.getAttribute('aria-disabled') === 'false') return;
+    tgLinkWrap.hidden = false;
+    tgManualWrap.hidden = true;
+    tgResult.className = 'verify-result';
+    tgLinkBtn.setAttribute('aria-disabled', 'true');
+    tgLinkBtn.textContent = '신청 링크 준비 중...';
+    fetch('/api/telegram-link', {
+      method:'POST', credentials:'same-origin',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ uid: verifiedUid })
+    })
+      .then(function(res){ return res.json(); })
+      .then(function(data){
+        if(data.ok && data.url){
+          tgLinkUid = verifiedUid;
+          tgLinkBtn.href = data.url;
+          tgLinkBtn.setAttribute('aria-disabled', 'false');
+          tgLinkBtn.textContent = '텔레그램으로 신청하기 →';
+        } else if(data.fallback){
+          showManualForm();
+        } else {
+          tgLinkBtn.textContent = '텔레그램으로 신청하기 →';
+          showResult(tgResult, false, '❌ ' + (data.error || '신청 링크를 만들지 못했어요.'));
+        }
+      })
+      .catch(function(){ showManualForm(); });
+  }
+
   seedOBtn.addEventListener('click', function(){
     seedOBtn.classList.add('selected');
     seedXBtn.classList.remove('selected');
     seedXResult.className = 'verify-result';
     tgIdStep.hidden = false;
+    prepareTelegramLink();
   });
   seedXBtn.addEventListener('click', function(){
     seedXBtn.classList.add('selected');
@@ -629,6 +678,8 @@
     telegramStep.hidden = true;
     resetSeedChoice();
     verifiedUid = null;
+    tgLinkUid = null;
+    tgLinkBtn.setAttribute('aria-disabled', 'true');
     fetch('/api/check-uid?uid=' + encodeURIComponent(uid), { credentials:'same-origin' })
       .then(function(res){ return res.json(); })
       .then(function(data){

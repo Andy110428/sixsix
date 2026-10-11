@@ -39,3 +39,51 @@ CREATE TABLE IF NOT EXISTS payback_cursor (
   uid TEXT PRIMARY KEY,
   last_checked INTEGER NOT NULL   -- epoch 초 (Gate.io API 파라미터와 단위 통일)
 );
+
+-- 2026-10-11 20-16단계: 스터디방 관리 봇(src/study-bot.js) 테이블 4개 추가.
+
+-- 사이트에서 발급하는 1회용 봇 딥링크 토큰(24시간 유효) — 신청자가 봇에서 "시작"을 누르면 소비됨.
+CREATE TABLE IF NOT EXISTS tg_link_tokens (
+  token TEXT PRIMARY KEY,
+  uid TEXT NOT NULL,
+  created_at INTEGER NOT NULL,    -- epoch ms
+  used_at INTEGER
+);
+
+-- 텔레그램 숫자 ID(user_id, 아이디를 바꿔도 불변) ↔ Gate.io UID 연결 + 스터디방 상태.
+-- status: pending(승인 대기) / approved / rejected / kicked
+CREATE TABLE IF NOT EXISTS tg_members (
+  user_id INTEGER PRIMARY KEY,
+  uid TEXT NOT NULL,
+  username TEXT,
+  first_name TEXT,
+  status TEXT NOT NULL,
+  linked_at INTEGER,
+  approved_at INTEGER,
+  joined_at INTEGER,              -- 30일 유예 기간의 기준
+  in_group INTEGER NOT NULL DEFAULT 0,
+  invite_link TEXT,               -- 이 사람 전용 1회용 초대 링크(다른 사람이 쓰면 내보냄)
+  last_check_at INTEGER,
+  last_active_at INTEGER,
+  warned_at INTEGER,
+  flagged_at INTEGER,             -- 자동 내보내기 꺼짐 상태에서 "대상"으로 알린 시각
+  flag_reason TEXT,
+  kicked_at INTEGER,
+  kick_reason TEXT
+);
+
+-- 사이트 신청 없이 그룹에서 감지된(입장/메시지) 미등록 멤버.
+CREATE TABLE IF NOT EXISTS tg_seen (
+  user_id INTEGER PRIMARY KEY,
+  username TEXT,
+  first_name TEXT,
+  first_seen INTEGER NOT NULL,
+  last_seen INTEGER NOT NULL,
+  in_group INTEGER NOT NULL DEFAULT 1
+);
+
+-- 단순 설정값 저장(autokick = on/off 등).
+CREATE TABLE IF NOT EXISTS app_kv (
+  key TEXT PRIMARY KEY,
+  value TEXT
+);
