@@ -758,8 +758,11 @@
   var listEl = document.getElementById('payback-feed-list');
   if(!listEl) return;
 
-  function timeAgo(ts){
-    var diff = Math.floor(Date.now() / 1000) - ts;
+  function timeAgo(createdAtMs){
+    // Gate.io가 내려주는 commission_time은 베타 단계라 신뢰할 수 없는 값(0에 가까운 값 등)이
+    // 관측돼서, 서버가 직접 기록한 created_at(동기화 시각)을 기준으로 표시함.
+    var diff = Math.floor(Date.now() / 1000) - Math.floor(createdAtMs / 1000);
+    if(diff < 0) diff = 0;
     if(diff < 60) return '방금 전';
     if(diff < 3600) return Math.floor(diff / 60) + '분 전';
     if(diff < 86400) return Math.floor(diff / 3600) + '시간 전';
@@ -773,7 +776,7 @@
   function render(items){
     if(!items.length){ listEl.innerHTML = '<div class="feed-empty">아직 집계된 페이백 내역이 없어요.</div>'; return; }
     listEl.innerHTML = items.map(function(it){
-      return '<div class="feed-item"><div class="feed-left"><div class="feed-avatar">G</div><div class="feed-meta"><div class="feed-uid">' + maskUid(it.uid) + '</div><div class="feed-time">Gate.io · ' + timeAgo(it.commission_time) + '</div></div></div><div class="feed-amount">+' + Number(it.amount_usdt).toFixed(2) + ' USDT</div></div>';
+      return '<div class="feed-item"><div class="feed-left"><div class="feed-avatar">G</div><div class="feed-meta"><div class="feed-uid">' + maskUid(it.uid) + '</div><div class="feed-time">Gate.io · ' + timeAgo(it.created_at) + '</div></div></div><div class="feed-amount">+' + Number(it.amount_usdt).toFixed(2) + ' USDT</div></div>';
     }).join('');
   }
   function load(){

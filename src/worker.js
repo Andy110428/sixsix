@@ -245,8 +245,11 @@ async function handlePaybackTotal(request, env) {
 
 async function handlePaybackFeed(request, env) {
   if (!env.DB) return json({ ok: false, error: 'DB가 연결되지 않았습니다.' }, 500);
+  // commission_time은 Gate.io API가 내려주는 값을 그대로 저장한 것이라 베타 단계에서
+  // 비정상적인 값(0에 가까운 값 등)이 관측됨 — 정렬/표시 모두 우리가 직접 기록한
+  // created_at(동기화 시각, ms)을 기준으로 해서 Gate.io 응답 품질과 무관하게 항상 정확하도록 함.
   const rows = await env.DB.prepare(
-    `SELECT uid, commission_time, amount_usdt, source FROM payback_feed ORDER BY commission_time DESC LIMIT 20`
+    `SELECT uid, commission_time, amount_usdt, source, created_at FROM payback_feed ORDER BY id DESC LIMIT 20`
   ).all();
   return json({ ok: true, items: rows.results || [] });
 }
