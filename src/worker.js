@@ -7,9 +7,6 @@
 //                                      telegram_join_requests에 저장 + 운영자에게 텔레그램 알림
 //   GET  /api/payback-total?uid=... 그 UID의 누적 페이백 추정액 조회 (아래 "페이백 계산 방식" 참고)
 //   GET  /api/payback-feed          최근 페이백 내역 공개 피드 (UID 마스킹, 최대 40건)
-//   POST /api/telegram-link         UID 재검증 후 스터디방 신청용 1회용 봇 딥링크 발급 (study-bot.js)
-//   POST /api/telegram-webhook      텔레그램 봇 웹훅 — 신청 연결/승인 버튼/그룹 입장 감지 (study-bot.js)
-//   GET  /api/telegram-setup?key=   운영자용 원클릭 설정 — 웹훅 등록 + 설정 점검 결과를 한글 페이지로 (study-bot.js)
 //
 // 페이백 계산 방식(2026-10-10, 20-6단계):
 //   Gate.io 커미션 분배 구조가 "유저 50% 자동 지급(거래소가 직접) : 파트너(우리) 25% : 거래소 25%"라서,
@@ -25,11 +22,10 @@
 // 환경변수(Settings > Variables and Secrets):
 //   GATE_API_KEY, GATE_API_SECRET        Gate.io 파트너 API (레퍼럴 확인 + 커미션 내역 조회, Rebate 권한만 필요 — 출금 권한 불필요)
 //   TELEGRAM_BOT_TOKEN, TELEGRAM_ADMIN_CHAT_ID  (선택) 가입 신청 알림 — 없으면 신청 저장만 되고 알림은 생략됨
-//   TELEGRAM_WEBHOOK_SECRET, TELEGRAM_GROUP_CHAT_ID  (선택) 스터디방 관리 봇 — 자세한 건 study-bot.js 맨 위 주석
 // 필요한 바인딩: D1 데이터베이스 → env.DB
 //   (telegram_join_requests / known_uids / payback_feed / payback_cursor 테이블 사용)
 //
-// Cron(scheduled): MEMBERSHIP_CRON이면 스터디방 활동 검사(study-bot.js), 그 외엔 15분마다 known_uids에 쌓인 UID들의 최근 커미션 내역을 조회해서 payback_feed에 적재함
+// Cron(scheduled): 15분마다 known_uids에 쌓인 UID들의 최근 커미션 내역을 조회해서 payback_feed에 적재함
 //   (실시간 피드용 — wrangler.jsonc의 triggers.crons 참고).
 //
 // ⚠️ 2026-10-07 20단계: 스터디룸(게시판/등급/UID 계정)·추천인 파트너 프로그램·거래량 랭킹·관리자
@@ -37,11 +33,6 @@
 //    랜딩페이지로 전환함. 예전 시스템이 쓰던 D1 테이블(members/posts/referral_* 등)은 데이터를
 //    보존하기 위해 그대로 남겨뒀고 이 파일은 더 이상 그 테이블들을 건드리지 않음 — 필요하면 D1
 //    콘솔에서 직접 조회 가능. 관리자 인터페이스는 이제 텔레그램 알림이 전부(별도 로그인/대시보드 없음).
-
-import { ensureBotSchema, handleTelegramLink, handleTelegramSetup, handleTelegramWebhook, runMembershipCheck } from './study-bot.js';
-
-// 스터디방 활동 검사 크론 — wrangler.jsonc triggers.crons의 두 번째 항목과 같은 문자열이어야 함
-const MEMBERSHIP_CRON = '5,20,35,50 * * * *';
 
 // 유저 50% : 파트너(우리) 25% — Gate.io가 우리에게 지급하는 커미션 × 이 값 = 유저 누적 페이백 추정액
 const PAYBACK_RATIO = 2;
@@ -63,9 +54,6 @@ export default {
       if (path === '/api/telegram-join' && method === 'POST') return await handleTelegramJoin(request, env);
       if (path === '/api/payback-total' && method === 'GET') return await handlePaybackTotal(request, env);
       if (path === '/api/payback-feed' && method === 'GET') return await handlePaybackFeed(request, env);
-      if (path === '/api/telegram-link' && method === 'POST') return await handleTelegramLink(request, env, botDeps);
-      if (path === '/api/telegram-webhook' && method === 'POST') return await handleTelegramWebhook(request, env, ctx);
-      if (path === '/api/telegram-setup' && method === 'GET') return await handleTelegramSetup(request, env);
     } catch (err) {
       return json({ ok: false, error: '서버 오류가 발생했습니다.', detail: String(err) }, 500);
     }
@@ -74,20 +62,8 @@ export default {
   },
 
   async scheduled(event, env, ctx) {
-    if (event.cron === MEMBERSHIP_CRON) {
-      ctx.waitUntil((async () => { await ensureSchema(env); await runMembershipCheck(env, botDeps); })());
-      return;
-    }
     ctx.waitUntil(syncPaybackFeed(env));
   },
-};
-
-// study-bot.js가 쓰는 공통 함수들(순환 import 대신 넘겨줌)
-const botDeps = {
-  json: (...a) => json(...a),
-  safeJson: (...a) => safeJson(...a),
-  checkGateReferral: (...a) => checkGateReferral(...a),
-  fetchPartnerCommissionHistory: (...a) => fetchPartnerCommissionHistory(...a),
 };
 
 // ───────────────────────── Gate.io API 공통 ─────────────────────────
@@ -354,7 +330,6 @@ async function ensureSchema(env) {
     uid TEXT PRIMARY KEY,
     last_checked INTEGER NOT NULL
   )`).run();
-  await ensureBotSchema(env);
   schemaReady = true;
 }
 

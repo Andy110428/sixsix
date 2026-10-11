@@ -24,39 +24,3 @@ CREATE TABLE IF NOT EXISTS payback_cursor (
   uid TEXT PRIMARY KEY,
   last_checked INTEGER NOT NULL
 );
-
-
-CREATE TABLE IF NOT EXISTS tg_link_tokens (
-  token TEXT PRIMARY KEY,
-  uid TEXT NOT NULL,
-  created_at INTEGER NOT NULL,
-  used_at INTEGER
-);
-
-CREATE TABLE IF NOT EXISTS tg_members (
-  user_id INTEGER PRIMARY KEY,
-  uid TEXT NOT NULL,
-  username TEXT,
-  first_name TEXT,
-  status TEXT NOT NULL,
-  linked_at INTEGER,
-  approved_at INTEGER,
-  joined_at INTEGER,
-  in_group INTEGER NOT NULL DEFAULT 0,
-  invite_link TEXT,
-  last_check_at INTEGER,
-  last_active_at INTEGER,
-  warned_at INTEGER,
-  flagged_at INTEGER,
-  flag_reason TEXT,
-  kicked_at INTEGER,
-  kick_reason TEXT,
-  exempt INTEGER NOT NULL DEFAULT 0,
-  warn_dm_at INTEGER
-);
-
-
-CREATE TABLE IF NOT EXISTS app_kv (
-  key TEXT PRIMARY KEY,
-  value TEXT
-);

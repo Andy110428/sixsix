@@ -29,8 +29,7 @@ wrangler.jsonc          Workers 설정 (assets + D1 바인딩, cron trigger는 2
 schema.sql / schema-console.sql   D1 스키마 (telegram_join_requests 테이블 하나만 정의 — 예전 테이블은 운영 DB에 데이터와 함께 남아있지만 이 파일/ensureSchema()가 더 이상 관리하지 않음)
 migration-*.sql          예전(스터디룸 시절) 마이그레이션 기록 — 지금은 미사용, 과거 기록용으로만 남겨둠
 src/worker.js           서버 코드 — /api/check-uid, /api/telegram-join, /api/payback-total, /api/payback-feed + 크론
-src/study-bot.js        스터디방 관리 텔레그램 봇 — /api/telegram-link, /api/telegram-webhook, /api/telegram-setup + 활동 검사 크론 (20-16·17단계)
-docs/telegram-setup.md  사용자용 설정 가이드 — PC 원격작업(새 봇, Claude Code Channels) + 스터디방 봇(기존 봇) 설정 절차
+docs/telegram-setup.md  사용자용 가이드 — 텔레그램 → 내 PC 원격작업(새 봇, Claude Code Channels + Chrome) 설정 절차 (Windows)
 public/index.html       유일한 페이지. 히어로 + 거래소 카드(Gate.io) + 이용방법 + UID 확인/텔레그램 신청 폼 + FAQ
 ```
 
@@ -54,9 +53,8 @@ public/index.html       유일한 페이지. 히어로 + 거래소 카드(Gate.i
 
 1. **다른 거래소 추가**: index.html 거래소 섹션에 "준비중" 카드로 자리만 잡아둔 상태 — 실제 거래소(OKX/Bybit 등)와 링크/요율이 정해지면 Gate.io 카드와 같은 구조로 하나 더 추가하면 됨(`checkGateReferral()`/`handleCheckUid`는 Gate.io 전용이라 다른 거래소를 붙이려면 그 거래소의 레퍼럴 확인 API를 별도로 조사/구현해야 함 — 거래소마다 API가 다름).
 2. **텔레그램 신청 내역 조회 UI 없음**: 관리자 대시보드가 없어서, `telegram_join_requests` 테이블 내용을 보려면 D1 콘솔에서 직접 SQL로 조회해야 함. 신청이 많아지면 간단한 조회 전용 페이지가 필요할 수 있음.
-3. **스터디방 봇(20-16단계)은 사용자가 웹훅/환경변수를 설정해야 동작** — `docs/telegram-setup.md` B절. 설정 전엔 사이트가 예전 @아이디 입력 방식으로 자동 대체됨.
-4. **중복/스팸 신청 방지 없음**: 같은 UID/텔레그램 아이디로 여러 번 신청해도 막지 않음 — 지금은 트래픽이 적어서 문제 없지만 늘어나면 고려.
-5. 레거시 히스토리에 남아있던 "아직 안 만든 것"(비밀번호 찾기, 회원 탈퇴 등)은 계정 시스템 자체가 없어졌으므로 전부 해당 없음.
+3. **중복/스팸 신청 방지 없음**: 같은 UID/텔레그램 아이디로 여러 번 신청해도 막지 않음 — 지금은 트래픽이 적어서 문제 없지만 늘어나면 고려.
+4. 레거시 히스토리에 남아있던 "아직 안 만든 것"(비밀번호 찾기, 회원 탈퇴 등)은 계정 시스템 자체가 없어졌으므로 전부 해당 없음.
 
 ---
 
@@ -771,7 +769,7 @@ portal.html의 `.welcome-splash`/`.welcome-splash-text`도 동일한 패턴으�
 - `.reveal` + `IntersectionObserver` 스크롤 리빌 애니메이션은 자동화 스크린샷 도구(Playwright 등)로 전체 페이지를 한 번에 캡처하면 아직 스크롤 안 된 아래쪽 섹션들이 빈 화면으로 찍히는 게 정상 동작임(실제 사용자는 스크롤하면서 순서대로 보임) — 다음에 이 사이트를 스크린샷으로 점검할 때는 `.reveal` 요소에 `is-visible` 클래스를 강제로 붙이거나, 충분히 긴 대기시간을 주고 스크롤을 실제로 끝까지 내린 뒤 캡처해야 "콘텐츠가 사라졌다"는 오판을 피할 수 있음.
 - 실시간 페이백 내역이 40건까지 쌓이려면 시간이 걸림 — 지금 당장은 신청이 적어서 체감이 안 될 수 있지만 구조는 이미 늘려둔 상태.
 
-## 20-16단계: 스터디방 관리 봇(신청 연결·승인·비활성 자동 내보내기) + PC 원격작업 가이드 (2026-10-11)
+## 20-16단계 (⚠️ 20-18단계에서 전부 제거됨): 스터디방 관리 봇(신청 연결·승인·비활성 자동 내보내기) + PC 원격작업 가이드 (2026-10-11)
 
 사용자 요청: ① 텔레그램 봇에 메시지를 보내면 사용자 PC(Windows)의 Claude가 브라우저 검색·앱 실행·문서 작성을 처리하는 구조, ③ 스터디방(비공개 텔레그램 그룹)에서 레퍼럴이 아니거나 30일간 거래 없는 멤버 자동 내보내기. (② "채널 '빗각에 대한 모든것' 글을 Threads API로 올리기"는 처음엔 하기로 했다가 사용자가 "1번과 3번만"으로 범위를 줄여서 **구현 안 함**.)
 
@@ -795,7 +793,7 @@ portal.html의 `.welcome-splash`/`.welcome-splash-text`도 동일한 패턴으�
 - `TELEGRAM_ADMIN_CHAT_ID`가 운영자 개인 ID가 아니라 그룹/채널 ID로 설정돼 있으면 관리 명령·승인 버튼이 안 먹음(가이드 B-3-4에 확인법 적어둠).
 - 멤버가 하루 약 480명(15분×5명) 넘게 늘어나면 CHECK_BATCH/크론 주기 조정 필요(유료 플랜이면 배치 키워도 됨).
 
-## 20-17단계: /members 관리 목록 + 기존 멤버 제외 + 원클릭 설정 + 쉬운 가이드 (2026-10-11, ⚠️ main 미반영)
+## 20-17단계 (⚠️ 20-18단계에서 전부 제거됨): /members 관리 목록 + 기존 멤버 제외 + 원클릭 설정 + 쉬운 가이드 (2026-10-11, ⚠️ main 미반영)
 
 사용자 요청: "봇으로 관리 대상 멤버 목록을 한눈에", "기존 멤버는 넣을 필요 없고 새로 오는 멤버만 자동 정리", "가이드를 내가 할 수 있게 쉽게", 그리고 **"아직 업데이트는 적용하지 말고"** → 이번 변경은 `claude/nice-mendel-b779al` 브랜치에만 커밋/푸시하고 **main에 병합하지 않음**(CLAUDE.md의 "바로 병합" 운영 방침보다 이번 명시적 지시가 우선). 단, 20-16단계 커밋(adb4859)은 이 지시 전에 이미 main에 병합·배포돼 있음 — 환경변수(`TELEGRAM_WEBHOOK_SECRET`)를 안 넣으면 사이트는 예전 @아이디 방식 그대로라 사용자 눈엔 변화 없음.
 
@@ -813,15 +811,21 @@ portal.html의 `.welcome-splash`/`.welcome-splash-text`도 동일한 패턴으�
 - 사용자가 "적용해도 된다"고 하면: `node --check` + `wrangler deploy --dry-run` 후 이 브랜치를 main에 병합.
 - 적용 후 사용자가 `docs/telegram-setup.md` B절을 따라 설정해야 실제 동작.
 
+## 20-18단계: 스터디방 봇(3번) 전면 제거 — PC 원격작업 가이드(1번)만 남김 (2026-10-11)
+
+사용자: "1번만 하자 3번은 빼고, 자율적인 거래 분위기를 조성해야 하니" — 비활성 멤버 자동 내보내기 같은 강제 장치가 "자율적인 거래 환경" 취지(20-13단계 참고)와 맞지 않는다는 판단. 그래서 20-16·17단계의 스터디방 봇을 코드에서 완전히 걷어냄:
+- `src/study-bot.js` 삭제, `src/worker.js`/`public/index.html`/`wrangler.jsonc`/`schema*.sql`을 20-15단계 커밋(43fd772) 상태로 복원 — 라우트(`/api/telegram-link`·`/api/telegram-webhook`·`/api/telegram-setup`), 활동 검사 크론(`5,20,35,50 * * * *`), 사이트 ③단계 딥링크 버튼 전부 제거. 사이트 신청은 원래대로 "@아이디 입력 → 운영자 텔레그램 알림"(`/api/telegram-join`).
+- `docs/telegram-setup.md`는 PC 원격작업(새 봇 + Claude Code Channels + Chrome) 부분만 남김. 명령마다 🟦 PowerShell / 🟧 Claude Code 중 어디에 치는지 표시(사용자가 "파워쉘에 치는거야 클로드 코드에 치는거야 똑바로 말해"라고 지적해서 20-17 이후 보강한 것).
+- 20-16 배포(adb4859) 때 운영 D1에 `tg_link_tokens`/`tg_members`/`tg_seen`/`app_kv` 테이블이 빈 채로 생겼을 수 있음 — 코드가 더 이상 안 쓰므로 무해, 그대로 둠. `TELEGRAM_WEBHOOK_SECRET`/`TELEGRAM_GROUP_CHAT_ID` 환경변수도 넣었다면 지워도 됨(코드가 안 읽음). 웹훅은 사용자가 등록한 적 없음(설정 전 단계에서 중단).
+- 참고: 사용자가 Claude 앱에서 가이드를 열었을 때 빨간 줄/마이너스가 보인다고 함 → 앱의 변경 내역(diff) 표시였고 파일 내용이 아님. 가이드는 SendUserFile(render)로 깨끗한 파일을 따로 보내주는 게 혼동이 없음.
+
 ## 환경변수 목록 (Cloudflare 대시보드 Settings > Variables and Secrets)
 
 ```
 GATE_API_KEY            Gate.io API 키 (UID 확인용)
 GATE_API_SECRET         Gate.io API 시크릿
 TELEGRAM_BOT_TOKEN      (선택) 텔레그램 가입 신청 알림용 봇 토큰 — 없으면 알림만 생략되고 신청 저장은 항상 됨
-TELEGRAM_ADMIN_CHAT_ID  (선택) 알림 받을 chat_id — 위와 세트로 필요. 스터디방 봇에서는 "운영자 본인 개인 user_id"로도 쓰임(관리 명령/승인 버튼 권한)
-TELEGRAM_WEBHOOK_SECRET (선택, 20-16) 스터디방 봇 웹훅 비밀값 — setWebhook의 secret_token과 같아야 함. 없으면 봇 기능 꺼지고 사이트는 @아이디 입력 방식
-TELEGRAM_GROUP_CHAT_ID  (선택, 20-16) 스터디방 그룹 chat_id(-100...) — 그룹에서 운영자가 /groupid 보내면 봇이 알려줌
+TELEGRAM_ADMIN_CHAT_ID  (선택) 알림 받을 chat_id — 위와 세트로 필요
 ```
 
 ⚠️ `ADMIN_USERNAME`/`ADMIN_PASSWORD`는 20단계에서 관리자 대시보드 자체가 없어지면서 더 이상 코드에서 쓰이지 않음 — Cloudflare 대시보드에 남아있어도 무해하지만, 정리하고 싶으면 지워도 됨.
