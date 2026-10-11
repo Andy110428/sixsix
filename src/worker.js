@@ -6,7 +6,7 @@
 //                                    → 서버가 UID를 다시 한 번 검증(direct_referral만 허용)하고
 //                                      telegram_join_requests에 저장 + 운영자에게 텔레그램 알림
 //   GET  /api/payback-total?uid=... 그 UID의 누적 페이백 추정액 조회 (아래 "페이백 계산 방식" 참고)
-//   GET  /api/payback-feed          최근 페이백 내역 공개 피드 (UID 마스킹, 최대 20건)
+//   GET  /api/payback-feed          최근 페이백 내역 공개 피드 (UID 마스킹, 최대 40건)
 //
 // 페이백 계산 방식(2026-10-10, 20-6단계):
 //   Gate.io 커미션 분배 구조가 "유저 50% 자동 지급(거래소가 직접) : 파트너(우리) 25% : 거래소 25%"라서,
@@ -249,7 +249,7 @@ async function handlePaybackFeed(request, env) {
   // 비정상적인 값(0에 가까운 값 등)이 관측됨 — 정렬/표시 모두 우리가 직접 기록한
   // created_at(동기화 시각, ms)을 기준으로 해서 Gate.io 응답 품질과 무관하게 항상 정확하도록 함.
   const rows = await env.DB.prepare(
-    `SELECT uid, commission_time, amount_usdt, source, created_at FROM payback_feed ORDER BY id DESC LIMIT 20`
+    `SELECT uid, commission_time, amount_usdt, source, created_at FROM payback_feed ORDER BY id DESC LIMIT 40`
   ).all();
   return json({ ok: true, items: rows.results || [] });
 }
