@@ -40,7 +40,7 @@ CREATE TABLE IF NOT EXISTS payback_cursor (
   last_checked INTEGER NOT NULL   -- epoch 초 (Gate.io API 파라미터와 단위 통일)
 );
 
--- 2026-10-11 20-16단계: 스터디방 관리 봇(src/study-bot.js) 테이블 4개 추가.
+-- 2026-10-11 20-16단계: 스터디방 관리 봇(src/study-bot.js) 테이블 추가. (20-17단계에서 tg_seen 제거, exempt/warn_dm_at 추가)
 
 -- 사이트에서 발급하는 1회용 봇 딥링크 토큰(24시간 유효) — 신청자가 봇에서 "시작"을 누르면 소비됨.
 CREATE TABLE IF NOT EXISTS tg_link_tokens (
@@ -69,18 +69,11 @@ CREATE TABLE IF NOT EXISTS tg_members (
   flagged_at INTEGER,             -- 자동 내보내기 꺼짐 상태에서 "대상"으로 알린 시각
   flag_reason TEXT,
   kicked_at INTEGER,
-  kick_reason TEXT
+  kick_reason TEXT,
+  exempt INTEGER NOT NULL DEFAULT 0, -- 1이면 자동 정리 제외(/keep)
+  warn_dm_at INTEGER              -- 마지막 경고 DM 시각(warned_at은 상태 표시용)
 );
 
--- 사이트 신청 없이 그룹에서 감지된(입장/메시지) 미등록 멤버.
-CREATE TABLE IF NOT EXISTS tg_seen (
-  user_id INTEGER PRIMARY KEY,
-  username TEXT,
-  first_name TEXT,
-  first_seen INTEGER NOT NULL,
-  last_seen INTEGER NOT NULL,
-  in_group INTEGER NOT NULL DEFAULT 1
-);
 
 -- 단순 설정값 저장(autokick = on/off 등).
 CREATE TABLE IF NOT EXISTS app_kv (

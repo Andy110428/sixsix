@@ -29,7 +29,7 @@ wrangler.jsonc          Workers 설정 (assets + D1 바인딩, cron trigger는 2
 schema.sql / schema-console.sql   D1 스키마 (telegram_join_requests 테이블 하나만 정의 — 예전 테이블은 운영 DB에 데이터와 함께 남아있지만 이 파일/ensureSchema()가 더 이상 관리하지 않음)
 migration-*.sql          예전(스터디룸 시절) 마이그레이션 기록 — 지금은 미사용, 과거 기록용으로만 남겨둠
 src/worker.js           서버 코드 — /api/check-uid, /api/telegram-join, /api/payback-total, /api/payback-feed + 크론
-src/study-bot.js        스터디방 관리 텔레그램 봇 — /api/telegram-link, /api/telegram-webhook + 활동 검사 크론 (20-16단계)
+src/study-bot.js        스터디방 관리 텔레그램 봇 — /api/telegram-link, /api/telegram-webhook, /api/telegram-setup + 활동 검사 크론 (20-16·17단계)
 docs/telegram-setup.md  사용자용 설정 가이드 — PC 원격작업(새 봇, Claude Code Channels) + 스터디방 봇(기존 봇) 설정 절차
 public/index.html       유일한 페이지. 히어로 + 거래소 카드(Gate.io) + 이용방법 + UID 확인/텔레그램 신청 폼 + FAQ
 ```
@@ -794,6 +794,24 @@ portal.html의 `.welcome-splash`/`.welcome-splash-text`도 동일한 패턴으�
 - "거래 여부" 판단이 `commission_history`(베타, 20-6단계 리스크 그대로)에 의존 — 자동 내보내기 켜기 전에 꺼진 상태의 "대상" 알림이 실제와 맞는지 사용자 확인 필요.
 - `TELEGRAM_ADMIN_CHAT_ID`가 운영자 개인 ID가 아니라 그룹/채널 ID로 설정돼 있으면 관리 명령·승인 버튼이 안 먹음(가이드 B-3-4에 확인법 적어둠).
 - 멤버가 하루 약 480명(15분×5명) 넘게 늘어나면 CHECK_BATCH/크론 주기 조정 필요(유료 플랜이면 배치 키워도 됨).
+
+## 20-17단계: /members 관리 목록 + 기존 멤버 제외 + 원클릭 설정 + 쉬운 가이드 (2026-10-11, ⚠️ main 미반영)
+
+사용자 요청: "봇으로 관리 대상 멤버 목록을 한눈에", "기존 멤버는 넣을 필요 없고 새로 오는 멤버만 자동 정리", "가이드를 내가 할 수 있게 쉽게", 그리고 **"아직 업데이트는 적용하지 말고"** → 이번 변경은 `claude/nice-mendel-b779al` 브랜치에만 커밋/푸시하고 **main에 병합하지 않음**(CLAUDE.md의 "바로 병합" 운영 방침보다 이번 명시적 지시가 우선). 단, 20-16단계 커밋(adb4859)은 이 지시 전에 이미 main에 병합·배포돼 있음 — 환경변수(`TELEGRAM_WEBHOOK_SECRET`)를 안 넣으면 사이트는 예전 @아이디 방식 그대로라 사용자 눈엔 변화 없음.
+
+- 사용자가 "텔레그램 아이디를 사이트에 입력하면 고유 ID를 추출하는 거냐"고 물음 → **아님**. Bot API로는 @아이디→숫자 ID 조회 불가. 신청자가 사이트 버튼 → 봇에서 "시작"을 누르는 순간 봇이 숫자 ID를 받는 구조라고 다시 설명함.
+- **`/members`**(`/status`도 같은 동작): tg_members를 🔴 정리 대상(flagged) / 🟡 주의(warned) / 🟢 정상(유예 남은 일수 또는 최근 거래 확인 며칠 전) / 🛡 제외 / ⏳ 승인 대기 / 📨 승인됐지만 미입장 / 🚪 최근 내보냄(5명)으로 묶어 한 메시지로(4096자 제한 때문에 섹션별 최대 인원 + "외 N명").
+- **`/kick UID|@아이디`**(수동 내보내기), **`/keep UID|@아이디`**(자동 정리 제외 토글, `tg_members.exempt`).
+- `warned_at`은 이제 자동 정리가 꺼져 있어도 상태로 기록(🟡 표시용), 경고 DM은 켜져 있을 때만 `warn_dm_at` 기준 6일 간격.
+- **기존 멤버 추적 제거**: `tg_seen` 테이블/미등록 감지/`/unlinked`/`/kick_unlinked` 전부 삭제. 관리 대상은 딥링크로 신청→승인된 tg_members뿐. (운영 DB에 20-16 배포로 tg_seen이 생겼을 수 있지만 무해, 코드는 더 안 씀.) 신청 없이 입장한 사람 알림(ℹ️)은 유지.
+- 첫 버전으로 이미 생성됐을 수 있는 tg_members에 `exempt`/`warn_dm_at`을 `ALTER TABLE ADD COLUMN`(try/catch)으로 추가.
+- **`GET /api/telegram-setup?key=<TELEGRAM_WEBHOOK_SECRET>`**: 서버가 setWebhook(allowed_updates: message/callback_query/chat_member)을 대신 호출하고, 봇 토큰·운영자 테스트 메시지·스터디방 확인 결과를 ✅/❌ 한글 HTML 페이지로 보여줌 — 사용자가 봇 토큰이 들어간 긴 텔레그램 API 주소를 조립할 필요 없게.
+- `docs/telegram-setup.md` 전면 재작성(쉬운 버전): 클릭 경로 단위 단계, `.bat` 만들기, Cloudflare 메뉴 경로, `/members` 예시.
+- 검증: 목 테스트 41개 통과(기존 26개 + /members 각 섹션, /keep 토글·제외자 미정리, /kick, 자동 정리 꺼짐 시 경고 상태만 기록·DM 없음, 기존 멤버 미추적, 설정 페이지 키 검증·웹훅 등록, 구버전 테이블 ALTER).
+
+### 다음에 볼 것
+- 사용자가 "적용해도 된다"고 하면: `node --check` + `wrangler deploy --dry-run` 후 이 브랜치를 main에 병합.
+- 적용 후 사용자가 `docs/telegram-setup.md` B절을 따라 설정해야 실제 동작.
 
 ## 환경변수 목록 (Cloudflare 대시보드 Settings > Variables and Secrets)
 

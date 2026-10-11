@@ -16,8 +16,10 @@
 //
 // 텔레그램 봇 API는 남의 @아이디로 숫자 ID를 조회하는 기능이 없음 → 숫자 ID는 그 사람이 봇/그룹과
 // 상호작용할 때만 알 수 있음. 그래서 딥링크(1번) + 그룹 입장/메시지 감지로 숫자 ID를 확보함.
-// 이 봇이 생기기 전부터 그룹에 있던 사람은 봇이 모름 → 그룹에서 메시지를 쓰거나 입장할 때 "미등록"으로
-// 기록되고, 운영자가 /unlinked 로 보고 /kick_unlinked confirm 으로 정리할 수 있음(자동으로는 안 내보냄).
+// 자동 정리는 "사이트 → 봇 딥링크로 신청해서 승인된 멤버"(tg_members)에게만 적용됨. 이 봇이 생기기 전부터
+// 있던 기존 멤버는 봇이 모르고 관리 대상도 아님(사용자 확인: "기존 멤버는 넣을 필요 없고 새로 오는 멤버만").
+// 운영자 관리: /members(한눈에 보는 멤버 목록), /kick UID(수동 내보내기), /keep UID(자동 정리 제외 켜기/끄기).
+// 웹훅 등록은 브라우저로 /api/telegram-setup?key=<TELEGRAM_WEBHOOK_SECRET> 한 번 열면 서버가 대신 해줌.
 //
 // 환경변수:
 //   TELEGRAM_BOT_TOKEN       기존 알림 봇 토큰 그대로 사용
@@ -61,16 +63,17 @@ export async function ensureBotSchema(env) {
     flagged_at INTEGER,
     flag_reason TEXT,
     kicked_at INTEGER,
-    kick_reason TEXT
+    kick_reason TEXT,
+    exempt INTEGER NOT NULL DEFAULT 0,
+    warn_dm_at INTEGER
   )`).run();
-  await env.DB.prepare(`CREATE TABLE IF NOT EXISTS tg_seen (
-    user_id INTEGER PRIMARY KEY,
-    username TEXT,
-    first_name TEXT,
-    first_seen INTEGER NOT NULL,
-    last_seen INTEGER NOT NULL,
-    in_group INTEGER NOT NULL DEFAULT 1
-  )`).run();
+  // 첫 버전(adb4859)으로 이미 만들어진 테이블에 컬럼 추가 — 이미 있으면 에러 나고 무시됨
+  for (const ddl of [
+    `ALTER TABLE tg_members ADD COLUMN exempt INTEGER NOT NULL DEFAULT 0`,
+    `ALTER TABLE tg_members ADD COLUMN warn_dm_at INTEGER`,
+  ]) {
+    try { await env.DB.prepare(ddl).run(); } catch (e) { /* 이미 있음 */ }
+  }
   await env.DB.prepare(`CREATE TABLE IF NOT EXISTS app_kv (
     key TEXT PRIMARY KEY,
     value TEXT
@@ -169,6 +172,65 @@ export async function handleTelegramLink(request, env, deps) {
   return json({ ok: true, url: `https://t.me/${username}?start=${token}` });
 }
 
+// ───────────────────────── 원클릭 설정 ─────────────────────────
+//
+// 운영자가 브라우저로 /api/telegram-setup?key=<TELEGRAM_WEBHOOK_SECRET> 를 열면 서버가 setWebhook을
+// 대신 호출하고, 운영자에게 테스트 메시지를 보내서 각 설정이 맞는지 한글로 알려줌.
+// (봇 토큰이 들어간 긴 주소를 직접 조립할 필요가 없게 하려는 목적)
+
+function setupPage(title, rows) {
+  const esc = (t) => String(t).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const items = rows.map(([ok, text]) => `<li><span>${ok === true ? '✅' : ok === false ? '❌' : '👉'}</span>${esc(text)}</li>`).join('');
+  return new Response(`<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>텔레그램 봇 설정</title><style>body{font-family:system-ui,sans-serif;background:#0b0f0d;color:#e8f0ec;margin:0;padding:24px 16px;line-height:1.6}
+main{max-width:560px;margin:0 auto}h1{font-size:1.3rem}ul{list-style:none;padding:0}li{display:flex;gap:10px;padding:12px 14px;margin:8px 0;background:#141a17;border-radius:12px}</style></head>
+<body><main><h1>${esc(title)}</h1><ul>${items}</ul></main></body></html>`, { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
+}
+
+export async function handleTelegramSetup(request, env) {
+  const url = new URL(request.url);
+  const key = url.searchParams.get('key') || '';
+  if (!env.TELEGRAM_BOT_TOKEN) {
+    return setupPage('설정이 아직 안 됐어요', [[false, 'Cloudflare에 TELEGRAM_BOT_TOKEN(봇 토큰)이 없어요.']]);
+  }
+  if (!env.TELEGRAM_WEBHOOK_SECRET) {
+    return setupPage('설정이 아직 안 됐어요', [[false, 'Cloudflare에 TELEGRAM_WEBHOOK_SECRET(비밀번호)을 먼저 넣고 저장해주세요. 저장 후 1분쯤 뒤에 이 주소를 다시 열어주세요.']]);
+  }
+  if (key !== env.TELEGRAM_WEBHOOK_SECRET) {
+    return setupPage('비밀번호가 달라요', [[false, '주소 끝의 key= 뒤에 Cloudflare에 넣은 TELEGRAM_WEBHOOK_SECRET 값을 똑같이 적어주세요.']]);
+  }
+  if (!/^[A-Za-z0-9_-]{1,256}$/.test(env.TELEGRAM_WEBHOOK_SECRET)) {
+    return setupPage('비밀번호 형식이 안 맞아요', [[false, 'TELEGRAM_WEBHOOK_SECRET은 영어/숫자/_/- 만 쓸 수 있어요. 한글·공백·특수문자를 빼고 다시 저장해주세요.']]);
+  }
+
+  const rows = [];
+  const me = await tg(env, 'getMe', {});
+  if (!me.ok) return setupPage('봇 토큰이 맞지 않아요', [[false, 'TELEGRAM_BOT_TOKEN 값을 BotFather에서 받은 토큰으로 다시 확인해주세요.']]);
+  rows.push([true, `봇 확인: @${me.result.username}`]);
+
+  const hook = await tg(env, 'setWebhook', {
+    url: `${url.origin}/api/telegram-webhook`,
+    secret_token: env.TELEGRAM_WEBHOOK_SECRET,
+    allowed_updates: ['message', 'callback_query', 'chat_member'],
+  });
+  rows.push(hook.ok ? [true, '봇 연결(웹훅) 완료 — 이제 봇이 사이트 서버로 메시지를 받아요.'] : [false, `봇 연결 실패: ${hook.description || '알 수 없는 오류'}`]);
+
+  if (!env.TELEGRAM_ADMIN_CHAT_ID) {
+    rows.push([false, 'TELEGRAM_ADMIN_CHAT_ID(내 텔레그램 숫자 ID)가 없어요.']);
+  } else {
+    const test = await sendText(env, env.TELEGRAM_ADMIN_CHAT_ID, '✅ 스터디방 관리 봇 연결 테스트 메시지예요. 이 메시지가 보이면 알림 설정이 맞아요.\n명령어 목록: /help');
+    rows.push(test.ok ? [true, '운영자에게 테스트 메시지를 보냈어요. 텔레그램을 확인해보세요.'] : [false, '운영자에게 메시지를 못 보냈어요. 봇과의 대화창에서 먼저 /start 를 눌러주세요.']);
+  }
+
+  if (env.TELEGRAM_GROUP_CHAT_ID) {
+    const chat = await tg(env, 'getChat', { chat_id: env.TELEGRAM_GROUP_CHAT_ID });
+    rows.push(chat.ok ? [true, `스터디방 확인: ${chat.result.title || env.TELEGRAM_GROUP_CHAT_ID}`] : [false, '스터디방을 찾을 수 없어요. 봇이 스터디방에 들어가 있는지, 번호가 맞는지 확인해주세요.']);
+  } else {
+    rows.push([null, '다음 단계: 스터디방 안에서 /groupid 를 보내고, 나온 번호를 Cloudflare에 TELEGRAM_GROUP_CHAT_ID로 넣어주세요.']);
+  }
+  return setupPage(hook.ok ? '설정 결과' : '설정 중 문제가 있어요', rows);
+}
+
 // ───────────────────────── 웹훅 ─────────────────────────
 
 export async function handleTelegramWebhook(request, env, ctx) {
@@ -197,12 +259,14 @@ async function processUpdate(update, env, origin) {
 
 const ADMIN_HELP = [
   '🛠 스터디방 관리 봇 명령어',
-  '/status — 멤버 현황 + 내보내기 대상 목록',
-  '/autokick on | off — 자동 내보내기 켜기/끄기 (기본 꺼짐)',
-  '/unlinked — 사이트 신청 없이 그룹에 있는 미등록 멤버 목록',
-  '/kick_unlinked confirm — 미등록 멤버 내보내기 (한 번에 최대 10명)',
+  '/members — 관리 중인 멤버 목록 한눈에 보기',
+  '/kick UID — 그 멤버 바로 내보내기',
+  '/keep UID — 자동 정리에서 빼기 (한 번 더 보내면 다시 포함)',
+  '/autokick on | off — 자동 정리 켜기/끄기 (처음엔 꺼짐)',
   '',
-  '그룹 안에서 /groupid — 그 그룹의 chat_id 확인 (TELEGRAM_GROUP_CHAT_ID에 넣는 값)',
+  '스터디방 안에서 /groupid — 스터디방 번호 확인',
+  '',
+  '※ 관리 대상은 사이트에서 신청해서 승인된 새 멤버만이에요. 기존 멤버는 건드리지 않아요.',
 ].join('\n');
 
 async function handlePrivate(msg, env, origin) {
@@ -228,12 +292,43 @@ async function handlePrivate(msg, env, origin) {
       ? '✅ 자동 내보내기를 켰어요. 대상자에게 경고 DM(23일차)과 내보내기(30일차)가 자동으로 진행돼요.'
       : '⏸ 자동 내보내기를 껐어요. 대상자는 알림으로만 알려드려요.');
   }
-  if (cmd === '/status') return sendText(env, from.id, await buildStatus(env));
-  if (cmd === '/unlinked') return sendText(env, from.id, await buildUnlinkedList(env));
-  if (cmd === '/kick_unlinked') {
-    if (arg !== 'confirm') return sendText(env, from.id, '정말 내보내려면 /kick_unlinked confirm 을 보내주세요. 먼저 /unlinked 로 목록을 확인하는 걸 추천해요.');
-    return sendText(env, from.id, await kickUnlinked(env));
-  }
+  if (cmd === '/members' || cmd === '/status') return sendText(env, from.id, await buildMemberList(env));
+  if (cmd === '/kick') return sendText(env, from.id, await manualKick(env, arg));
+  if (cmd === '/keep') return sendText(env, from.id, await toggleExempt(env, arg));
+}
+
+async function findMember(env, arg) {
+  const key = String(arg || '').trim().replace(/^@/, '');
+  if (!key) return null;
+  return (await env.DB.prepare(
+    `SELECT * FROM tg_members WHERE uid = ? AND status IN ('approved', 'pending') ORDER BY approved_at DESC LIMIT 1`
+  ).bind(key).first()) || (await env.DB.prepare(
+    `SELECT * FROM tg_members WHERE lower(username) = lower(?) AND status IN ('approved', 'pending') LIMIT 1`
+  ).bind(key).first());
+}
+
+async function manualKick(env, arg) {
+  if (!arg) return '사용법: /kick UID  (예: /kick 12345678)';
+  if (!env.TELEGRAM_GROUP_CHAT_ID) return '스터디방 번호(TELEGRAM_GROUP_CHAT_ID)가 아직 설정되지 않았어요.';
+  const m = await findMember(env, arg);
+  if (!m) return `${arg} — 관리 중인 멤버에서 찾을 수 없어요. /members 로 UID를 확인해주세요.`;
+  if (!(await kickUser(env, m.user_id))) return '내보내기 실패 — 봇에 "사용자 차단" 권한이 있는지 확인해주세요.';
+  await env.DB.prepare(
+    `UPDATE tg_members SET status = 'kicked', in_group = 0, kicked_at = ?, kick_reason = '운영자가 직접 내보냄' WHERE user_id = ?`
+  ).bind(Date.now(), m.user_id).run();
+  return `🚪 내보냈어요: ${memberLabel(m)}`;
+}
+
+async function toggleExempt(env, arg) {
+  if (!arg) return '사용법: /keep UID  (예: /keep 12345678)';
+  const m = await findMember(env, arg);
+  if (!m) return `${arg} — 관리 중인 멤버에서 찾을 수 없어요. /members 로 UID를 확인해주세요.`;
+  const next = m.exempt ? 0 : 1;
+  await env.DB.prepare(`UPDATE tg_members SET exempt = ?, flagged_at = NULL, flag_reason = NULL, warned_at = NULL WHERE user_id = ?`)
+    .bind(next, m.user_id).run();
+  return next
+    ? `🛡 ${memberLabel(m)} — 자동 정리에서 뺐어요. (다시 포함하려면 /keep ${m.uid})`
+    : `✅ ${memberLabel(m)} — 다시 자동 정리 대상에 포함했어요.`;
 }
 
 async function handleStartToken(token, msg, env, origin) {
@@ -331,7 +426,7 @@ async function handleCallback(cq, env) {
 
   await env.DB.prepare(
     `UPDATE tg_members SET status = 'approved', approved_at = ?, invite_link = ?, kicked_at = NULL, kick_reason = NULL,
-       warned_at = NULL, flagged_at = NULL, flag_reason = NULL, last_check_at = NULL WHERE user_id = ?`
+       warned_at = NULL, warn_dm_at = NULL, flagged_at = NULL, flag_reason = NULL, last_check_at = NULL WHERE user_id = ?`
   ).bind(Date.now(), inviteLink, userId).run();
 
   const dm = await sendText(env, userId,
@@ -344,30 +439,18 @@ async function handleCallback(cq, env) {
 
 // ───────────────────────── 그룹 입장/퇴장/메시지 감지 ─────────────────────────
 
+// 관리 대상(tg_members)이면 입장 기록하고 true, 아니면(기존 멤버 등) 아무것도 안 하고 false
 async function markJoined(env, user, now) {
   const member = await env.DB.prepare(`SELECT user_id FROM tg_members WHERE user_id = ?`).bind(user.id).first();
-  if (member) {
-    await env.DB.prepare(
-      `UPDATE tg_members SET in_group = 1, joined_at = COALESCE(joined_at, ?), username = ?, first_name = ? WHERE user_id = ?`
-    ).bind(now, user.username || null, user.first_name || null, user.id).run();
-    await env.DB.prepare(`DELETE FROM tg_seen WHERE user_id = ?`).bind(user.id).run();
-    return true;
-  }
-  await touchSeen(env, user, now);
-  return false;
-}
-
-async function touchSeen(env, user, now) {
+  if (!member) return false;
   await env.DB.prepare(
-    `INSERT INTO tg_seen (user_id, username, first_name, first_seen, last_seen, in_group) VALUES (?, ?, ?, ?, ?, 1)
-     ON CONFLICT(user_id) DO UPDATE SET username = excluded.username, first_name = excluded.first_name,
-       last_seen = excluded.last_seen, in_group = 1`
-  ).bind(user.id, user.username || null, user.first_name || null, now, now).run();
+    `UPDATE tg_members SET in_group = 1, joined_at = COALESCE(joined_at, ?), username = ?, first_name = ? WHERE user_id = ?`
+  ).bind(now, user.username || null, user.first_name || null, user.id).run();
+  return true;
 }
 
 async function markLeft(env, userId) {
   await env.DB.prepare(`UPDATE tg_members SET in_group = 0 WHERE user_id = ?`).bind(userId).run();
-  await env.DB.prepare(`UPDATE tg_seen SET in_group = 0 WHERE user_id = ?`).bind(userId).run();
 }
 
 async function handleChatMember(cm, env) {
@@ -414,13 +497,9 @@ async function handleGroupMessage(msg, env) {
   if (msg.left_chat_member && !msg.left_chat_member.is_bot) await markLeft(env, msg.left_chat_member.id);
 
   if (msg.from.is_bot) return;
-  const member = await env.DB.prepare(`SELECT user_id FROM tg_members WHERE user_id = ?`).bind(msg.from.id).first();
-  if (member) {
-    await env.DB.prepare(`UPDATE tg_members SET in_group = 1, joined_at = COALESCE(joined_at, ?) WHERE user_id = ?`)
-      .bind(now, msg.from.id).run();
-  } else {
-    await touchSeen(env, msg.from, now);
-  }
+  // 관리 대상 멤버가 그룹에서 말하면 "그룹에 있음"으로 보정(입장 이벤트가 누락됐을 때 대비)
+  await env.DB.prepare(`UPDATE tg_members SET in_group = 1, joined_at = COALESCE(joined_at, ?) WHERE user_id = ?`)
+    .bind(now, msg.from.id).run();
 }
 
 // ───────────────────────── 내보내기 ─────────────────────────
@@ -444,62 +523,59 @@ async function isGroupAdminOrGone(env, userId) {
   };
 }
 
-async function buildStatus(env) {
-  const count = async (sql) => ((await env.DB.prepare(sql).first()) || {}).c || 0;
-  const approvedIn = await count(`SELECT COUNT(*) AS c FROM tg_members WHERE status = 'approved' AND in_group = 1`);
-  const approvedOut = await count(`SELECT COUNT(*) AS c FROM tg_members WHERE status = 'approved' AND in_group = 0`);
-  const pending = await count(`SELECT COUNT(*) AS c FROM tg_members WHERE status = 'pending'`);
-  const kicked = await count(`SELECT COUNT(*) AS c FROM tg_members WHERE status = 'kicked'`);
-  const unlinked = await count(`SELECT COUNT(*) AS c FROM tg_seen WHERE in_group = 1`);
+function daysSince(ts, now) {
+  return Math.max(0, Math.floor((now - ts) / DAY_MS));
+}
+
+// /members — 관리 대상 멤버를 상태별로 묶어서 한 메시지로 보여줌
+async function buildMemberList(env) {
+  const now = Date.now();
   const autokick = (await kvGet(env, 'autokick')) === 'on';
-  const flagged = await env.DB.prepare(
-    `SELECT * FROM tg_members WHERE status = 'approved' AND in_group = 1 AND flagged_at IS NOT NULL ORDER BY flagged_at DESC LIMIT 15`
-  ).all();
+  const all = (await env.DB.prepare(
+    `SELECT * FROM tg_members WHERE status IN ('approved', 'pending') ORDER BY COALESCE(joined_at, approved_at, linked_at) ASC`
+  ).all()).results || [];
+  const kicked = (await env.DB.prepare(
+    `SELECT * FROM tg_members WHERE status = 'kicked' ORDER BY kicked_at DESC LIMIT 5`
+  ).all()).results || [];
+
+  const groups = { red: [], yellow: [], green: [], keep: [], notJoined: [], pending: [] };
+  for (const m of all) {
+    if (m.status === 'pending') { groups.pending.push(`· ${memberLabel(m)}`); continue; }
+    if (!m.in_group) { groups.notJoined.push(`· ${memberLabel(m)} · 승인 ${daysSince(m.approved_at || now, now)}일 전`); continue; }
+    const age = daysSince(m.joined_at || m.approved_at || now, now);
+    const base = `· ${memberLabel(m)} · 입장 ${age}일째`;
+    if (m.exempt) { groups.keep.push(base); continue; }
+    if (m.flagged_at) { groups.red.push(`${base} · ${m.flag_reason || ''}`); continue; }
+    if (m.warned_at) { groups.yellow.push(`${base} · ${WARN_DAYS}일 넘게 거래 없음`); continue; }
+    let note;
+    if (m.last_active_at) note = `최근 거래 확인 ${daysSince(m.last_active_at, now)}일 전`;
+    else if (age < INACTIVE_DAYS) note = `유예 ${INACTIVE_DAYS - age}일 남음`;
+    else note = '거래 확인 대기 중';
+    groups.green.push(`${base} · ${note}`);
+  }
 
   const lines = [
-    '📊 스터디방 현황',
-    `자동 내보내기: ${autokick ? '켜짐 ✅' : '꺼짐 ⏸ (/autokick on)'}`,
-    `그룹 설정: ${env.TELEGRAM_GROUP_CHAT_ID ? env.TELEGRAM_GROUP_CHAT_ID : '❌ TELEGRAM_GROUP_CHAT_ID 미설정'}`,
-    '',
-    `승인·입장 완료: ${approvedIn}명`,
-    `승인됐지만 아직 미입장: ${approvedOut}명`,
-    `승인 대기: ${pending}명`,
-    `내보낸 멤버(누적): ${kicked}명`,
-    `미등록 멤버(그룹에서 감지됨): ${unlinked}명 — /unlinked`,
+    '👥 스터디방 관리 멤버',
+    `자동 정리: ${autokick ? '켜짐 ✅' : '꺼짐 ⏸ — 대상만 표시하고 내보내지는 않아요'}`,
+    `🔴 정리 대상 ${groups.red.length} · 🟡 주의 ${groups.yellow.length} · 🟢 정상 ${groups.green.length} · 🛡 제외 ${groups.keep.length} · ⏳ 대기 ${groups.pending.length + groups.notJoined.length}`,
   ];
-  const rows = flagged.results || [];
-  if (rows.length) {
-    lines.push('', '⚠️ 내보내기 대상 (자동 내보내기 꺼짐이라 대기 중):');
-    for (const m of rows) lines.push(`· ${memberLabel(m)} — ${m.flag_reason || ''}`);
-  }
-  return lines.join('\n');
-}
-
-async function buildUnlinkedList(env) {
-  const res = await env.DB.prepare(`SELECT * FROM tg_seen WHERE in_group = 1 ORDER BY last_seen DESC LIMIT 30`).all();
-  const rows = res.results || [];
-  if (!rows.length) return '미등록 멤버가 없어요. (봇은 입장하거나 메시지를 쓴 사람만 감지할 수 있어요)';
-  return ['👤 미등록 멤버 (사이트 신청 없이 그룹에 있음, 최근 활동순 최대 30명)',
-    ...rows.map((r) => `· ${r.username ? '@' + r.username : '(아이디 없음)'}${r.first_name ? ' ' + r.first_name : ''} — 숫자 ID ${r.user_id}`),
-    '', '이분들은 사이트에서 UID 확인 → "텔레그램으로 신청하기"를 하면 자동으로 등록돼요.',
-    '정리하려면 /kick_unlinked confirm'].join('\n');
-}
-
-async function kickUnlinked(env) {
-  if (!env.TELEGRAM_GROUP_CHAT_ID) return 'TELEGRAM_GROUP_CHAT_ID가 설정되지 않았어요.';
-  const res = await env.DB.prepare(`SELECT * FROM tg_seen WHERE in_group = 1 ORDER BY first_seen ASC LIMIT 10`).all();
-  const rows = res.results || [];
-  let kicked = 0, skipped = 0;
-  for (const r of rows) {
-    if (isAdmin(env, r.user_id)) { skipped++; await markLeft(env, r.user_id); continue; }
-    const st = await isGroupAdminOrGone(env, r.user_id);
-    if (st.error) { skipped++; continue; }
-    if (st.admin || st.gone) { skipped++; await markLeft(env, r.user_id); continue; }
-    if (await kickUser(env, r.user_id)) { kicked++; await markLeft(env, r.user_id); } else skipped++;
-  }
-  const left = ((await env.DB.prepare(`SELECT COUNT(*) AS c FROM tg_seen WHERE in_group = 1`).first()) || {}).c || 0;
-  return `미등록 멤버 ${kicked}명 내보냄 (관리자/이미 나간 사람 등 ${skipped}명 건너뜀).` +
-    (left ? `\n남은 미등록 ${left}명 — 계속하려면 /kick_unlinked confirm 을 다시 보내주세요.` : '');
+  // 텔레그램 메시지 한 개는 4096자 제한 — 섹션마다 최대 인원을 정해 넘치면 "외 N명"으로 줄임
+  const section = (title, rows, max) => {
+    if (!rows.length) return;
+    lines.push('', title, ...rows.slice(0, max));
+    if (rows.length > max) lines.push(`  …외 ${rows.length - max}명`);
+  };
+  section('🔴 정리 대상', groups.red, 20);
+  section(`🟡 주의 (7일 안에 거래 없으면 정리)`, groups.yellow, 20);
+  section('🟢 정상', groups.green, 30);
+  section('🛡 자동 정리 제외', groups.keep, 15);
+  section('⏳ 승인 대기 (알림의 승인 버튼을 눌러주세요)', groups.pending, 10);
+  section('📨 승인됐지만 아직 입장 안 함', groups.notJoined, 10);
+  section('🚪 최근 내보낸 멤버', kicked.map((m) => `· ${memberLabel(m)} · ${m.kick_reason || ''}`), 5);
+  if (!all.length && !kicked.length) lines.push('', '아직 관리 중인 멤버가 없어요. 사이트에서 신청 → 승인된 새 멤버부터 여기에 표시돼요.');
+  lines.push('', '관리: /kick UID (내보내기) · /keep UID (자동 정리 제외)');
+  const text = lines.join('\n');
+  return text.length > 4000 ? text.slice(0, 3990) + '\n…' : text;
 }
 
 // ───────────────────────── 크론: 활동 검사 ─────────────────────────
@@ -531,7 +607,7 @@ export async function runMembershipCheck(env, deps) {
 async function checkMember(m, env, deps, autokick, now) {
   const setChecked = () => env.DB.prepare(`UPDATE tg_members SET last_check_at = ? WHERE user_id = ?`).bind(now, m.user_id).run();
 
-  if (isAdmin(env, m.user_id)) return setChecked();
+  if (isAdmin(env, m.user_id) || m.exempt) return setChecked();
   const st = await isGroupAdminOrGone(env, m.user_id);
   if (st.error) throw new Error('getChatMember failed');
   if (st.gone) { await markLeft(env, m.user_id); return setChecked(); }
@@ -551,7 +627,7 @@ async function checkMember(m, env, deps, autokick, now) {
       const recent = await deps.fetchPartnerCommissionHistory(m.uid, nowSec - WARN_DAYS * 86400, nowSec, 0, env);
       if (recent.length) {
         await env.DB.prepare(
-          `UPDATE tg_members SET last_active_at = ?, warned_at = NULL, flagged_at = NULL, flag_reason = NULL WHERE user_id = ?`
+          `UPDATE tg_members SET last_active_at = ?, warned_at = NULL, warn_dm_at = NULL, flagged_at = NULL, flag_reason = NULL WHERE user_id = ?`
         ).bind(now, m.user_id).run();
       } else if (ageDays >= INACTIVE_DAYS) {
         const older = await deps.fetchPartnerCommissionHistory(
@@ -586,10 +662,14 @@ async function checkMember(m, env, deps, autokick, now) {
     return setChecked();
   }
 
-  if (warn && autokick && (!m.warned_at || now - m.warned_at > 6 * DAY_MS)) {
-    await env.DB.prepare(`UPDATE tg_members SET warned_at = ? WHERE user_id = ?`).bind(now, m.user_id).run();
-    await sendText(env, m.user_id,
-      `안내: 최근 ${WARN_DAYS}일 동안 거래 기록이 없어요. 7일 안에 거래 기록이 없으면 스터디방에서 자동으로 내보내져요.`);
+  if (warn) {
+    // warned_at은 /members의 🟡 표시용 상태(자동 정리 꺼져 있어도 기록), 경고 DM은 켜져 있을 때만 6일 간격으로
+    if (!m.warned_at) await env.DB.prepare(`UPDATE tg_members SET warned_at = ? WHERE user_id = ?`).bind(now, m.user_id).run();
+    if (autokick && (!m.warn_dm_at || now - m.warn_dm_at > 6 * DAY_MS)) {
+      await env.DB.prepare(`UPDATE tg_members SET warn_dm_at = ? WHERE user_id = ?`).bind(now, m.user_id).run();
+      await sendText(env, m.user_id,
+        `안내: 최근 ${WARN_DAYS}일 동안 거래 기록이 없어요. 7일 안에 거래 기록이 없으면 스터디방에서 자동으로 내보내져요.`);
+    }
   }
   return setChecked();
 }

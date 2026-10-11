@@ -50,17 +50,11 @@ CREATE TABLE IF NOT EXISTS tg_members (
   flagged_at INTEGER,
   flag_reason TEXT,
   kicked_at INTEGER,
-  kick_reason TEXT
+  kick_reason TEXT,
+  exempt INTEGER NOT NULL DEFAULT 0,
+  warn_dm_at INTEGER
 );
 
-CREATE TABLE IF NOT EXISTS tg_seen (
-  user_id INTEGER PRIMARY KEY,
-  username TEXT,
-  first_name TEXT,
-  first_seen INTEGER NOT NULL,
-  last_seen INTEGER NOT NULL,
-  in_group INTEGER NOT NULL DEFAULT 1
-);
 
 CREATE TABLE IF NOT EXISTS app_kv (
   key TEXT PRIMARY KEY,
