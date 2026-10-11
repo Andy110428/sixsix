@@ -30,6 +30,11 @@ irm https://claude.ai/install.ps1 | iex
 - 🟦 PowerShell에 `claude` 입력 → 엔터 → 화면 안내대로 로그인(지금 쓰는 Claude 계정)
 - 로그인이 끝나면 `/exit` 입력해서 🟦 PowerShell로 돌아옵니다.
 - "Git이 필요하다"는 말이 나오면 https://git-scm.com/download/win 에서 설치하고 다시 해보세요.
+- **`claude` 용어가 ... 인식되지 않습니다` 오류가 나오면** — 설치는 됐는데 윈도우가 위치를 못 찾는 거예요. 🟦 PowerShell에 아래 한 줄을 붙여넣고 엔터 → **PowerShell 창을 닫고 새로 연 뒤** 다시 `claude` 입력
+  ```
+  [Environment]::SetEnvironmentVariable("Path", [Environment]::GetEnvironmentVariable("Path","User") + ";$env:USERPROFILE\.local\bin", "User")
+  ```
+  그래도 안 되면 🟦 PowerShell에 `winget install Anthropic.ClaudeCode` 로 다시 설치해보세요.
 
 **② Bun 설치** — 🟦 PowerShell에 입력
 ```
