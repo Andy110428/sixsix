@@ -203,9 +203,16 @@
   .prv-exchange svg, .prv-exchange img{ display:block; border-radius:9px; }
   .prv-exchange span{ font-weight:700; font-size:0.96rem; }
   .prv-uid{ color:var(--text-dim); font-size:0.9rem; font-family:'JetBrains Mono',monospace; }
-  .prv-amount{ font-family:'JetBrains Mono',monospace; font-weight:800; font-size:clamp(1.9rem, 8vw, 2.6rem); color:var(--accent-a); margin:12px 0 4px; line-height:1.1; }
+  .prv-amount-label{ color:var(--text-dim); font-size:0.84rem; margin-top:14px; }
+  .prv-amount{ font-family:'JetBrains Mono',monospace; font-weight:800; font-size:clamp(1.9rem, 8vw, 2.6rem); color:var(--accent-a); margin:4px 0 4px; line-height:1.1; }
   .prv-amount .unit{ font-size:0.96rem; color:var(--text-dim); font-weight:700; margin-left:7px; }
   .prv-period{ color:var(--text-dim); font-size:0.84rem; }
+  .prv-breakdown{ margin:18px 0 0; padding:14px 16px; border-radius:12px; background:var(--panel-soft); border:1px solid var(--line); display:flex; flex-direction:column; gap:10px; text-align:left; }
+  .prv-bd-row{ display:flex; justify-content:space-between; align-items:center; gap:12px; font-size:0.88rem; }
+  .prv-bd-row .label{ color:var(--text-dim); }
+  .prv-bd-row .val{ font-family:'JetBrains Mono',monospace; font-weight:700; white-space:nowrap; }
+  .prv-bd-row.highlight .label{ color:var(--text); font-weight:600; }
+  .prv-bd-row.highlight .val{ color:var(--accent-a); }
   .prv-hint{ color:var(--text-dim); font-size:0.9rem; margin-top:18px; padding-top:18px; border-top:1px solid var(--line); }
   @media (max-width:480px){ .payback-modal{ padding:26px 20px; } }
 
@@ -759,11 +766,21 @@
       + '<div class="prv-hint" style="border-top:none; padding-top:0;">조회 중이에요. 활동 기간이 길면 몇 초 걸릴 수 있어요...</div></div>';
   }
   function renderResult(uid, data){
-    var hint = data.total_usdt > 0 ? '2026.10.08부터 지금까지 쌓인 누적 페이백 추정액이에요.' : '2026.10.08 이후 아직 집계된 페이백 내역이 없어요.';
+    var hasData = data.total_usdt > 0;
+    var hint = hasData ? '2026.10.08부터 지금까지 쌓인 누적 페이백 추정액이에요.' : '2026.10.08 이후 아직 집계된 페이백 내역이 없어요.';
+    var breakdown = !hasData ? '' : (
+      '<div class="prv-breakdown">'
+      + '<div class="prv-bd-row"><span class="label">여태까지 낸 수수료(추정)</span><span class="val">' + formatAmount(data.total_fee_usdt) + ' USDT</span></div>'
+      + '<div class="prv-bd-row"><span class="label">일반 20% 코드였다면</span><span class="val">' + formatAmount(data.generic20_usdt) + ' USDT</span></div>'
+      + '<div class="prv-bd-row highlight"><span class="label">50% 요율로 더 받은 금액</span><span class="val">+' + formatAmount(data.extra_usdt) + ' USDT</span></div>'
+      + '</div>'
+    );
     resultEl.innerHTML = '<div class="prv-result-wrap">' + exchangeBadge()
       + '<div class="prv-uid">UID ' + escapeHtml(uid) + '</div>'
+      + '<div class="prv-amount-label">받은 페이백</div>'
       + '<div class="prv-amount">' + formatAmount(data.total_usdt) + '<span class="unit">USDT</span></div>'
       + '<div class="prv-period">2026.10.08 ~ 지금</div>'
+      + breakdown
       + '<div class="prv-hint">' + hint + '</div></div>';
   }
   function renderError(uid, msg){

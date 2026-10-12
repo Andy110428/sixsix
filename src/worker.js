@@ -16,6 +16,10 @@
 //   바로 지급하므로 우리가 그 금액을 직접 조회할 방법이 없음 — 대신 비율이 고정이므로
 //     유저 누적 페이백 = 우리가 받은 커미션(commission_history API) × PAYBACK_RATIO(=2, 50÷25)
 //   로 계산함. PAYBACK_RATIO는 Gate.io 파트너 대시보드에 설정된 분배 비율이 바뀌면 같이 수정해야 함.
+//   같은 논리로 50+25+25=100%이므로 커미션 × 4 = 그 구간 전체 수수료 풀 추정치(total_fee_usdt,
+//   20-18단계) — 여기서 일반 인플루언서 코드 요율(20%, GENERIC_INFLUENCER_RATE)이었다면 받았을 금액과
+//   지금 요율로 추가로 받은 금액을 같이 보여줌. 전부 25% 커미션 하나에서 파생된 추정치라 이 값이
+//   틀리면 나머지도 비례해서 같이 틀어짐.
 //   ⚠️ 베타 — 이 프로젝트의 다른 Gate.io 개인 데이터 연동들과 마찬가지로 실제 키로 응답 필드를
 //   검증한 적은 없음(이 세션은 egress 제약으로 공식 API 문서 원문을 못 읽고 GitHub SDK 문서 기반으로
 //   구현함). 실제 운영 중 Gate.io 대시보드에 찍힌 커미션 실수령액과 /api/payback-total 결과를
@@ -44,6 +48,14 @@ const MEMBERSHIP_CRON = '5,20,35,50 * * * *';
 
 // 유저 50% : 파트너(우리) 25% — Gate.io가 우리에게 지급하는 커미션 × 이 값 = 유저 누적 페이백 추정액
 const PAYBACK_RATIO = 2;
+
+// 유저 50% + 파트너(우리) 25% + 거래소 25% = 100%이므로, 우리가 받는 커미션(25%) × 4 = 그 구간에서
+// 발생한 전체 수수료 풀(추정). "여태까지 낸 대략적인 수수료"/"일반 20% 코드였다면" 비교에 사용.
+const TOTAL_FEE_MULTIPLIER = 4;
+
+// 일반적인 인플루언서/추천인 코드가 흔히 제공하는 페이백율 — "우리 50% vs 보통 20%" 비교에만 사용,
+// 실제 다른 업체의 정확한 요율을 조사해서 확정한 값이 아니라 업계에서 흔히 보이는 수준의 참고치임.
+const GENERIC_INFLUENCER_RATE = 0.2;
 
 // 2026-10-08 00:00 KST부터 페이백 요율이 20%→50%로 인상됨(20-4단계) — 그 이전 커미션에는
 // 지금 비율(PAYBACK_RATIO=2)을 적용하면 안 되므로, 페이백 집계는 이 시점부터만 계산함.
@@ -241,7 +253,11 @@ async function getUidPaybackTotal(uid, env) {
     if (emptyStreak >= 2) break;
   }
 
-  return totalCommission * PAYBACK_RATIO;
+  return totalCommission;
+}
+
+function round2(n) {
+  return Math.round(n * 100) / 100;
 }
 
 async function handlePaybackTotal(request, env) {
@@ -258,8 +274,25 @@ async function handlePaybackTotal(request, env) {
     if (referral.status !== 'direct_referral') {
       return json({ ok: false, error: '전용 링크로 가입된 계정이 아니에요. UID를 다시 확인해주세요.' }, 403);
     }
-    const total = await getUidPaybackTotal(uid, env);
-    return json({ ok: true, uid, total_usdt: Math.round(total * 100) / 100 });
+    // 우리 몫 커미션(25%, API로 조회 가능한 유일한 값)을 기준으로 나머지는 전부 추정임(베타) —
+    // total_fee_usdt: 그 구간에서 발생한 전체 수수료 풀 추정(커미션 × 4, 50:25:25 분배 전제)
+    // received_usdt: 지금 50% 요율로 실제 받은 누적 페이백(기존 total_usdt와 동일, 호환 유지)
+    // generic20_usdt: 흔한 20% 코드였다면 받았을 금액(총 수수료 풀 × 20%)
+    // extra_usdt: 지금 요율 덕분에 추가로 더 받은 금액(received - generic20)
+    const commission = await getUidPaybackTotal(uid, env);
+    const received = commission * PAYBACK_RATIO;
+    const totalFee = commission * TOTAL_FEE_MULTIPLIER;
+    const generic20 = totalFee * GENERIC_INFLUENCER_RATE;
+    const extra = received - generic20;
+    return json({
+      ok: true,
+      uid,
+      total_usdt: round2(received),
+      received_usdt: round2(received),
+      total_fee_usdt: round2(totalFee),
+      generic20_usdt: round2(generic20),
+      extra_usdt: round2(extra),
+    });
   } catch (err) {
     return json({ ok: false, error: err.message || '조회 중 오류', detail: err.detail }, err.status || 500);
   }
