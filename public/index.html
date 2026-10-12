@@ -7,8 +7,8 @@
 <meta name="description" content="Gate.io 전용 링크로 가입하면 거래 수수료의 일부를 페이백 받을 수 있습니다. UID 확인 후 텔레그램 전용방에 가입하세요.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" onload="this.onload=null;this.rel='stylesheet'">
-<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap"></noscript>
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" onload="this.onload=null;this.rel='stylesheet'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap"></noscript>
 <style>
 
   :root{
@@ -33,11 +33,11 @@
     margin:0;
     background: var(--bg);
     color: var(--text);
-    font-family: 'Inter', sans-serif;
+    font-family: 'IBM Plex Sans KR', sans-serif;
     line-height: 1.65;
     -webkit-font-smoothing: antialiased;
   }
-  h1,h2,h3{ font-family:'Sora',sans-serif; margin:0; letter-spacing:-0.01em; }
+  h1,h2,h3{ font-family:'IBM Plex Sans KR',sans-serif; margin:0; letter-spacing:-0.01em; }
   .mono{ font-family:'JetBrains Mono', monospace; }
   a{ color:inherit; text-decoration:none; }
   img{ max-width:100%; display:block; }
@@ -166,7 +166,7 @@
   .ex-row{ display:flex; justify-content:space-between; align-items:center; font-size:1rem; }
   .ex-row .label{ color:var(--text-dim); }
   .ex-row .val{ font-family:'JetBrains Mono',monospace; font-weight:700; color:var(--gold); }
-  .ex-row .val.muted{ color:var(--text-dim); font-weight:600; font-family:'Inter',sans-serif; }
+  .ex-row .val.muted{ color:var(--text-dim); font-weight:600; font-family:'IBM Plex Sans KR',sans-serif; }
   .ex-link-box{ display:flex; gap:8px; }
   .ex-link-box input{ flex:1; min-width:0; background:var(--panel-soft); border:1px solid var(--line); border-radius:10px; padding:11px 13px; color:var(--text-dim); font-family:'JetBrains Mono',monospace; font-size:0.84rem; }
   .ex-actions{ display:flex; gap:8px; flex-wrap:wrap; }
@@ -182,7 +182,7 @@
   .feed-list{ display:flex; flex-direction:column; gap:10px; max-height:480px; overflow-y:auto; }
   .feed-item{ display:flex; align-items:center; justify-content:space-between; gap:12px; padding:13px 15px; border:1px solid var(--line); border-radius:12px; background:var(--panel-soft); }
   .feed-left{ display:flex; align-items:center; gap:11px; min-width:0; }
-  .feed-avatar{ width:34px; height:34px; border-radius:50%; background:linear-gradient(135deg, var(--accent-a), var(--accent-c)); flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:0.86rem; font-weight:800; color:#04120d; font-family:'Sora',sans-serif; }
+  .feed-avatar{ width:34px; height:34px; border-radius:50%; background:linear-gradient(135deg, var(--accent-a), var(--accent-c)); flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:0.86rem; font-weight:800; color:#04120d; font-family:'IBM Plex Sans KR',sans-serif; }
   .feed-meta{ min-width:0; }
   .feed-uid{ font-family:'JetBrains Mono',monospace; font-size:0.92rem; font-weight:700; }
   .feed-time{ color:var(--text-dim); font-size:0.78rem; margin-top:2px; }
@@ -222,7 +222,7 @@
   @media (max-width:860px){ .how-grid{ grid-template-columns:1fr; } }
   .how-card{ background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); padding:28px; transition: transform .2s ease; }
   .how-card:hover{ transform:translateY(-3px); }
-  .how-num{ width:36px; height:36px; border-radius:11px; display:flex; align-items:center; justify-content:center; font-family:'Sora',sans-serif; font-weight:800; font-size:1rem; background:linear-gradient(135deg, var(--accent-a), var(--accent-c)); color:#04120d; margin-bottom:18px; }
+  .how-num{ width:36px; height:36px; border-radius:11px; display:flex; align-items:center; justify-content:center; font-family:'IBM Plex Sans KR',sans-serif; font-weight:800; font-size:1rem; background:linear-gradient(135deg, var(--accent-a), var(--accent-c)); color:#04120d; margin-bottom:18px; }
   .how-card h3{ font-size:1.18rem; margin-bottom:9px; }
   .how-card p{ color:var(--text-dim); font-size:0.98rem; }
 
@@ -242,7 +242,7 @@
   #telegram-step[hidden]{ display:none; }
   .step-desc{ color:var(--text-dim); font-size:0.9rem; margin:0 0 12px; }
   .choice-row{ display:flex; gap:10px; }
-  .choice-btn{ flex:1; padding:13px; border-radius:12px; border:1px solid var(--line); background:var(--panel-soft); color:var(--text); font-weight:700; font-size:1.05rem; font-family:'Sora',sans-serif; cursor:pointer; transition:border-color .15s ease, background .15s ease, color .15s ease; }
+  .choice-btn{ flex:1; padding:13px; border-radius:12px; border:1px solid var(--line); background:var(--panel-soft); color:var(--text); font-weight:700; font-size:1.05rem; font-family:'IBM Plex Sans KR',sans-serif; cursor:pointer; transition:border-color .15s ease, background .15s ease, color .15s ease; }
   .choice-btn:hover{ border-color:rgba(255,255,255,0.25); }
   .choice-btn.selected{ border-color:rgba(52,211,153,0.5); background:rgba(52,211,153,0.12); color:var(--accent-a); }
   .choice-btn.deny.selected{ border-color:rgba(255,92,122,0.5); background:rgba(255,92,122,0.1); color:var(--danger); }
@@ -253,7 +253,7 @@
 
   /* faq — 아코디언(details/summary) */
   .faq-item{ background:var(--panel); border:1px solid var(--line); border-radius:14px; margin-bottom:12px; overflow:hidden; }
-  .faq-item summary{ list-style:none; cursor:pointer; padding:20px 24px; font-family:'Sora',sans-serif; font-size:1.08rem; font-weight:700; display:flex; justify-content:space-between; align-items:center; gap:14px; }
+  .faq-item summary{ list-style:none; cursor:pointer; padding:20px 24px; font-family:'IBM Plex Sans KR',sans-serif; font-size:1.08rem; font-weight:700; display:flex; justify-content:space-between; align-items:center; gap:14px; }
   .faq-item summary::-webkit-details-marker{ display:none; }
   .faq-item summary::after{ content:'+'; font-size:1.5rem; font-weight:400; color:var(--text-dim); flex-shrink:0; transition:transform .2s ease; }
   .faq-item[open] summary::after{ transform:rotate(45deg); }
