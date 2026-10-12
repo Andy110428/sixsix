@@ -25,7 +25,7 @@
 // 필요한 바인딩: D1 데이터베이스 → env.DB
 //   (telegram_join_requests / known_uids / payback_feed / payback_cursor 테이블 사용)
 //
-// Cron(scheduled): 15분마다 known_uids에 쌓인 UID들의 최근 커미션 내역을 조회해서 payback_feed에 적재함
+// Cron(scheduled): 5분마다 known_uids에 쌓인 UID들의 최근 커미션 내역을 조회해서 payback_feed에 적재함
 //   (실시간 피드용 — wrangler.jsonc의 triggers.crons 참고).
 //
 // ⚠️ 2026-10-07 20단계: 스터디룸(게시판/등급/UID 계정)·추천인 파트너 프로그램·거래량 랭킹·관리자
