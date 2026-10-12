@@ -795,6 +795,18 @@ portal.html의 `.welcome-splash`/`.welcome-splash-text`도 동일한 패턴으�
 - `TELEGRAM_ADMIN_CHAT_ID`가 운영자 개인 ID가 아니라 그룹/채널 ID로 설정돼 있으면 관리 명령·승인 버튼이 안 먹음(가이드 B-3-4에 확인법 적어둠).
 - 멤버가 하루 약 480명(15분×5명) 넘게 늘어나면 CHECK_BATCH/크론 주기 조정 필요(유료 플랜이면 배치 키워도 됨).
 
+## 20-17단계: 실시간 페이백 동기화 크론을 15분 → 5분 간격으로 단축 (2026-10-12)
+
+사용자가 "실시간 페이백 내역 확인하는거를 15분마다 말고 5분마다로 줄이는 것도 가능?"이라고 요청 — `wrangler.jsonc`의 `triggers.crons` 첫 번째 항목(`syncPaybackFeed()` 트리거)을 `*/15 * * * *` → `*/5 * * * *`로 변경. `src/worker.js` 상단 주석(`scheduled()` 설명)도 동일하게 수정.
+
+**작업 중 main에 다른 세션의 큰 변경이 먼저 들어와 있던 걸 발견 → 신중하게 머지함**: 작업 브랜치에서 커밋 후 `main`에 병합하려는데, 그 사이 **다른 Claude 세션(Opus 5.5, 별도 session_019U7u...)이 "스터디방 관리 텔레그램 봇"(20-16단계, `src/study-bot.js` 595줄 신설 — 딥링크 신청/운영자 승인/비활성 멤버 자동 내보내기)을 이미 `main`에 병합해놓은 상태**였음. `wrangler.jsonc`와 `src/worker.js`에서 충돌 발생 — 그냥 내 쪽 변경으로 덮어쓰지 않고 먼저 상대 커밋(`git show adb4859 --stat`)과 `scheduled()`의 cron 분기 로직(`event.cron === MEMBERSHIP_CRON`이면 스터디방 활동검사, 그 외엔 페이백 동기화)을 읽어서 두 크론이 서로 다른 독립적인 용도라는 걸 확인한 뒤: `wrangler.jsonc`의 `triggers.crons`를 `["*/5 * * * *", "5,20,35,50 * * * *"]`(페이백 동기화만 5분으로 변경, 스터디방 봇의 `MEMBERSHIP_CRON`은 그대로 유지)로, `worker.js`의 안내 주석도 두 크론을 모두 설명하도록 합쳐서 해결함. 머지 커밋 메시지에 충돌 해결 근거를 남겨둠.
+
+`node --check` (worker.js + study-bot.js 둘 다) + `wrangler deploy --dry-run`(합쳐진 결과 43.36 KiB — 20-16단계의 study-bot.js가 번들에 포함돼서 이전보다 커짐) 검증 후 배포.
+
+### 다음에 볼 것
+- 페이백 동기화가 5분마다 돌면서 `known_uids` 최대 200개를 순회 — 15분→5분으로 Gate.io API 호출 빈도가 3배 늘어남. 지금은 UID 수가 적어서 문제 없지만, 나중에 UID가 많이 쌓이면 Gate.io API 레이트리밋에 걸릴 가능성을 염두에 둘 것(에러 시 개별 UID만 건너뛰는 기존 방어 로직은 그대로 있음).
+- 이번에 확인된 대로 **이 프로젝트는 지금 여러 세션(claude.ai 웹 세션 포함)이 동시에 같은 `main`을 건드릴 수 있는 상태** — 앞으로 병합 전엔 항상 `git log origin/main`으로 내가 모르는 커밋이 먼저 들어와 있지 않은지 먼저 확인하고, 충돌이 나면 상대 커밋의 의도를 먼저 파악한 뒤 병합할 것(이번처럼 그냥 내 변경으로 덮어쓰면 스터디방 봇 크론이 통째로 사라질 뻔했음).
+
 ## 환경변수 목록 (Cloudflare 대시보드 Settings > Variables and Secrets)
 
 ```
