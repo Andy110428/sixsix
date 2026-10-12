@@ -771,8 +771,8 @@
     var breakdown = !hasData ? '' : (
       '<div class="prv-breakdown">'
       + '<div class="prv-bd-row"><span class="label">여태까지 낸 수수료(추정)</span><span class="val">' + formatAmount(data.total_fee_usdt) + ' USDT</span></div>'
-      + '<div class="prv-bd-row"><span class="label">일반 20% 코드였다면</span><span class="val">' + formatAmount(data.generic20_usdt) + ' USDT</span></div>'
-      + '<div class="prv-bd-row highlight"><span class="label">50% 요율로 더 받은 금액</span><span class="val">+' + formatAmount(data.extra_usdt) + ' USDT</span></div>'
+      + '<div class="prv-bd-row"><span class="label">인플루언서·유튜버 20% 코드였다면</span><span class="val">' + formatAmount(data.generic20_usdt) + ' USDT</span></div>'
+      + '<div class="prv-bd-row highlight"><span class="label">50% 페이백으로 더 받은 금액</span><span class="val">+' + formatAmount(data.extra_usdt) + ' USDT</span></div>'
       + '</div>'
     );
     resultEl.innerHTML = '<div class="prv-result-wrap">' + exchangeBadge()
