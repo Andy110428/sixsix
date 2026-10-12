@@ -32,7 +32,7 @@
 // 필요한 바인딩: D1 데이터베이스 → env.DB
 //   (telegram_join_requests / known_uids / payback_feed / payback_cursor 테이블 사용)
 //
-// Cron(scheduled): MEMBERSHIP_CRON이면 스터디방 활동 검사(study-bot.js), 그 외엔 5분마다 known_uids에 쌓인 UID들의 최근 커미션 내역을 조회해서 payback_feed에 적재함
+// Cron(scheduled): MEMBERSHIP_CRON이면 스터디방 활동 검사(study-bot.js), 그 외엔 1분마다(Cloudflare Cron Trigger가 허용하는 최소 간격) known_uids에 쌓인 UID들의 최근 커미션 내역을 조회해서 payback_feed에 적재함
 //   (실시간 피드용 — wrangler.jsonc의 triggers.crons 참고).
 //
 // ⚠️ 2026-10-07 20단계: 스터디룸(게시판/등급/UID 계정)·추천인 파트너 프로그램·거래량 랭킹·관리자
@@ -324,14 +324,23 @@ async function syncPaybackFeed(env) {
     try {
       const cursorRow = await env.DB.prepare(`SELECT last_checked FROM payback_cursor WHERE uid = ?`).bind(uid).first();
       const since = cursorRow ? cursorRow.last_checked : Math.max(now - 24 * 3600, PAYBACK_START_SEC);
-      const list = await fetchPartnerCommissionHistory(uid, since, now, 0, env);
 
-      for (const item of list) {
-        if ((item.commission_asset || 'USDT') !== 'USDT') continue;
-        const amount = (parseFloat(item.commission_amount) || 0) * PAYBACK_RATIO;
-        await env.DB.prepare(
-          `INSERT OR IGNORE INTO payback_feed (uid, commission_time, amount_usdt, source, created_at) VALUES (?, ?, ?, ?, ?)`
-        ).bind(uid, item.commission_time, amount, item.source || '', Date.now()).run();
+      // 한 번에 최대 100건만 오므로, 그 구간에 100건 넘게 쌓였으면(크론이 한동안 못 돈 경우 등)
+      // 페이지네이션 안 하면 나머지가 조용히 누락됨 — getUidPaybackTotal()과 같은 패턴으로 최대
+      // 3페이지(300건)까지 이어서 가져옴.
+      let offset = 0;
+      for (let p = 0; p < 3; p++) {
+        const list = await fetchPartnerCommissionHistory(uid, since, now, offset, env);
+        if (!list.length) break;
+        for (const item of list) {
+          if ((item.commission_asset || 'USDT') !== 'USDT') continue;
+          const amount = (parseFloat(item.commission_amount) || 0) * PAYBACK_RATIO;
+          await env.DB.prepare(
+            `INSERT OR IGNORE INTO payback_feed (uid, commission_time, amount_usdt, source, created_at) VALUES (?, ?, ?, ?, ?)`
+          ).bind(uid, item.commission_time, amount, item.source || '', Date.now()).run();
+        }
+        if (list.length < 100) break;
+        offset += 100;
       }
 
       await env.DB.prepare(
@@ -339,7 +348,8 @@ async function syncPaybackFeed(env) {
          ON CONFLICT(uid) DO UPDATE SET last_checked = excluded.last_checked`
       ).bind(uid, now).run();
     } catch (e) {
-      // 개별 UID 실패(권한 문제, 일시적 오류 등)는 건너뛰고 다음 UID 계속 처리
+      // 개별 UID 실패(권한 문제, 일시적 오류 등)는 건너뛰고 다음 UID 계속 처리 —
+      // cursor를 안 건드리므로 다음 크론 때 같은 since부터 자동으로 재시도됨.
     }
   }
 }
