@@ -33,7 +33,8 @@
 //   (telegram_join_requests / known_uids / payback_feed / payback_cursor 테이블 사용)
 //
 // Cron(scheduled): MEMBERSHIP_CRON이면 스터디방 활동 검사(study-bot.js), 그 외엔 1분마다(Cloudflare Cron Trigger가 허용하는 최소 간격) known_uids에 쌓인 UID들의 최근 커미션 내역을 조회해서 payback_feed에 적재함
-//   (실시간 피드용 — wrangler.jsonc의 triggers.crons 참고).
+//   (실시간 피드용 — wrangler.jsonc의 triggers.crons 참고. UID당 이번 동기화 구간의 커미션을 합산해 한 줄로만 적재해서
+//    같은 사람 내역이 여러 줄로 쪼개지지 않게 함).
 //
 // ⚠️ 2026-10-07 20단계: 스터디룸(게시판/등급/UID 계정)·추천인 파트너 프로그램·거래량 랭킹·관리자
 //    대시보드를 전부 폐기하고, "Gate.io 전용 링크 가입 → UID 확인 → 텔레그램 전용방 신청" 단일
@@ -328,19 +329,27 @@ async function syncPaybackFeed(env) {
       // 한 번에 최대 100건만 오므로, 그 구간에 100건 넘게 쌓였으면(크론이 한동안 못 돈 경우 등)
       // 페이지네이션 안 하면 나머지가 조용히 누락됨 — getUidPaybackTotal()과 같은 패턴으로 최대
       // 3페이지(300건)까지 이어서 가져옴.
+      // 단, 커미션 레코드 하나당 피드에 한 줄씩 넣으면 같은 사람이 이번 구간에 여러 건
+      // 체결했을 때 실시간 내역이 같은 사람 걸로 여러 줄 쪼개져 보임 — 이번 동기화에서
+      // 모은 건 전부 합산해서 UID당 한 줄로만 적재함.
       let offset = 0;
+      let totalAmount = 0;
+      let latestTime = since;
       for (let p = 0; p < 3; p++) {
         const list = await fetchPartnerCommissionHistory(uid, since, now, offset, env);
         if (!list.length) break;
         for (const item of list) {
           if ((item.commission_asset || 'USDT') !== 'USDT') continue;
-          const amount = (parseFloat(item.commission_amount) || 0) * PAYBACK_RATIO;
-          await env.DB.prepare(
-            `INSERT OR IGNORE INTO payback_feed (uid, commission_time, amount_usdt, source, created_at) VALUES (?, ?, ?, ?, ?)`
-          ).bind(uid, item.commission_time, amount, item.source || '', Date.now()).run();
+          totalAmount += (parseFloat(item.commission_amount) || 0) * PAYBACK_RATIO;
+          if (item.commission_time > latestTime) latestTime = item.commission_time;
         }
         if (list.length < 100) break;
         offset += 100;
+      }
+      if (totalAmount > 0) {
+        await env.DB.prepare(
+          `INSERT OR IGNORE INTO payback_feed (uid, commission_time, amount_usdt, source, created_at) VALUES (?, ?, ?, ?, ?)`
+        ).bind(uid, latestTime, round2(totalAmount), 'merged', Date.now()).run();
       }
 
       await env.DB.prepare(
