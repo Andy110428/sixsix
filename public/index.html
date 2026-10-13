@@ -109,8 +109,6 @@
   .hero-stats{ display:flex; gap:12px; justify-content:center; flex-wrap:wrap; }
   .stat-chip{ padding:11px 20px; border-radius:999px; border:1px solid var(--line); background:rgba(255,255,255,0.03); font-size:0.94rem; font-weight:600; color:var(--text-dim); }
   .stat-chip b{ color:var(--text); font-family:'JetBrains Mono',monospace; }
-  .stat-chip.highlight{ border-color:rgba(52,211,153,0.45); background:rgba(52,211,153,0.1); color:var(--text); }
-  .stat-chip.highlight b{ color:var(--accent-a); }
   @media (max-width:640px){
     .hero{ padding:64px 0 44px; }
     .hero h1{ font-size:clamp(1.9rem, 8vw, 2.6rem); }
@@ -318,7 +316,6 @@
         <a class="btn btn-ghost" href="#verify">비공개 텔레그램 입장 신청</a>
       </div>
       <div class="hero-stats">
-        <div class="stat-chip highlight" id="grand-total-chip" hidden>💰 누적 페이백 지급액 <b id="grand-total-val">0.00 USDT</b></div>
         <div class="stat-chip"><b>50%</b> 페이백율 (Gate.io)</div>
         <div class="stat-chip"><b>매일 지급</b> · 1시간 내외</div>
         <div class="stat-chip">🔒 <b>비공개</b> 텔레그램 커뮤니티</div>
@@ -850,27 +847,6 @@
   }
   load();
   setInterval(load, 20000);
-})();
-
-(function(){
-  var chipEl = document.getElementById('grand-total-chip');
-  var valEl = document.getElementById('grand-total-val');
-  if(!chipEl || !valEl) return;
-  function fmt(n){
-    return Number(n).toLocaleString('en-US', { minimumFractionDigits:2, maximumFractionDigits:2 });
-  }
-  function load(){
-    fetch('/api/payback-grand-total', { credentials:'same-origin' })
-      .then(function(res){ return res.json(); })
-      .then(function(data){
-        if(!data.ok || !(data.total_usdt > 0)) return;
-        valEl.textContent = fmt(data.total_usdt) + ' USDT';
-        chipEl.hidden = false;
-      })
-      .catch(function(){});
-  }
-  load();
-  setInterval(load, 60000);
 })();
 </script>
 
