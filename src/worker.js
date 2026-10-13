@@ -7,6 +7,7 @@
 //                                      telegram_join_requests에 저장 + 운영자에게 텔레그램 알림
 //   GET  /api/payback-total?uid=... 그 UID의 누적 페이백 추정액 조회 (아래 "페이백 계산 방식" 참고)
 //   GET  /api/payback-feed          최근 페이백 내역 공개 피드 (UID 마스킹, 최대 40건)
+//   GET  /api/payback-grand-total   전체 회원이 지금까지 받은 누적 페이백 합계(payback_feed 테이블 전체 SUM, 공개)
 //   POST /api/telegram-link         UID 재검증 후 스터디방 신청용 1회용 봇 딥링크 발급 (study-bot.js)
 //   POST /api/telegram-webhook      텔레그램 봇 웹훅 — 신청 연결/승인 버튼/그룹 입장 감지 (study-bot.js)
 //
@@ -76,6 +77,7 @@ export default {
       if (path === '/api/telegram-join' && method === 'POST') return await handleTelegramJoin(request, env);
       if (path === '/api/payback-total' && method === 'GET') return await handlePaybackTotal(request, env);
       if (path === '/api/payback-feed' && method === 'GET') return await handlePaybackFeed(request, env);
+      if (path === '/api/payback-grand-total' && method === 'GET') return await handlePaybackGrandTotal(request, env);
       if (path === '/api/telegram-link' && method === 'POST') return await handleTelegramLink(request, env, botDeps);
       if (path === '/api/telegram-webhook' && method === 'POST') return await handleTelegramWebhook(request, env, ctx);
     } catch (err) {
@@ -309,6 +311,17 @@ async function handlePaybackFeed(request, env) {
     `SELECT uid, commission_time, amount_usdt, source, created_at FROM payback_feed ORDER BY id DESC LIMIT 40`
   ).all();
   return json({ ok: true, items: rows.results || [] });
+}
+
+// 전체 회원이 지금까지 받은 누적 페이백 합계 — payback_feed는 크론이 적재할 때마다
+// UID당 한 줄씩 쌓이는 누적 로그라서(20-21단계부터 UID+동기화 구간 합산 1줄), 테이블
+// 전체를 SUM하면 "지금까지 집계된 전체 페이백 지급액"이 됨. 공개, 로그인 불필요.
+async function handlePaybackGrandTotal(request, env) {
+  if (!env.DB) return json({ ok: false, error: 'DB가 연결되지 않았습니다.' }, 500);
+  const row = await env.DB.prepare(
+    `SELECT COALESCE(SUM(amount_usdt), 0) AS total FROM payback_feed`
+  ).first();
+  return json({ ok: true, total_usdt: round2(row ? row.total : 0) });
 }
 
 // Cron(scheduled)에서 호출 — known_uids에 쌓인 UID들의 최근 커미션 내역을 payback_feed에 적재.
