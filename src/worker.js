@@ -33,8 +33,9 @@
 //   (telegram_join_requests / known_uids / payback_feed / payback_cursor 테이블 사용)
 //
 // Cron(scheduled): MEMBERSHIP_CRON이면 스터디방 활동 검사(study-bot.js), 그 외엔 1분마다(Cloudflare Cron Trigger가 허용하는 최소 간격) known_uids에 쌓인 UID들의 최근 커미션 내역을 조회해서 payback_feed에 적재함
-//   (실시간 피드용 — wrangler.jsonc의 triggers.crons 참고. UID당 이번 동기화 구간의 커미션을 합산해 한 줄로만 적재해서
-//    같은 사람 내역이 여러 줄로 쪼개지지 않게 함).
+//   (실시간 피드용 — wrangler.jsonc의 triggers.crons 참고. 20-24단계부터 커미션 레코드 단위로 그대로
+//    적재하고(커서보다 SYNC_SAFETY_LOOKBACK_SEC만큼 겹쳐서 재조회, Gate.io의 커미션 집계 지연에 대비),
+//    같은 사람이 짧은 시간에 여러 건 잡히는 건 GET /api/payback-feed가 보여줄 때 합쳐서 처리함).
 //
 // ⚠️ 2026-10-07 20단계: 스터디룸(게시판/등급/UID 계정)·추천인 파트너 프로그램·거래량 랭킹·관리자
 //    대시보드를 전부 폐기하고, "Gate.io 전용 링크 가입 → UID 확인 → 텔레그램 전용방 신청" 단일
@@ -300,16 +301,44 @@ async function handlePaybackTotal(request, env) {
   }
 }
 
+// 같은 사람이 짧은 시간 안에 여러 건 잡히면 피드에서 한 줄로 합쳐서 보여줌(20-21단계 요청) —
+// 단, 원본 payback_feed는 커미션 레코드 단위로 그대로 쌓임(20-24단계, 아래 syncPaybackFeed 참고).
+// 병합은 DB에 적재할 때가 아니라 "보여줄 때"만 하므로, 지연 집계된 과거 커미션을 UNIQUE 제약으로
+// 안전하게 재조회/중복 제거할 수 있음.
+const FEED_MERGE_WINDOW_MS = 15 * 60 * 1000;
+
 async function handlePaybackFeed(request, env) {
   if (!env.DB) return json({ ok: false, error: 'DB가 연결되지 않았습니다.' }, 500);
   // commission_time은 Gate.io API가 내려주는 값을 그대로 저장한 것이라 베타 단계에서
   // 비정상적인 값(0에 가까운 값 등)이 관측됨 — 정렬/표시 모두 우리가 직접 기록한
   // created_at(동기화 시각, ms)을 기준으로 해서 Gate.io 응답 품질과 무관하게 항상 정확하도록 함.
   const rows = await env.DB.prepare(
-    `SELECT uid, commission_time, amount_usdt, source, created_at FROM payback_feed ORDER BY id DESC LIMIT 40`
+    `SELECT uid, amount_usdt, created_at FROM payback_feed ORDER BY id DESC LIMIT 300`
   ).all();
-  return json({ ok: true, items: rows.results || [] });
+  const list = rows.results || [];
+
+  const merged = [];
+  for (const row of list) {
+    const last = merged[merged.length - 1];
+    if (last && last.uid === row.uid && (last.created_at - row.created_at) <= FEED_MERGE_WINDOW_MS) {
+      last.amount_usdt = round2(last.amount_usdt + row.amount_usdt);
+      continue;
+    }
+    if (merged.length >= 40) break;
+    merged.push({ uid: row.uid, amount_usdt: row.amount_usdt, created_at: row.created_at });
+  }
+
+  return json({ ok: true, items: merged });
 }
+
+// 커서보다 이만큼 더 과거까지 겹쳐서 다시 조회함(초) — Gate.io가 커미션을 실제 거래 시점보다
+// 늦게 집계/노출하는 경우(베타, 실 키로 검증 안 됨, 운영 중 "커미션은 들어오는데 피드는 7시간
+// 전에 멈춰있다"는 증상으로 확인됨, 20-24단계)를 대비한 안전 여유분. 실제 관측된 지연(7시간)보다
+// 넉넉한 여유를 두려고 24시간으로 잡음 — 겹쳐서 다시 읽은 레코드는 payback_feed의
+// UNIQUE(uid, commission_time, amount_usdt, source) 제약 + INSERT OR IGNORE로 자동 중복 제거되므로
+// 안전함(대부분의 UID는 24시간 안에 100건을 안 넘어서 매 틱 Gate API 호출 1회로 끝남 — 활동이 아주
+// 많은 UID만 페이지네이션이 더 돔).
+const SYNC_SAFETY_LOOKBACK_SEC = 24 * 3600;
 
 // Cron(scheduled)에서 호출 — known_uids에 쌓인 UID들의 최근 커미션 내역을 payback_feed에 적재.
 // 개별 UID 조회가 실패해도 건너뛰고 계속 진행함(한 명 때문에 전체가 멈추지 않도록).
@@ -324,32 +353,25 @@ async function syncPaybackFeed(env) {
   for (const uid of uids) {
     try {
       const cursorRow = await env.DB.prepare(`SELECT last_checked FROM payback_cursor WHERE uid = ?`).bind(uid).first();
-      const since = cursorRow ? cursorRow.last_checked : Math.max(now - 24 * 3600, PAYBACK_START_SEC);
+      const baseline = cursorRow ? cursorRow.last_checked : Math.max(now - 24 * 3600, PAYBACK_START_SEC);
+      const since = Math.max(baseline - SYNC_SAFETY_LOOKBACK_SEC, PAYBACK_START_SEC);
 
-      // 한 번에 최대 100건만 오므로, 그 구간에 100건 넘게 쌓였으면(크론이 한동안 못 돈 경우 등)
-      // 페이지네이션 안 하면 나머지가 조용히 누락됨 — getUidPaybackTotal()과 같은 패턴으로 최대
-      // 3페이지(300건)까지 이어서 가져옴.
-      // 단, 커미션 레코드 하나당 피드에 한 줄씩 넣으면 같은 사람이 이번 구간에 여러 건
-      // 체결했을 때 실시간 내역이 같은 사람 걸로 여러 줄 쪼개져 보임 — 이번 동기화에서
-      // 모은 건 전부 합산해서 UID당 한 줄로만 적재함.
+      // 레코드 단위로 그대로 적재(커미션 레코드 하나당 한 줄) — UNIQUE 제약이 중복 삽입을
+      // 막아주므로 lookback으로 겹쳐서 다시 읽어도 안전함. 한 번에 최대 100건만 오므로,
+      // 그 구간에 100건 넘게 쌓였으면 최대 5페이지(500건)까지 이어서 가져옴.
       let offset = 0;
-      let totalAmount = 0;
-      let latestTime = since;
-      for (let p = 0; p < 3; p++) {
+      for (let p = 0; p < 5; p++) {
         const list = await fetchPartnerCommissionHistory(uid, since, now, offset, env);
         if (!list.length) break;
         for (const item of list) {
           if ((item.commission_asset || 'USDT') !== 'USDT') continue;
-          totalAmount += (parseFloat(item.commission_amount) || 0) * PAYBACK_RATIO;
-          if (item.commission_time > latestTime) latestTime = item.commission_time;
+          const amount = (parseFloat(item.commission_amount) || 0) * PAYBACK_RATIO;
+          await env.DB.prepare(
+            `INSERT OR IGNORE INTO payback_feed (uid, commission_time, amount_usdt, source, created_at) VALUES (?, ?, ?, ?, ?)`
+          ).bind(uid, item.commission_time, round2(amount), item.source || '', Date.now()).run();
         }
         if (list.length < 100) break;
         offset += 100;
-      }
-      if (totalAmount > 0) {
-        await env.DB.prepare(
-          `INSERT OR IGNORE INTO payback_feed (uid, commission_time, amount_usdt, source, created_at) VALUES (?, ?, ?, ?, ?)`
-        ).bind(uid, latestTime, round2(totalAmount), 'merged', Date.now()).run();
       }
 
       await env.DB.prepare(
@@ -358,7 +380,8 @@ async function syncPaybackFeed(env) {
       ).bind(uid, now).run();
     } catch (e) {
       // 개별 UID 실패(권한 문제, 일시적 오류 등)는 건너뛰고 다음 UID 계속 처리 —
-      // cursor를 안 건드리므로 다음 크론 때 같은 since부터 자동으로 재시도됨.
+      // cursor를 안 건드리므로 다음 크론 때 같은 since부터(사실상 더 넓은 lookback으로) 자동 재시도됨.
+      console.error('syncPaybackFeed failed for uid', uid, String(e));
     }
   }
 }
