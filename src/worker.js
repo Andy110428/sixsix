@@ -34,7 +34,9 @@
 //
 // Cron(scheduled): MEMBERSHIP_CRON이면 스터디방 활동 검사(study-bot.js), 그 외엔 1분마다(Cloudflare Cron Trigger가 허용하는 최소 간격) known_uids에 쌓인 UID들의 최근 커미션 내역을 조회해서 payback_feed에 적재함
 //   (실시간 피드용 — wrangler.jsonc의 triggers.crons 참고. 20-24단계부터 커미션 레코드 단위로 그대로
-//    적재하고(커서보다 SYNC_SAFETY_LOOKBACK_SEC만큼 겹쳐서 재조회, Gate.io의 커미션 집계 지연에 대비),
+//    적재하고(커서 이후만 보는 저비용 조회가 기본, Gate.io의 커미션 집계 지연에 대비해 10분에 한 번만
+//    SYNC_SAFETY_LOOKBACK_SEC만큼 겹쳐서 재조회하는 넓은 스캔으로 전환 — 20-25단계, 매 틱마다 넓게
+//    스캔하면 API 호출량이 너무 커져서 오히려 동기화가 막힐 수 있어서 빈도를 낮춤),
 //    같은 사람이 짧은 시간에 여러 건 잡히는 건 GET /api/payback-feed가 보여줄 때 합쳐서 처리함).
 //
 // ⚠️ 2026-10-07 20단계: 스터디룸(게시판/등급/UID 계정)·추천인 파트너 프로그램·거래량 랭킹·관리자
@@ -336,9 +338,18 @@ async function handlePaybackFeed(request, env) {
 // 전에 멈춰있다"는 증상으로 확인됨, 20-24단계)를 대비한 안전 여유분. 실제 관측된 지연(7시간)보다
 // 넉넉한 여유를 두려고 24시간으로 잡음 — 겹쳐서 다시 읽은 레코드는 payback_feed의
 // UNIQUE(uid, commission_time, amount_usdt, source) 제약 + INSERT OR IGNORE로 자동 중복 제거되므로
-// 안전함(대부분의 UID는 24시간 안에 100건을 안 넘어서 매 틱 Gate API 호출 1회로 끝남 — 활동이 아주
-// 많은 UID만 페이지네이션이 더 돔).
+// 안전함.
 const SYNC_SAFETY_LOOKBACK_SEC = 24 * 3600;
+
+// 위 24시간 lookback을 매 틱(1분)마다 전체 known_uids에 걸어버리면, 활동이 많은 UID는 매분
+// 24시간치 구간을 다시 스캔하게 돼서(5페이지까지 페이지네이션 가능) Gate.io API 호출량이 20-24단계
+// 이전보다 훨씬 커짐 — 최악의 경우 Gate.io 레이트리밋이나 Cloudflare 서브요청 한도에 걸려 동기화
+// 자체가 실패하고, 그 결과 피드가 또 멈춰 보이는 "같은 증상, 다른 원인"이 재발할 수 있음(20-25단계
+// 발견). 그래서 넓은 24시간 lookback은 10분에 한 번(크론 10틱마다)만 적용하고, 그 사이 9번은 원래
+// 하던 대로 커서 이후만 조회하는 저비용 경로를 씀 — 지연된 커미션도 늦어도 10분 안에는 다음
+// lookback 틱에서 잡히므로 완전성은 거의 그대로 유지하면서 평소 API 호출량은 20-24단계 이전 수준으로
+// 되돌림.
+const WIDE_SCAN_INTERVAL_MIN = 10;
 
 // Cron(scheduled)에서 호출 — known_uids에 쌓인 UID들의 최근 커미션 내역을 payback_feed에 적재.
 // 개별 UID 조회가 실패해도 건너뛰고 계속 진행함(한 명 때문에 전체가 멈추지 않도록).
@@ -349,12 +360,15 @@ async function syncPaybackFeed(env) {
   const uidsRes = await env.DB.prepare(`SELECT uid FROM known_uids ORDER BY first_seen DESC LIMIT 200`).all();
   const uids = (uidsRes.results || []).map((r) => r.uid);
   const now = Math.floor(Date.now() / 1000);
+  const isWideScanTick = Math.floor(now / 60) % WIDE_SCAN_INTERVAL_MIN === 0;
 
   for (const uid of uids) {
     try {
       const cursorRow = await env.DB.prepare(`SELECT last_checked FROM payback_cursor WHERE uid = ?`).bind(uid).first();
       const baseline = cursorRow ? cursorRow.last_checked : Math.max(now - 24 * 3600, PAYBACK_START_SEC);
-      const since = Math.max(baseline - SYNC_SAFETY_LOOKBACK_SEC, PAYBACK_START_SEC);
+      const since = isWideScanTick
+        ? Math.max(baseline - SYNC_SAFETY_LOOKBACK_SEC, PAYBACK_START_SEC)
+        : baseline;
 
       // 레코드 단위로 그대로 적재(커미션 레코드 하나당 한 줄) — UNIQUE 제약이 중복 삽입을
       // 막아주므로 lookback으로 겹쳐서 다시 읽어도 안전함. 한 번에 최대 100건만 오므로,
