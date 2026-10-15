@@ -111,24 +111,28 @@
     .menu-btn{ display:flex; }
   }
 
-  /* hero */
-  .hero{ padding:72px 0 44px; text-align:center; }
-  .badge{ display:inline-flex; align-items:center; gap:8px; padding:8px 18px; border-radius:999px; border:1px solid var(--line); background:rgba(255,255,255,0.03); font-size:0.9rem; font-weight:600; color:var(--text-dim); margin-bottom:30px; }
+  /* hero — CashMine 참고 스크린샷처럼 좌: 카피/CTA, 우: 파트너 거래소 표를 처음부터 바로 보여주는 split 레이아웃 (20-29단계) */
+  .hero{ padding:56px 0 64px; text-align:left; }
+  .hero-grid{ display:grid; grid-template-columns:0.85fr 1.15fr; gap:50px; align-items:center; }
+  @media (max-width:900px){ .hero-grid{ grid-template-columns:1fr; gap:36px; } }
+  .hero-left{ max-width:560px; }
+  .badge{ display:inline-flex; align-items:center; gap:8px; padding:8px 18px; border-radius:999px; border:1px solid var(--line); background:rgba(255,255,255,0.03); font-size:0.9rem; font-weight:600; color:var(--text-dim); margin-bottom:24px; }
   .badge .dot{ width:7px; height:7px; border-radius:50%; background:var(--good); box-shadow:0 0 8px var(--good); }
-  .hero h1{ font-size:clamp(2.5rem, 6.5vw, 4.3rem); line-height:1.14; font-weight:800; }
-  .hero h1 .line2{ display:block; margin-top:8px; }
-  .hero-sub-badge{ display:inline-block; margin:24px 0 20px; padding:7px 16px; border-radius:999px; border:1px solid var(--line); font-size:0.8rem; font-weight:700; letter-spacing:0.06em; color:var(--text-dim); }
-  .hero p.desc{ max-width:660px; margin:0 auto 34px; color:var(--text-dim); font-size:1.14rem; }
-  .hero-actions{ display:flex; gap:14px; justify-content:center; flex-wrap:wrap; margin-bottom:42px; }
-  .hero-stats{ display:flex; gap:12px; justify-content:center; flex-wrap:wrap; }
+  .hero h1{ font-size:clamp(2rem, 3.6vw, 3.1rem); line-height:1.2; font-weight:800; }
+  .hero h1 .line2{ display:block; margin-top:6px; color:var(--text-dim); font-weight:700; }
+  .hero p.desc{ max-width:480px; margin:20px 0 32px; color:var(--text-dim); font-size:1.08rem; }
+  .hero p.desc b{ color:var(--accent-a); font-weight:700; }
+  .hero-actions{ display:flex; gap:14px; flex-wrap:wrap; margin-bottom:32px; }
+  .hero-stats{ display:flex; gap:12px; flex-wrap:wrap; }
   .stat-chip{ padding:11px 20px; border-radius:999px; border:1px solid var(--line); background:rgba(255,255,255,0.03); font-size:0.94rem; font-weight:600; color:var(--text-dim); }
   .stat-chip b{ color:var(--text); font-family:'JetBrains Mono',monospace; }
+  .hero-right{ min-width:0; }
+  .hero-table-label{ font-weight:700; font-size:1.02rem; margin-bottom:14px; }
   @media (max-width:640px){
-    .hero{ padding:64px 0 44px; }
-    .hero h1{ font-size:clamp(1.9rem, 8vw, 2.6rem); }
-    .hero p.desc{ font-size:1rem; }
+    .hero{ padding:48px 0 52px; }
+    .hero h1{ font-size:clamp(1.7rem, 7vw, 2.3rem); }
+    .hero p.desc{ font-size:0.98rem; max-width:none; }
     .badge{ font-size:0.82rem; padding:7px 15px; }
-    .hero-sub-badge{ font-size:0.7rem; padding:6px 13px; }
     .stat-chip{ font-size:0.84rem; padding:9px 15px; }
   }
 
@@ -402,19 +406,71 @@
 <main id="top">
 
   <section class="hero">
-    <div class="wrap">
-      <div class="badge"><span class="dot"></span> 현재 가입 모집중</div>
-      <h1>전용 링크로 가입하고<span class="line2 grad-text">페이백 + 비공개 커뮤니티</span></h1>
-      <div class="hero-sub-badge">EXCHANGE CASHBACK &amp; PRIVATE COMMUNITY</div>
-      <p class="desc">전용 링크로 가입하면 거래 수수료 일부를 매일 페이백 받고, 비공개 텔레그램 커뮤니티에도 입장할 수 있어요.</p>
-      <div class="hero-actions">
-        <a class="btn btn-primary" href="#exchanges">가입하러 가기 →</a>
-        <a class="btn btn-ghost" href="#verify">비공개 텔레그램 입장 신청</a>
+    <div class="wrap hero-grid">
+      <div class="hero-left">
+        <div class="badge"><span class="dot"></span> 현재 가입 모집중</div>
+        <h1>거래소 수수료,<span class="line2">다시 돌려받으세요</span></h1>
+        <p class="desc"><b>페이백</b>과 <b>비공개 커뮤니티</b>를 동시에! 정산 내역과 지급 기록을 직접 확인해 보세요.</p>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="#exchanges">시작하기 →</a>
+          <a class="btn btn-ghost" href="#verify">비공개 텔레그램 입장 신청</a>
+        </div>
+        <div class="hero-stats">
+          <div class="stat-chip"><b>50%</b> 페이백율 (Gate.io)</div>
+          <div class="stat-chip"><b>매일 지급</b> · 1시간 내외</div>
+        </div>
       </div>
-      <div class="hero-stats">
-        <div class="stat-chip"><b>50%</b> 페이백율 (Gate.io)</div>
-        <div class="stat-chip"><b>매일 지급</b> · 1시간 내외</div>
-        <div class="stat-chip">🔒 <b>비공개</b> 텔레그램 커뮤니티</div>
+      <div class="hero-right" id="exchanges">
+        <div class="hero-table-label">파트너 거래소</div>
+        <div class="ex-table reveal">
+          <div class="ex-table-head">
+            <span>거래소</span>
+            <span>페이백율</span>
+            <span>정산 주기</span>
+            <span></span>
+          </div>
+          <div class="ex-row-card active">
+            <div class="ex-row-main">
+              <div class="ex-row-id">
+                <div class="ex-logo" aria-hidden="true">
+                  <img src="/gate-logo.png" width="44" height="44" alt="" loading="lazy">
+                </div>
+                <div>
+                  <span class="ex-pill active">운영중</span>
+                  <h3>Gate.io</h3>
+                </div>
+              </div>
+              <div class="ex-row-stat"><b>50%</b><span>페이백율</span></div>
+              <div class="ex-row-stat"><b>매일</b><span>1시간 내외</span></div>
+              <div class="ex-row-actions">
+                <a class="btn btn-primary btn-sm" href="https://www.gate.com/signup?ref_type=103&ref=TEAMSIXX" target="_blank" rel="noopener">가입하기 →</a>
+                <a class="btn btn-ghost btn-sm" href="#verify">UID 확인</a>
+              </div>
+            </div>
+            <div class="ex-desc-row">글로벌 코인 현물·선물 거래소 — 전용 링크로 새로 가입해야 인정됩니다.</div>
+            <div class="ex-row-link">
+              <div class="ex-link-box">
+                <input type="text" readonly id="gate-link" value="https://www.gate.com/signup?ref_type=103&ref=TEAMSIXX">
+                <button class="btn btn-ghost btn-sm" id="copy-gate-link">복사</button>
+              </div>
+            </div>
+          </div>
+          <div class="ex-row-card soon">
+            <div class="ex-row-main">
+              <div class="ex-row-id">
+                <div class="ex-logo placeholder" aria-hidden="true">🔒</div>
+                <div>
+                  <span class="ex-pill soon">준비중</span>
+                  <h3>다른 메이저 거래소</h3>
+                </div>
+              </div>
+              <div class="ex-row-stat muted"><b>—</b><span>페이백율</span></div>
+              <div class="ex-row-stat muted"><b>—</b><span>정산 주기</span></div>
+              <div class="ex-row-actions"><span class="btn btn-ghost btn-sm" style="opacity:0.5; pointer-events:none;">준비중</span></div>
+            </div>
+            <div class="ex-desc-row">더 좋은 조건의 파트너십을 준비하고 있어요. 곧 추가될 예정입니다.</div>
+          </div>
+        </div>
       </div>
     </div>
   </section>
@@ -450,65 +506,6 @@
           <div class="benefit-icon">🔒</div>
           <h3>비공개 텔레그램 커뮤니티 입장</h3>
           <p>가입이 확인된 분들만 들어올 수 있는 전용 텔레그램방이에요. 운영자와 직접 소통할 수 있어요.</p>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <section id="exchanges">
-    <div class="wrap">
-      <div class="sec-head reveal">
-        <div class="sec-label">— EXCHANGES</div>
-        <h2>파트너 거래소</h2>
-        <p>아래 전용 링크로 새로 가입해야 페이백 대상이 됩니다. 기존 계정은 인정되지 않아요.</p>
-      </div>
-      <div class="ex-table reveal">
-        <div class="ex-table-head">
-          <span>거래소</span>
-          <span>페이백율</span>
-          <span>정산 주기</span>
-          <span></span>
-        </div>
-        <div class="ex-row-card active">
-          <div class="ex-row-main">
-            <div class="ex-row-id">
-              <div class="ex-logo" aria-hidden="true">
-                <img src="/gate-logo.png" width="44" height="44" alt="" loading="lazy">
-              </div>
-              <div>
-                <span class="ex-pill active">운영중</span>
-                <h3>Gate.io</h3>
-              </div>
-            </div>
-            <div class="ex-row-stat"><b>50%</b><span>페이백율</span></div>
-            <div class="ex-row-stat"><b>매일</b><span>1시간 내외</span></div>
-            <div class="ex-row-actions">
-              <a class="btn btn-primary btn-sm" href="https://www.gate.com/signup?ref_type=103&ref=TEAMSIXX" target="_blank" rel="noopener">가입하기 →</a>
-              <a class="btn btn-ghost btn-sm" href="#verify">UID 확인</a>
-            </div>
-          </div>
-          <div class="ex-desc-row">글로벌 코인 현물·선물 거래소 — 전용 링크로 새로 가입해야 인정됩니다.</div>
-          <div class="ex-row-link">
-            <div class="ex-link-box">
-              <input type="text" readonly id="gate-link" value="https://www.gate.com/signup?ref_type=103&ref=TEAMSIXX">
-              <button class="btn btn-ghost btn-sm" id="copy-gate-link">복사</button>
-            </div>
-          </div>
-        </div>
-        <div class="ex-row-card soon">
-          <div class="ex-row-main">
-            <div class="ex-row-id">
-              <div class="ex-logo placeholder" aria-hidden="true">🔒</div>
-              <div>
-                <span class="ex-pill soon">준비중</span>
-                <h3>다른 메이저 거래소</h3>
-              </div>
-            </div>
-            <div class="ex-row-stat muted"><b>—</b><span>페이백율</span></div>
-            <div class="ex-row-stat muted"><b>—</b><span>정산 주기</span></div>
-            <div class="ex-row-actions"><span class="btn btn-ghost btn-sm" style="opacity:0.5; pointer-events:none;">준비중</span></div>
-          </div>
-          <div class="ex-desc-row">더 좋은 조건의 파트너십을 준비하고 있어요. 곧 추가될 예정입니다.</div>
         </div>
       </div>
     </div>
