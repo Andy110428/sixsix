@@ -10,6 +10,7 @@
 //   POST /api/telegram-link         UID 재검증 후 스터디방 신청용 1회용 봇 딥링크 발급 (study-bot.js)
 //   POST /api/telegram-webhook      텔레그램 봇 웹훅 — 신청 연결/승인 버튼/그룹 입장 감지 (study-bot.js)
 //   GET  /api/events                공개 이벤트/공지 목록 (status='active'만, 20-28단계)
+//   GET  /api/popup-event           관리자가 "팝업으로 표시"로 고른 이벤트 1건 (없으면 item:null, 20-34단계)
 //   POST /api/admin/login           관리자 비밀번호 로그인 → 서명된 쿠키 발급 (ADMIN_PASSWORD 필요)
 //   POST /api/admin/logout          관리자 쿠키 제거
 //   GET  /api/admin/events          전체 이벤트 목록(비공개 포함) — 관리자 쿠키 필요
@@ -90,6 +91,7 @@ export default {
       if (path === '/api/telegram-link' && method === 'POST') return await handleTelegramLink(request, env, botDeps);
       if (path === '/api/telegram-webhook' && method === 'POST') return await handleTelegramWebhook(request, env, ctx);
       if (path === '/api/events' && method === 'GET') return await handleEventsPublic(request, env);
+      if (path === '/api/popup-event' && method === 'GET') return await handlePopupEvent(request, env);
       if (path === '/api/admin/login' && method === 'POST') return await handleAdminLogin(request, env);
       if (path === '/api/admin/logout' && method === 'POST') return await handleAdminLogout(request, env);
       if (path === '/api/admin/events' && method === 'GET') return await handleAdminEventsList(request, env);
@@ -507,10 +509,23 @@ const EVENT_TITLE_MAX = 200;
 const EVENT_DESC_MAX = 1000;
 const EVENT_EXCHANGE_MAX = 50;
 const EVENT_URL_MAX = 500;
+// 20-34단계: 이미지를 외부 URL 대신 파일로 직접 업로드할 수 있게 됨 — base64 data URI로 저장.
+// 용량 상한은 17단계(레거시)에서 쓰던 것과 같은 수준(원본 바이너리 약 1.5MB)으로 둠.
+const EVENT_IMAGE_DATA_MAX = 2_000_000; // base64 문자열 길이 상한
 
 function isValidEventUrl(url) {
   if (!url) return true; // 선택값
   return typeof url === 'string' && url.length <= EVENT_URL_MAX && /^https?:\/\//.test(url);
+}
+
+// 이미지 필드는 http(s) 링크(예전 방식) 또는 업로드된 data:image/... base64(20-34단계) 둘 다 허용.
+function isValidEventImage(value) {
+  if (!value) return true; // 선택값
+  if (typeof value !== 'string') return false;
+  if (/^data:image\/(png|jpe?g|gif|webp);base64,/.test(value)) {
+    return value.length <= EVENT_IMAGE_DATA_MAX;
+  }
+  return isValidEventUrl(value);
 }
 
 function validateEventInput(body) {
@@ -522,14 +537,15 @@ function validateEventInput(body) {
   const status = body.status === 'inactive' ? 'inactive' : 'active';
   const starts_at = Number.isFinite(body.starts_at) ? Math.trunc(body.starts_at) : null;
   const ends_at = Number.isFinite(body.ends_at) ? Math.trunc(body.ends_at) : null;
+  const is_popup = body.is_popup ? 1 : 0;
 
   if (!title || title.length > EVENT_TITLE_MAX) return { error: `제목은 1~${EVENT_TITLE_MAX}자로 입력해주세요.` };
   if (description.length > EVENT_DESC_MAX) return { error: `설명은 ${EVENT_DESC_MAX}자 이하로 입력해주세요.` };
   if (!exchange || exchange.length > EVENT_EXCHANGE_MAX) return { error: '거래소를 입력해주세요.' };
-  if (!isValidEventUrl(image_url)) return { error: '이미지 URL은 http(s)://로 시작해야 해요.' };
+  if (!isValidEventImage(image_url)) return { error: '이미지는 PNG/JPEG/GIF/WEBP 파일(1.5MB 이하) 또는 http(s) 링크만 가능해요.' };
   if (!isValidEventUrl(link_url)) return { error: '링크 URL은 http(s)://로 시작해야 해요.' };
 
-  return { value: { title, description, exchange, image_url, link_url, status, starts_at, ends_at } };
+  return { value: { title, description, exchange, image_url, link_url, status, starts_at, ends_at, is_popup } };
 }
 
 async function handleEventsPublic(request, env) {
@@ -541,6 +557,16 @@ async function handleEventsPublic(request, env) {
   const now = Date.now();
   const items = (rows.results || []).map((r) => ({ ...r, ended: !!(r.ends_at && r.ends_at < now) }));
   return json({ ok: true, items });
+}
+
+// 관리자가 "팝업으로 표시"를 켠 이벤트 1건만 반환 — 없으면 item:null(그러면 프론트가 팝업을 아예 안 띄움).
+async function handlePopupEvent(request, env) {
+  if (!env.DB) return json({ ok: false, error: 'DB가 연결되지 않았습니다.' }, 500);
+  const row = await env.DB.prepare(
+    `SELECT id, title, description, exchange, image_url, link_url FROM events
+     WHERE status = 'active' AND is_popup = 1 ORDER BY id DESC LIMIT 1`
+  ).first();
+  return json({ ok: true, item: row || null });
 }
 
 async function handleAdminEventsList(request, env) {
@@ -556,10 +582,12 @@ async function handleAdminEventCreate(request, env) {
   const body = await safeJson(request);
   const { error, value } = validateEventInput(body);
   if (error) return json({ ok: false, error }, 400);
+  // 팝업은 한 번에 하나만 — 새로 팝업으로 지정하면 기존에 켜져있던 다른 이벤트의 팝업 표시를 내림.
+  if (value.is_popup) await env.DB.prepare(`UPDATE events SET is_popup = 0 WHERE is_popup = 1`).run();
   await env.DB.prepare(
-    `INSERT INTO events (title, description, exchange, image_url, link_url, status, starts_at, ends_at, created_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
-  ).bind(value.title, value.description, value.exchange, value.image_url, value.link_url, value.status, value.starts_at, value.ends_at, Date.now()).run();
+    `INSERT INTO events (title, description, exchange, image_url, link_url, status, starts_at, ends_at, is_popup, created_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+  ).bind(value.title, value.description, value.exchange, value.image_url, value.link_url, value.status, value.starts_at, value.ends_at, value.is_popup, Date.now()).run();
   return json({ ok: true });
 }
 
@@ -571,9 +599,10 @@ async function handleAdminEventUpdate(request, env) {
   if (!id) return json({ ok: false, error: 'id가 필요합니다.' }, 400);
   const { error, value } = validateEventInput(body);
   if (error) return json({ ok: false, error }, 400);
+  if (value.is_popup) await env.DB.prepare(`UPDATE events SET is_popup = 0 WHERE is_popup = 1 AND id != ?`).bind(id).run();
   await env.DB.prepare(
-    `UPDATE events SET title=?, description=?, exchange=?, image_url=?, link_url=?, status=?, starts_at=?, ends_at=? WHERE id=?`
-  ).bind(value.title, value.description, value.exchange, value.image_url, value.link_url, value.status, value.starts_at, value.ends_at, id).run();
+    `UPDATE events SET title=?, description=?, exchange=?, image_url=?, link_url=?, status=?, starts_at=?, ends_at=?, is_popup=? WHERE id=?`
+  ).bind(value.title, value.description, value.exchange, value.image_url, value.link_url, value.status, value.starts_at, value.ends_at, value.is_popup, id).run();
   return json({ ok: true });
 }
 
@@ -626,8 +655,13 @@ async function ensureSchema(env) {
     status TEXT NOT NULL DEFAULT 'active',
     starts_at INTEGER,
     ends_at INTEGER,
+    is_popup INTEGER NOT NULL DEFAULT 0,
     created_at INTEGER NOT NULL
   )`).run();
+  // 20-34단계: 20-28단계 때 이미 events 테이블이 만들어져 있던 운영 DB엔 is_popup 컬럼이 없으므로
+  // ALTER로 추가 시도 — 이미 있으면(재배포 시) 에러가 나는 게 정상이라 조용히 무시함(이 프로젝트의
+  // 반복된 "컬럼 추가는 ALTER + try/catch" 패턴).
+  try { await env.DB.prepare(`ALTER TABLE events ADD COLUMN is_popup INTEGER NOT NULL DEFAULT 0`).run(); } catch (e) {}
   await ensureBotSchema(env);
   schemaReady = true;
 }

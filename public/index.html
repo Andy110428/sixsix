@@ -140,16 +140,6 @@
   .sec-head h2{ font-size:clamp(1.8rem, 4vw, 2.5rem); margin-bottom:12px; }
   .sec-head p{ color:var(--text-dim); font-size:1.08rem; }
 
-  /* benefits */
-  .benefit-grid{ display:grid; grid-template-columns:1fr 1fr; gap:22px; }
-  @media (max-width:760px){ .benefit-grid{ grid-template-columns:1fr; } }
-  .benefit-card{ background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); padding:32px; border-left:3px solid var(--accent-a); box-shadow:var(--card-shadow); transition: opacity .7s cubic-bezier(.16,.84,.44,1), transform .3s cubic-bezier(.16,.84,.44,1), border-color .2s ease; }
-  .benefit-card:nth-child(2){ border-left-color: var(--accent-c); transition-delay:.15s; }
-  .benefit-card:hover{ transform:translateY(-3px); }
-  .benefit-icon{ font-size:2rem; margin-bottom:14px; }
-  .benefit-card h3{ font-size:1.3rem; margin-bottom:10px; }
-  .benefit-card p{ color:var(--text-dim); font-size:1.02rem; margin:0; }
-
   /* promo banner — 이미 가입한 사람용 지름길 */
   .promo-wrap{ padding:0 0 84px; }
   .promo-banner{ display:flex; align-items:center; justify-content:space-between; gap:18px; flex-wrap:wrap; background:linear-gradient(90deg, rgba(52,211,153,0.1), rgba(45,212,236,0.08)); border:1px solid rgba(52,211,153,0.3); border-radius:var(--radius); padding:18px 24px; transition: opacity .7s cubic-bezier(.16,.84,.44,1), transform .3s cubic-bezier(.16,.84,.44,1), border-color .2s ease; }
@@ -240,25 +230,39 @@
   .prv-hint{ color:var(--text-dim); font-size:0.9rem; margin-top:18px; padding-top:18px; border-top:1px solid var(--line); }
   @media (max-width:480px){ .payback-modal{ padding:26px 20px; } }
 
-  /* 프로모 팝업 — 페이지 첫 방문 시 짧게 뜨는 이벤트 안내창 ("오늘 하루 보지 않기" 지원) */
+  /* 프로모 팝업 — 관리자가 "팝업으로 표시"로 고른 이벤트 1건을 보여줌(20-34단계, 없으면 안 뜸).
+     "오늘 하루 보지 않기" 지원. 내용이 이벤트별로 다르므로 레이아웃은 범용(이미지+제목+설명+CTA)으로. */
   .promo-popup-backdrop{ position:fixed; inset:0; z-index:210; background:rgba(5,6,8,0.78); backdrop-filter:blur(6px); display:flex; align-items:center; justify-content:center; padding:20px; opacity:0; visibility:hidden; transition:opacity .25s ease, visibility .25s ease; }
   .promo-popup-backdrop[hidden]{ display:none; }
   .promo-popup-backdrop.show{ opacity:1; visibility:visible; }
-  .promo-popup{ position:relative; width:100%; max-width:400px; background:var(--panel); border:1px solid rgba(52,211,153,0.3); border-radius:var(--radius); padding:30px 26px 26px; box-shadow:var(--card-shadow); transform:translateY(14px) scale(0.98); transition:transform .25s ease; }
+  .promo-popup{ position:relative; width:100%; max-width:400px; max-height:86vh; overflow-y:auto; background:var(--panel); border:1px solid rgba(52,211,153,0.3); border-radius:var(--radius); box-shadow:var(--card-shadow); transform:translateY(14px) scale(0.98); transition:transform .25s ease; }
   .promo-popup-backdrop.show .promo-popup{ transform:translateY(0) scale(1); }
-  .promo-popup-close{ position:absolute; top:14px; right:14px; width:30px; height:30px; border-radius:50%; border:1px solid var(--line); background:rgba(255,255,255,0.04); color:var(--text-dim); font-size:0.94rem; cursor:pointer; display:flex; align-items:center; justify-content:center; }
+  .promo-popup-close{ position:absolute; top:12px; right:12px; width:30px; height:30px; border-radius:50%; border:1px solid var(--line); background:rgba(10,11,13,0.65); color:var(--text-dim); font-size:0.94rem; cursor:pointer; display:flex; align-items:center; justify-content:center; z-index:1; }
   .promo-popup-close:hover{ color:var(--text); border-color:rgba(255,255,255,0.3); }
-  .promo-popup-badge{ display:inline-flex; align-items:center; gap:6px; font-size:0.76rem; font-weight:700; color:var(--text-dim); margin-bottom:16px; }
-  .promo-popup-badge img{ width:18px; height:18px; border-radius:5px; display:block; }
-  .promo-popup-hero{ display:flex; align-items:center; gap:14px; margin-bottom:16px; }
-  .promo-popup-pct{ font-family:'JetBrains Mono',monospace; font-weight:800; font-size:2.6rem; background:linear-gradient(135deg, var(--accent-a), var(--accent-c)); -webkit-background-clip:text; background-clip:text; color:transparent; line-height:1; }
-  .promo-popup-hero h3{ font-size:1.08rem; margin-bottom:2px; }
-  .promo-popup-hero p{ color:var(--text-dim); font-size:0.8rem; margin:0; }
-  .promo-popup-desc{ color:var(--text-dim); font-size:0.88rem; line-height:1.6; margin:0 0 20px; }
-  .promo-popup .btn{ width:100%; margin-bottom:12px; justify-content:center; }
+  .promo-popup-img{ width:100%; aspect-ratio:16/9; object-fit:cover; display:block; background:linear-gradient(135deg, rgba(52,211,153,0.18), rgba(45,212,236,0.1)); }
+  .promo-popup-img[hidden]{ display:none; }
+  .promo-popup-body{ padding:24px 24px 22px; }
+  .promo-popup-ex-chip{ display:inline-block; font-size:0.72rem; font-weight:700; color:var(--accent-a); background:rgba(52,211,153,0.1); border:1px solid rgba(52,211,153,0.3); padding:3px 10px; border-radius:999px; margin-bottom:10px; }
+  .promo-popup-title{ font-size:1.14rem; margin-bottom:8px; }
+  .promo-popup-desc{ color:var(--text-dim); font-size:0.88rem; line-height:1.6; margin:0 0 20px; display:-webkit-box; -webkit-line-clamp:4; -webkit-box-orient:vertical; overflow:hidden; }
+  .promo-popup .btn{ width:100%; margin-bottom:10px; justify-content:center; }
   .promo-popup-dismiss{ display:block; width:100%; text-align:center; background:none; border:none; color:var(--text-dim); font-size:0.8rem; cursor:pointer; padding:4px; font-family:'IBM Plex Sans KR',sans-serif; }
   .promo-popup-dismiss:hover{ color:var(--text); }
-  @media (max-width:480px){ .promo-popup{ padding:24px 20px 20px; } }
+  @media (max-width:480px){ .promo-popup-body{ padding:20px 20px 18px; } }
+
+  /* 이벤트 상세 모달 — 이벤트 카드/팝업 둘 다 클릭하면 바로 외부 링크로 안 넘어가고 이걸 먼저 보여줌(20-34단계) */
+  .event-modal-backdrop{ position:fixed; inset:0; z-index:205; background:rgba(5,6,8,0.74); backdrop-filter:blur(6px); display:flex; align-items:center; justify-content:center; padding:20px; overflow-y:auto; }
+  .event-modal-backdrop[hidden]{ display:none; }
+  .event-modal{ position:relative; width:100%; max-width:480px; margin:auto; background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); box-shadow:var(--card-shadow); overflow:hidden; }
+  .event-modal-close{ position:absolute; top:12px; right:12px; width:30px; height:30px; border-radius:50%; border:1px solid var(--line); background:rgba(10,11,13,0.65); color:var(--text-dim); font-size:0.94rem; cursor:pointer; display:flex; align-items:center; justify-content:center; z-index:1; }
+  .event-modal-close:hover{ color:var(--text); border-color:rgba(255,255,255,0.3); }
+  .event-modal-img{ width:100%; aspect-ratio:16/9; object-fit:cover; display:block; }
+  .event-modal-img[hidden]{ display:none; }
+  .event-modal-body{ padding:22px 24px 24px; }
+  .event-modal-body .event-ex-chip{ margin-bottom:10px; }
+  .event-modal-body h3{ font-size:1.18rem; margin-bottom:10px; }
+  .event-modal-body p{ color:var(--text-dim); font-size:0.92rem; line-height:1.7; margin:0 0 20px; white-space:pre-wrap; }
+  @media (max-width:480px){ .event-modal-body{ padding:18px 20px 20px; } }
 
   /* how it works — 좌: 소개 텍스트 / 우: 단계 플로우 카드 (CashMine 참고, 아이콘 체인+콜아웃 구조만 차용) */
   .how-layout{ display:grid; grid-template-columns:0.85fr 1.15fr; gap:40px; align-items:center; }
@@ -333,7 +337,7 @@
   .events-filter button{ padding:8px 16px; border-radius:999px; border:1px solid var(--line); background:var(--panel-soft); color:var(--text-dim); font-weight:700; font-size:0.88rem; font-family:'IBM Plex Sans KR',sans-serif; cursor:pointer; transition:border-color .15s ease, color .15s ease, background .15s ease; }
   .events-filter button.selected{ border-color:rgba(52,211,153,0.5); background:rgba(52,211,153,0.12); color:var(--accent-a); }
   .events-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:20px; }
-  .event-card{ background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); overflow:hidden; box-shadow:var(--card-shadow); display:flex; flex-direction:column; transition:transform .2s ease; }
+  .event-card{ background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); overflow:hidden; box-shadow:var(--card-shadow); display:flex; flex-direction:column; cursor:pointer; transition:transform .2s ease; }
   .event-card:hover{ transform:translateY(-3px); }
   .event-card-img{ aspect-ratio:16/9; background:linear-gradient(135deg, rgba(52,211,153,0.18), rgba(45,212,236,0.1)); display:flex; align-items:center; justify-content:center; font-size:2.2rem; position:relative; }
   .event-card-img img{ width:100%; height:100%; object-fit:cover; }
@@ -364,6 +368,14 @@
   .admin-event-row .meta .t{ font-weight:700; font-size:0.94rem; }
   .admin-event-row .meta .s{ font-size:0.78rem; color:var(--text-dim); margin-top:2px; }
   .admin-event-row .actions{ display:flex; gap:6px; flex-shrink:0; }
+  .admin-event-row .badge-popup{ display:inline-block; font-size:0.68rem; font-weight:800; color:var(--accent-a); background:rgba(52,211,153,0.12); border:1px solid rgba(52,211,153,0.3); padding:1px 8px; border-radius:999px; margin-left:6px; }
+  .admin-form input[type="file"]{ width:100%; background:var(--panel-soft); border:1px solid var(--line); border-radius:10px; padding:9px 11px; color:var(--text-dim); font-family:'IBM Plex Sans KR',sans-serif; font-size:0.86rem; }
+  .admin-img-preview{ display:flex; align-items:center; gap:12px; margin-top:8px; }
+  .admin-img-preview[hidden]{ display:none; }
+  .admin-img-preview img{ width:64px; height:64px; object-fit:cover; border-radius:10px; border:1px solid var(--line); }
+  .admin-img-hint{ font-size:0.76rem; color:var(--text-dim); margin:6px 0 0; }
+  label.admin-checkbox-row{ display:flex; align-items:center; gap:8px; font-size:0.9rem; font-weight:600; color:var(--text); cursor:pointer; }
+  .admin-checkbox-row input{ width:16px; height:16px; accent-color:var(--accent-a); }
 
   /* faq — 아코디언(details/summary) */
   .faq-item{ background:var(--panel); border:1px solid var(--line); border-radius:14px; margin-bottom:12px; overflow:hidden; }
@@ -546,27 +558,6 @@
     </div>
   </section>
 
-  <section id="benefits">
-    <div class="wrap">
-      <div class="sec-head reveal">
-        <div class="sec-label">— BENEFITS</div>
-        <h2>두 가지 혜택</h2>
-      </div>
-      <div class="benefit-grid">
-        <div class="benefit-card reveal">
-          <div class="benefit-icon">💰</div>
-          <h3>수수료 페이백</h3>
-          <p>거래 수수료의 <b style="color:var(--text);">50%</b> — Gate.io 최대 요율이자 업계 상위권 수준이에요. 매일, 1시간 내외로 지급돼요.</p>
-        </div>
-        <div class="benefit-card reveal">
-          <div class="benefit-icon">🔒</div>
-          <h3>비공개 텔레그램 커뮤니티 입장</h3>
-          <p>가입이 확인된 분들만 들어올 수 있는 전용 텔레그램방이에요. 운영자와 직접 소통할 수 있어요.</p>
-        </div>
-      </div>
-    </div>
-  </section>
-
   <section id="calc">
     <div class="wrap">
       <div class="sec-head reveal">
@@ -679,17 +670,27 @@
   <div class="promo-popup-backdrop" id="promo-popup-backdrop" hidden>
     <div class="promo-popup">
       <button class="promo-popup-close" id="promo-popup-close" aria-label="닫기">✕</button>
-      <div class="promo-popup-badge"><img src="/gate-logo.png" alt=""> TEAM SIXX × Gate.io</div>
-      <div class="promo-popup-hero">
-        <span class="promo-popup-pct">50%</span>
-        <div>
-          <h3>수수료 페이백</h3>
-          <p>전용 링크로 가입하면 바로 적용</p>
-        </div>
+      <img class="promo-popup-img" id="promo-popup-img" alt="" hidden>
+      <div class="promo-popup-body">
+        <span class="promo-popup-ex-chip" id="promo-popup-ex"></span>
+        <h3 class="promo-popup-title" id="promo-popup-title"></h3>
+        <p class="promo-popup-desc" id="promo-popup-desc"></p>
+        <button type="button" class="btn btn-primary" id="promo-popup-cta">자세히 보기 →</button>
+        <button class="promo-popup-dismiss" id="promo-popup-dismiss">오늘 하루 보지 않기</button>
       </div>
-      <p class="promo-popup-desc">지금 전용 링크로 Gate.io에 가입하면 거래 수수료의 <b style="color:var(--text);">50%</b>를 매일, 1시간 내외로 페이백 받을 수 있어요. UID만 확인되면 비공개 텔레그램 커뮤니티도 바로 신청할 수 있어요.</p>
-      <a href="#verify" class="btn btn-primary" id="promo-popup-cta">지금 확인하기 →</a>
-      <button class="promo-popup-dismiss" id="promo-popup-dismiss">오늘 하루 보지 않기</button>
+    </div>
+  </div>
+
+  <div class="event-modal-backdrop" id="event-modal-backdrop" hidden>
+    <div class="event-modal">
+      <button class="event-modal-close" id="event-modal-close" aria-label="닫기">✕</button>
+      <img class="event-modal-img" id="event-modal-img" alt="" hidden>
+      <div class="event-modal-body">
+        <span class="event-ex-chip" id="event-modal-ex"></span>
+        <h3 id="event-modal-title"></h3>
+        <p id="event-modal-desc"></p>
+        <a class="btn btn-primary" id="event-modal-link" target="_blank" rel="noopener" hidden>바로가기 →</a>
+      </div>
     </div>
   </div>
 
@@ -778,12 +779,18 @@
               </select>
             </label>
           </div>
-          <label>이미지 URL (선택)<input type="text" id="admin-ev-image" placeholder="https://..."></label>
+          <label>대표 이미지 (선택)<input type="file" id="admin-ev-image-file" accept="image/png,image/jpeg,image/gif,image/webp"></label>
+          <p class="admin-img-hint">PNG/JPEG/GIF/WEBP, 1.5MB 이하</p>
+          <div class="admin-img-preview" id="admin-ev-image-preview" hidden>
+            <img id="admin-ev-image-preview-img" alt="">
+            <button type="button" class="btn btn-ghost btn-sm" id="admin-ev-image-remove">이미지 제거</button>
+          </div>
           <label>링크 URL (선택)<input type="text" id="admin-ev-link" placeholder="https://..."></label>
           <div class="admin-form-row">
             <label>시작일시 (선택)<input type="datetime-local" id="admin-ev-starts"></label>
             <label>종료일시 (선택)<input type="datetime-local" id="admin-ev-ends"></label>
           </div>
+          <label class="admin-checkbox-row"><input type="checkbox" id="admin-ev-popup"> 팝업 광고로 표시 (한 번에 하나만 가능해요)</label>
           <div class="admin-form-actions">
             <button type="submit" class="btn btn-primary" id="admin-ev-submit">등록하기</button>
             <button type="button" class="btn btn-ghost" id="admin-ev-cancel" hidden>수정 취소</button>
@@ -1182,9 +1189,28 @@
 })();
 
 (function(){
+  // 20-34단계: 이벤트 그리드, 이벤트 상세 모달, 팝업 광고(관리자가 고른 이벤트 1건)를 한 IIFE로 합침 —
+  // 그리드 카드와 팝업 둘 다 "클릭하면 바로 외부 링크로 안 넘어가고 상세 모달부터 보여줌"이라는
+  // 동작을 공유해야 해서, 서로 다른 IIFE에 나눠뒀다가 지역 함수를 잘못 참조하는 실수(20-22단계에서
+  // 실제로 겪었던 버그)를 피하려고 처음부터 하나로 묶음.
   var filterEl = document.getElementById('events-filter');
   var gridEl = document.getElementById('events-grid');
-  if(!gridEl) return;
+  var modalBackdrop = document.getElementById('event-modal-backdrop');
+  var modalClose = document.getElementById('event-modal-close');
+  var modalImg = document.getElementById('event-modal-img');
+  var modalEx = document.getElementById('event-modal-ex');
+  var modalTitle = document.getElementById('event-modal-title');
+  var modalDesc = document.getElementById('event-modal-desc');
+  var modalLink = document.getElementById('event-modal-link');
+  var popupBackdrop = document.getElementById('promo-popup-backdrop');
+  var popupClose = document.getElementById('promo-popup-close');
+  var popupImg = document.getElementById('promo-popup-img');
+  var popupEx = document.getElementById('promo-popup-ex');
+  var popupTitle = document.getElementById('promo-popup-title');
+  var popupDesc = document.getElementById('promo-popup-desc');
+  var popupCta = document.getElementById('promo-popup-cta');
+  var popupDismiss = document.getElementById('promo-popup-dismiss');
+  if(!gridEl && !popupBackdrop) return;
 
   function escapeHtml(s){
     return String(s).replace(/[&<>"']/g, function(c){ return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]; });
@@ -1193,6 +1219,31 @@
     return id === 'gate' ? 'Gate.io' : id;
   }
 
+  // ── 이벤트 상세 모달(그리드 카드 + 팝업이 공유) ──
+  function openEventModal(item){
+    if(!modalBackdrop) return;
+    if(item.image_url){ modalImg.src = item.image_url; modalImg.hidden = false; }
+    else { modalImg.src = ''; modalImg.hidden = true; }
+    modalEx.textContent = exchangeLabel(item.exchange);
+    modalTitle.textContent = item.title;
+    modalDesc.textContent = item.description || '';
+    if(item.link_url){ modalLink.href = item.link_url; modalLink.hidden = false; }
+    else { modalLink.hidden = true; }
+    modalBackdrop.hidden = false;
+    document.body.style.overflow = 'hidden';
+  }
+  function closeEventModal(){
+    if(!modalBackdrop) return;
+    modalBackdrop.hidden = true;
+    document.body.style.overflow = '';
+  }
+  if(modalBackdrop){
+    modalClose.addEventListener('click', closeEventModal);
+    modalBackdrop.addEventListener('click', function(e){ if(e.target === modalBackdrop) closeEventModal(); });
+    document.addEventListener('keydown', function(e){ if(e.key === 'Escape' && !modalBackdrop.hidden) closeEventModal(); });
+  }
+
+  // ── 이벤트 그리드 ──
   var allItems = [];
   var activeFilter = 'all';
 
@@ -1220,20 +1271,83 @@
     gridEl.innerHTML = items.map(function(it){
       var img = it.image_url ? '<img src="' + escapeHtml(it.image_url) + '" alt="" loading="lazy">' : '🎉';
       var badge = it.ended ? '<span class="event-badge ended">종료</span>' : '<span class="event-badge live">진행중</span>';
-      var btn = it.link_url ? '<a class="btn btn-primary btn-sm event-card-btn" href="' + escapeHtml(it.link_url) + '" target="_blank" rel="noopener">자세히 보기 →</a>' : '';
+      var btn = it.link_url ? '<span class="btn btn-primary btn-sm event-card-btn">자세히 보기 →</span>' : '';
       var desc = it.description ? '<p class="event-card-desc">' + escapeHtml(it.description) + '</p>' : '';
-      return '<div class="event-card"><div class="event-card-img">' + img + badge + '</div><div class="event-card-body"><span class="event-ex-chip">' + escapeHtml(exchangeLabel(it.exchange)) + '</span><h3 class="event-card-title">' + escapeHtml(it.title) + '</h3>' + desc + btn + '</div></div>';
+      return '<div class="event-card" data-id="' + it.id + '"><div class="event-card-img">' + img + badge + '</div><div class="event-card-body"><span class="event-ex-chip">' + escapeHtml(exchangeLabel(it.exchange)) + '</span><h3 class="event-card-title">' + escapeHtml(it.title) + '</h3>' + desc + btn + '</div></div>';
     }).join('');
+    // 카드를 눌러도 바로 외부 링크로 나가지 않고, 먼저 상세 모달에서 전체 설명을 보여줌(사용자 요청).
+    gridEl.querySelectorAll('.event-card').forEach(function(card){
+      card.addEventListener('click', function(){
+        var item = items.filter(function(i){ return String(i.id) === card.getAttribute('data-id'); })[0];
+        if(item) openEventModal(item);
+      });
+    });
   }
 
-  fetch('/api/events', { credentials:'same-origin' })
-    .then(function(res){ return res.json(); })
-    .then(function(data){
-      allItems = data.items || [];
-      renderFilters();
-      renderGrid();
-    })
-    .catch(function(){ gridEl.innerHTML = '<div class="events-empty">이벤트를 불러오지 못했어요.</div>'; });
+  if(gridEl){
+    fetch('/api/events', { credentials:'same-origin' })
+      .then(function(res){ return res.json(); })
+      .then(function(data){
+        allItems = data.items || [];
+        renderFilters();
+        renderGrid();
+      })
+      .catch(function(){ gridEl.innerHTML = '<div class="events-empty">이벤트를 불러오지 못했어요.</div>'; });
+  }
+
+  // ── 프로모 팝업(관리자가 "팝업으로 표시"로 고른 이벤트 1건 — 없으면 안 뜸) ──
+  if(popupBackdrop){
+    var STORAGE_KEY = 'teamsixx_popup_hide_until';
+    var popupItem = null;
+
+    function isHiddenToday(){
+      try{
+        var until = localStorage.getItem(STORAGE_KEY);
+        return !!until && Date.now() < Number(until);
+      }catch(e){ return false; }
+    }
+    function hideToday(){
+      try{
+        var midnight = new Date();
+        midnight.setHours(24, 0, 0, 0);
+        localStorage.setItem(STORAGE_KEY, String(midnight.getTime()));
+      }catch(e){}
+    }
+    function openPopup(){
+      popupBackdrop.hidden = false;
+      requestAnimationFrame(function(){ popupBackdrop.classList.add('show'); });
+      document.body.style.overflow = 'hidden';
+    }
+    function closePopup(){
+      popupBackdrop.classList.remove('show');
+      document.body.style.overflow = '';
+      setTimeout(function(){ popupBackdrop.hidden = true; }, 250);
+    }
+    popupClose.addEventListener('click', closePopup);
+    popupBackdrop.addEventListener('click', function(e){ if(e.target === popupBackdrop) closePopup(); });
+    popupDismiss.addEventListener('click', function(){ hideToday(); closePopup(); });
+    popupCta.addEventListener('click', function(){
+      closePopup();
+      if(popupItem) openEventModal(popupItem);
+    });
+    document.addEventListener('keydown', function(e){ if(e.key === 'Escape' && !popupBackdrop.hidden) closePopup(); });
+
+    if(!isHiddenToday()){
+      fetch('/api/popup-event', { credentials:'same-origin' })
+        .then(function(res){ return res.json(); })
+        .then(function(data){
+          if(!data.item) return;
+          popupItem = data.item;
+          popupEx.textContent = exchangeLabel(popupItem.exchange);
+          popupTitle.textContent = popupItem.title;
+          popupDesc.textContent = popupItem.description || '';
+          if(popupItem.image_url){ popupImg.src = popupItem.image_url; popupImg.hidden = false; }
+          else { popupImg.hidden = true; }
+          setTimeout(openPopup, 1400);
+        })
+        .catch(function(){});
+    }
+  }
 })();
 
 (function(){
@@ -1249,15 +1363,24 @@
   var descInput = document.getElementById('admin-ev-desc');
   var exInput = document.getElementById('admin-ev-exchange');
   var statusInput = document.getElementById('admin-ev-status');
-  var imageInput = document.getElementById('admin-ev-image');
+  var imageFileInput = document.getElementById('admin-ev-image-file');
+  var imagePreviewWrap = document.getElementById('admin-ev-image-preview');
+  var imagePreviewImg = document.getElementById('admin-ev-image-preview-img');
+  var imageRemoveBtn = document.getElementById('admin-ev-image-remove');
   var linkInput = document.getElementById('admin-ev-link');
   var startsInput = document.getElementById('admin-ev-starts');
   var endsInput = document.getElementById('admin-ev-ends');
+  var popupCheckbox = document.getElementById('admin-ev-popup');
   var submitBtn = document.getElementById('admin-ev-submit');
   var cancelBtn = document.getElementById('admin-ev-cancel');
   var formResult = document.getElementById('admin-ev-result');
   var listEl = document.getElementById('admin-event-list');
   if(!loginCard || !panel) return;
+
+  // 20-34단계: 이미지는 URL 입력 대신 파일 업로드 → base64 data URI로 들고 있다가 submit 시 image_url로 보냄
+  // (서버는 http(s) 링크와 data:image/... 둘 다 허용 — 기존 URL로 등록된 이벤트를 수정할 때는 그 값을 그대로 유지).
+  var IMAGE_MAX_BYTES = 1400000; // ≈1.4MB 원본 — base64로 부풀어도 서버 상한(약 1.5MB) 안쪽
+  var currentImageData = '';
 
   function escapeHtml(s){
     return String(s).replace(/[&<>"']/g, function(c){ return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]; });
@@ -1267,11 +1390,38 @@
     el.className = 'verify-result show ' + (ok ? 'ok' : 'bad');
   }
 
+  function setImagePreview(dataUrl){
+    currentImageData = dataUrl || '';
+    if(currentImageData){
+      imagePreviewImg.src = currentImageData;
+      imagePreviewWrap.hidden = false;
+    } else {
+      imagePreviewImg.src = '';
+      imagePreviewWrap.hidden = true;
+    }
+  }
+
+  imageFileInput.addEventListener('change', function(){
+    var file = imageFileInput.files && imageFileInput.files[0];
+    imageFileInput.value = '';
+    if(!file) return;
+    if(file.size > IMAGE_MAX_BYTES){
+      showResult(formResult, false, '이미지가 너무 커요. 1.5MB 이하 파일을 선택해주세요.');
+      return;
+    }
+    var reader = new FileReader();
+    reader.onload = function(){ setImagePreview(reader.result); };
+    reader.onerror = function(){ showResult(formResult, false, '이미지를 읽는 중 오류가 발생했습니다.'); };
+    reader.readAsDataURL(file);
+  });
+  imageRemoveBtn.addEventListener('click', function(){ setImagePreview(''); });
+
   function resetForm(){
     form.reset();
     idInput.value = '';
     exInput.value = 'gate';
     statusInput.value = 'active';
+    setImagePreview('');
     submitBtn.textContent = '등록하기';
     cancelBtn.hidden = true;
     formResult.className = 'verify-result';
@@ -1308,7 +1458,8 @@
         if(!items.length){ listEl.innerHTML = '<div class="events-empty">등록된 이벤트가 없어요.</div>'; return; }
         listEl.innerHTML = items.map(function(it){
           var statusLabel = it.status === 'active' ? '노출중' : '비공개';
-          return '<div class="admin-event-row"><div class="meta"><div class="t">' + escapeHtml(it.title) + '</div><div class="s">' + escapeHtml(it.exchange) + ' · ' + statusLabel + '</div></div><div class="actions"><button type="button" class="btn btn-ghost btn-sm" data-edit="' + it.id + '">수정</button><button type="button" class="btn btn-ghost btn-sm" data-del="' + it.id + '">삭제</button></div></div>';
+          var popupBadge = it.is_popup ? '<span class="badge-popup">📌 팝업</span>' : '';
+          return '<div class="admin-event-row"><div class="meta"><div class="t">' + escapeHtml(it.title) + popupBadge + '</div><div class="s">' + escapeHtml(it.exchange) + ' · ' + statusLabel + '</div></div><div class="actions"><button type="button" class="btn btn-ghost btn-sm" data-edit="' + it.id + '">수정</button><button type="button" class="btn btn-ghost btn-sm" data-del="' + it.id + '">삭제</button></div></div>';
         }).join('');
         listEl.querySelectorAll('[data-edit]').forEach(function(btn){
           btn.addEventListener('click', function(){
@@ -1319,10 +1470,11 @@
             descInput.value = item.description || '';
             exInput.value = item.exchange;
             statusInput.value = item.status;
-            imageInput.value = item.image_url || '';
+            setImagePreview(item.image_url || '');
             linkInput.value = item.link_url || '';
             startsInput.value = toLocalInput(item.starts_at);
             endsInput.value = toLocalInput(item.ends_at);
+            popupCheckbox.checked = !!item.is_popup;
             submitBtn.textContent = '수정 저장';
             cancelBtn.hidden = false;
             form.scrollIntoView({ behavior:'smooth', block:'center' });
@@ -1372,10 +1524,11 @@
       description: descInput.value.trim(),
       exchange: exInput.value.trim(),
       status: statusInput.value,
-      image_url: imageInput.value.trim(),
+      image_url: currentImageData,
       link_url: linkInput.value.trim(),
       starts_at: toMs(startsInput.value),
-      ends_at: toMs(endsInput.value)
+      ends_at: toMs(endsInput.value),
+      is_popup: popupCheckbox.checked
     };
     if(id) payload.id = Number(id);
     submitBtn.disabled = true;
@@ -1402,48 +1555,6 @@
     .then(function(res){ return res.json(); })
     .then(function(data){ if(data.ok) showPanel(); })
     .catch(function(){});
-})();
-
-(function(){
-  var backdrop = document.getElementById('promo-popup-backdrop');
-  if(!backdrop) return;
-  var closeBtn = document.getElementById('promo-popup-close');
-  var dismissBtn = document.getElementById('promo-popup-dismiss');
-  var ctaBtn = document.getElementById('promo-popup-cta');
-  var STORAGE_KEY = 'teamsixx_popup_hide_until';
-
-  function isHiddenToday(){
-    try{
-      var until = localStorage.getItem(STORAGE_KEY);
-      return !!until && Date.now() < Number(until);
-    }catch(e){ return false; }
-  }
-  function hideToday(){
-    try{
-      var midnight = new Date();
-      midnight.setHours(24, 0, 0, 0);
-      localStorage.setItem(STORAGE_KEY, String(midnight.getTime()));
-    }catch(e){}
-  }
-  function open(){
-    backdrop.hidden = false;
-    requestAnimationFrame(function(){ backdrop.classList.add('show'); });
-    document.body.style.overflow = 'hidden';
-  }
-  function close(){
-    backdrop.classList.remove('show');
-    document.body.style.overflow = '';
-    setTimeout(function(){ backdrop.hidden = true; }, 250);
-  }
-  closeBtn.addEventListener('click', close);
-  backdrop.addEventListener('click', function(e){ if(e.target === backdrop) close(); });
-  dismissBtn.addEventListener('click', function(){ hideToday(); close(); });
-  ctaBtn.addEventListener('click', close);
-  document.addEventListener('keydown', function(e){ if(e.key === 'Escape' && !backdrop.hidden) close(); });
-
-  if(!isHiddenToday()){
-    setTimeout(open, 1400);
-  }
 })();
 </script>
 
