@@ -1031,6 +1031,23 @@ extra_usdt       = received_usdt - generic20_usdt        (50% 요율 덕분에 �
 - 20-1단계에서 "글씨가 좀 커졌으면"이라는 요청으로 전역 기준 폰트를 키웠던 적이 있음(`html{ font-size:17px }`) — 이번 축소는 그 전역값은 안 건드리고 히어로/테이블 컴포넌트의 `rem` 값만 줄인 것이라 전역 기준과는 별개. 혹시 또 반대 방향 피드백(너무 작다)이 오면 이번에 줄인 컴포넌트별 값들부터 되돌리면 됨.
 - CashMine 비교 스크린샷을 보면 테이블 외에 FAQ/카드류 텍스트도 상대적으로 작은 편이었음 — 이번엔 "글이 너무 많아 안보여"의 핵심이던 히어로+테이블만 좁혀서 범위를 한정했는데, 다음 피드백이 다른 섹션을 지목하면 그때 같은 패턴(폰트/패딩만 축소, 구조는 유지)으로 확장하면 됨.
 
+## 20-31단계: 혜택 카드가 그냥 "팝업"되던 CSS 버그 수정 + 혜택 섹션 위치를 더 아래로 이동 (2026-10-15)
+
+사용자가 배포된 사이트 스크린샷을 보여주며 "내리면서 보이게 하지 말고 내리면서 칸별로 나눠지게 해줘" + "두가지 혜택 저런게 더 밑에 있게"라고 요청 — 스크롤 리빌 애니메이션이 매끄럽게 나뉘어 보이지 않고 혜택 카드/프로모 배너가 뭉텅이로 갑자기 나타나는 느낌이라는 지적, 그리고 "두 가지 혜택" 섹션이 프로모 배너 바로 아래 너무 일찍 나온다는 지적.
+
+**진짜 원인 — CSS 캐스케이드로 `.reveal`의 페이드 애니메이션 자체가 소리 없이 사라져 있었음**: `.benefit-card`와 `.promo-banner`가 각자 자기 호버 효과용 `transition:` 선언(`transform .2s ease, border-color .2s ease`)을 갖고 있었는데, 이게 소스 코드상 `.reveal`의 `transition: opacity .7s ..., transform .7s ...` 선언보다 **뒤에** 있었음 — 두 선택자 모두 단일 클래스라 명시도가 같고, 이런 경우 소스상 나중에 나오는 규칙이 `transition` 속성 전체를 완전히 덮어씀(병합 아님). 그 결과 이 두 요소는 `.is-visible`이 붙는 순간 `opacity`에 아무 트랜지션도 안 걸려서 **즉시 뙇 나타나고**, `transform`도 0.7s 대신 0.2s로 매우 빠르게 움직였음 — 페이지의 다른 모든 `.reveal` 요소(섹션 제목, FAQ, 테이블 등)는 이런 충돌이 없어서 정상적으로 부드럽게 페이드인되는데 이 둘만 "팝업"처럼 보였던 것. 10단계(캐스케이드 순서)·13/16/20-10/20-12/20-28단계(`[hidden]` 충돌)에 이어, 이 프로젝트에서 또 다른 형태로 재발한 CSS 캐스케이드 함정.
+
+**고친 방법**: `.benefit-card`/`.promo-banner`의 `transition` 선언을 `.reveal`의 타이밍(opacity/transform 0.7s cubic-bezier)과 각자의 호버 타이밍(border-color 0.2s ease)을 모두 포함하도록 다시 작성 — transform은 양쪽 용도(리빌 슬라이드업 + 호버 들림)를 같이 써야 해서 0.3s cubic-bezier로 절충. 추가로 `.benefit-card:nth-child(2)`에 `transition-delay:.15s`를 줘서 두 카드가 동시에 나타나지 않고 **하나씩 나뉘어(칸별로)** 순차적으로 드러나도록 만듦.
+
+**혜택 섹션 위치 이동**: `#benefits` 섹션 전체를 DOM 순서상 `#how`(이용 방법) 다음, `#calc`(계산기) 앞으로 옮김 — 기존엔 `hero → promo-wrap → benefits → how → calc`였는데 `hero → promo-wrap → how → benefits → calc`로 변경. 프로모 배너 바로 아래 혜택 재설명이 중복처럼 붙어있던 걸 한 섹션 뒤로 미뤄서 "더 밑에" 요청을 반영. `id="benefits"`를 그대로 유지해서 혹시 모를 외부/내부 앵커 링크는 안 깨짐(실제로 이 id를 가리키는 nav 링크는 없었음, grep으로 확인).
+
+로컬 `wrangler dev`(포트 8793, 로컬 전용 `ADMIN_PASSWORD=testpass123`) + Playwright로: (1) 섹션 DOM 순서가 `hero→promo-wrap→how→benefits→calc→verify→events→faq→admin`로 바뀐 것 확인, (2) `.benefit-card`/`.promo-banner`의 computed `transitionProperty`에 이제 `opacity, transform, border-color`가 전부 포함되는 것 확인(버그 수정 확인), (3) 두 혜택 카드의 computed `transitionDelay`가 각각 `0s`/`0.15s`로 스태거 적용된 것 확인, (4) 실제로 `.is-visible`을 트리거한 직후 opacity가 0에서 시작해 900ms 후 양쪽 다 ~1로 올라가되 2번째 카드가 지연 적용분만큼 살짝 늦게 올라가는 것 확인, (5) `scroll-behavior:smooth`(19-1단계부터 있던 설정) 때문에 Playwright의 `window.scrollTo(x,y)` 2-인자 호출이 비동기 스무스 스크롤로 처리돼 스크린샷이 어긋나는 걸 발견해서 `{behavior:'instant'}`로 바꿔 정확한 섹션 위치 스크린샷 확보, (6) 데스크톱(1440px)/모바일(390px) 가로 오버플로우 0px 확인. `node --check` + `wrangler deploy --dry-run` 검증, 병합 전 `git log origin/main`으로 다른 세션의 동시 커밋 없는지 확인(20-17단계 교훈) 후 배포.
+
+### 다음에 볼 것
+- 이번에 찾은 "같은 명시도의 두 클래스가 `transition` 같은 shorthand 속성을 각자 선언하면 소스상 나중 것이 완전히 덮어쓴다"는 패턴은 `.benefit-card`/`.promo-banner` 외에 다른 곳에도 잠재돼 있을 수 있음 — 새 카드/배너 컴포넌트를 `.reveal`과 함께 쓸 때는 그 컴포넌트가 `transition`을 따로 선언하지 않는지, 선언한다면 `.reveal`의 opacity/transform도 같이 포함시켰는지 확인할 것. 이번 점검에서 `.reveal`과 겹치는 다른 `transition:` 선언은 이 두 곳뿐이었음(grep으로 전체 확인).
+- 혜택 섹션 위치는 "더 밑으로" 한 단계만 옮긴 것(how 다음) — 더 아래로(예: verify 다음, 또는 맨 아래 FAQ 직전)까지 원하는 거였다면 추가 피드백 필요.
+- Playwright로 `scroll-behavior:smooth`가 걸린 페이지를 테스트할 때는 `window.scrollTo(x,y)` 2-인자 형태 대신 `window.scrollTo({top,left,behavior:'instant'})`를 써야 정확한 스크롤 위치를 즉시 캡처할 수 있음 — 이번에 겪은 디버깅 삽질이라 다음 세션을 위해 기록해둠.
+
 ## 환경변수 목록 (Cloudflare 대시보드 Settings > Variables and Secrets)
 
 ```
