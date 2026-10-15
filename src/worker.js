@@ -6,7 +6,7 @@
 //                                    → 서버가 UID를 다시 한 번 검증(direct_referral만 허용)하고
 //                                      telegram_join_requests에 저장 + 운영자에게 텔레그램 알림
 //   GET  /api/payback-total?uid=... 그 UID의 누적 페이백 추정액 조회 (아래 "페이백 계산 방식" 참고)
-//   GET  /api/payback-feed          최근 페이백 내역 공개 피드 (UID 마스킹, 최대 40건)
+//   GET  /api/payback-feed          최근 페이백 내역 공개 피드 (UID 마스킹, 최대 300건, 20-26단계)
 //   POST /api/telegram-link         UID 재검증 후 스터디방 신청용 1회용 봇 딥링크 발급 (study-bot.js)
 //   POST /api/telegram-webhook      텔레그램 봇 웹훅 — 신청 연결/승인 버튼/그룹 입장 감지 (study-bot.js)
 //
@@ -308,6 +308,11 @@ async function handlePaybackTotal(request, env) {
 // 병합은 DB에 적재할 때가 아니라 "보여줄 때"만 하므로, 지연 집계된 과거 커미션을 UNIQUE 제약으로
 // 안전하게 재조회/중복 제거할 수 있음.
 const FEED_MERGE_WINDOW_MS = 15 * 60 * 1000;
+// 20-26단계: 예전엔 병합 후 40건에서 끊었는데, 그날 실제 활동이 많으면 그 40건 안에
+// 오늘치가 전부 못 들어가는 경우가 생길 수 있어서(원본 300건 fetch가 먼저 바닥남) 사용자가
+// "40건밖에 못 보여주냐, 훨씬 늘려야 한다"고 지적함 — 원본 fetch/최종 표시 상한을 모두 크게 올림.
+const FEED_RAW_FETCH_LIMIT = 2000;
+const FEED_DISPLAY_LIMIT = 300;
 
 async function handlePaybackFeed(request, env) {
   if (!env.DB) return json({ ok: false, error: 'DB가 연결되지 않았습니다.' }, 500);
@@ -315,8 +320,8 @@ async function handlePaybackFeed(request, env) {
   // 비정상적인 값(0에 가까운 값 등)이 관측됨 — 정렬/표시 모두 우리가 직접 기록한
   // created_at(동기화 시각, ms)을 기준으로 해서 Gate.io 응답 품질과 무관하게 항상 정확하도록 함.
   const rows = await env.DB.prepare(
-    `SELECT uid, amount_usdt, created_at FROM payback_feed ORDER BY id DESC LIMIT 300`
-  ).all();
+    `SELECT uid, amount_usdt, created_at FROM payback_feed ORDER BY id DESC LIMIT ?1`
+  ).bind(FEED_RAW_FETCH_LIMIT).all();
   const list = rows.results || [];
 
   const merged = [];
@@ -326,7 +331,7 @@ async function handlePaybackFeed(request, env) {
       last.amount_usdt = round2(last.amount_usdt + row.amount_usdt);
       continue;
     }
-    if (merged.length >= 40) break;
+    if (merged.length >= FEED_DISPLAY_LIMIT) break;
     merged.push({ uid: row.uid, amount_usdt: row.amount_usdt, created_at: row.created_at });
   }
 
