@@ -146,8 +146,8 @@
   /* benefits */
   .benefit-grid{ display:grid; grid-template-columns:1fr 1fr; gap:22px; }
   @media (max-width:760px){ .benefit-grid{ grid-template-columns:1fr; } }
-  .benefit-card{ background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); padding:32px; border-left:3px solid var(--accent-a); box-shadow:var(--card-shadow); transition: transform .2s ease, border-color .2s ease; }
-  .benefit-card:nth-child(2){ border-left-color: var(--accent-c); }
+  .benefit-card{ background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); padding:32px; border-left:3px solid var(--accent-a); box-shadow:var(--card-shadow); transition: opacity .7s cubic-bezier(.16,.84,.44,1), transform .3s cubic-bezier(.16,.84,.44,1), border-color .2s ease; }
+  .benefit-card:nth-child(2){ border-left-color: var(--accent-c); transition-delay:.15s; }
   .benefit-card:hover{ transform:translateY(-3px); }
   .benefit-icon{ font-size:2rem; margin-bottom:14px; }
   .benefit-card h3{ font-size:1.3rem; margin-bottom:10px; }
@@ -155,7 +155,7 @@
 
   /* promo banner — 이미 가입한 사람용 지름길 */
   .promo-wrap{ padding:0 0 60px; }
-  .promo-banner{ display:flex; align-items:center; justify-content:space-between; gap:20px; flex-wrap:wrap; background:linear-gradient(90deg, rgba(52,211,153,0.1), rgba(45,212,236,0.08)); border:1px solid rgba(52,211,153,0.3); border-radius:var(--radius); padding:26px 30px; transition: transform .2s ease, border-color .2s ease; }
+  .promo-banner{ display:flex; align-items:center; justify-content:space-between; gap:20px; flex-wrap:wrap; background:linear-gradient(90deg, rgba(52,211,153,0.1), rgba(45,212,236,0.08)); border:1px solid rgba(52,211,153,0.3); border-radius:var(--radius); padding:26px 30px; transition: opacity .7s cubic-bezier(.16,.84,.44,1), transform .3s cubic-bezier(.16,.84,.44,1), border-color .2s ease; }
   .promo-banner:hover{ transform:translateY(-2px); border-color:rgba(52,211,153,0.5); }
   .promo-text{ display:flex; align-items:center; gap:16px; }
   .promo-icon{ font-size:1.8rem; flex-shrink:0; }
@@ -493,27 +493,6 @@
     </div>
   </section>
 
-  <section id="benefits">
-    <div class="wrap">
-      <div class="sec-head reveal">
-        <div class="sec-label">— BENEFITS</div>
-        <h2>두 가지 혜택</h2>
-      </div>
-      <div class="benefit-grid">
-        <div class="benefit-card reveal">
-          <div class="benefit-icon">💰</div>
-          <h3>수수료 페이백</h3>
-          <p>거래 수수료의 <b style="color:var(--text);">50%</b> — Gate.io 최대 요율이자 업계 상위권 수준이에요. 매일, 1시간 내외로 지급돼요.</p>
-        </div>
-        <div class="benefit-card reveal">
-          <div class="benefit-icon">🔒</div>
-          <h3>비공개 텔레그램 커뮤니티 입장</h3>
-          <p>가입이 확인된 분들만 들어올 수 있는 전용 텔레그램방이에요. 운영자와 직접 소통할 수 있어요.</p>
-        </div>
-      </div>
-    </div>
-  </section>
-
   <section id="how">
     <div class="wrap">
       <div class="how-layout">
@@ -546,6 +525,27 @@
             <span class="check">✅</span>
             <span>페이백은 거래마다 계산돼 <b>매일, 1시간 내외</b>로 지급돼요. 정확한 지급 내역은 비공개 텔레그램에서 확인할 수 있어요.</span>
           </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="benefits">
+    <div class="wrap">
+      <div class="sec-head reveal">
+        <div class="sec-label">— BENEFITS</div>
+        <h2>두 가지 혜택</h2>
+      </div>
+      <div class="benefit-grid">
+        <div class="benefit-card reveal">
+          <div class="benefit-icon">💰</div>
+          <h3>수수료 페이백</h3>
+          <p>거래 수수료의 <b style="color:var(--text);">50%</b> — Gate.io 최대 요율이자 업계 상위권 수준이에요. 매일, 1시간 내외로 지급돼요.</p>
+        </div>
+        <div class="benefit-card reveal">
+          <div class="benefit-icon">🔒</div>
+          <h3>비공개 텔레그램 커뮤니티 입장</h3>
+          <p>가입이 확인된 분들만 들어올 수 있는 전용 텔레그램방이에요. 운영자와 직접 소통할 수 있어요.</p>
         </div>
       </div>
     </div>
