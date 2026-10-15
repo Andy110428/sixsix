@@ -9,6 +9,14 @@
 //   GET  /api/payback-feed          최근 페이백 내역 공개 피드 (UID 마스킹, 최대 300건, 20-26단계)
 //   POST /api/telegram-link         UID 재검증 후 스터디방 신청용 1회용 봇 딥링크 발급 (study-bot.js)
 //   POST /api/telegram-webhook      텔레그램 봇 웹훅 — 신청 연결/승인 버튼/그룹 입장 감지 (study-bot.js)
+//   GET  /api/events                공개 이벤트/공지 목록 (status='active'만, 20-28단계)
+//   POST /api/admin/login           관리자 비밀번호 로그인 → 서명된 쿠키 발급 (ADMIN_PASSWORD 필요)
+//   POST /api/admin/logout          관리자 쿠키 제거
+//   GET  /api/admin/events          전체 이벤트 목록(비공개 포함) — 관리자 쿠키 필요
+//   POST /api/admin/events/create|update|delete  이벤트 CRUD — 관리자 쿠키 필요
+//   (20-28단계: 20단계에서 "관리자 대시보드 없음"으로 정리했던 방침을, 이번엔 사용자가 "이벤트 관리용
+//    관리자 탭을 새로 만들어도 좋다"고 명시적으로 허용해서 이벤트 CRUD 한정으로 재도입함 — 텔레그램
+//    신청/UID 확인 등 나머지 핵심 플로우는 여전히 로그인 없이 그대로 동작.)
 //
 // 페이백 계산 방식(2026-10-10, 20-6단계):
 //   Gate.io 커미션 분배 구조가 "유저 50% 자동 지급(거래소가 직접) : 파트너(우리) 25% : 거래소 25%"라서,
@@ -81,6 +89,13 @@ export default {
       if (path === '/api/payback-feed' && method === 'GET') return await handlePaybackFeed(request, env);
       if (path === '/api/telegram-link' && method === 'POST') return await handleTelegramLink(request, env, botDeps);
       if (path === '/api/telegram-webhook' && method === 'POST') return await handleTelegramWebhook(request, env, ctx);
+      if (path === '/api/events' && method === 'GET') return await handleEventsPublic(request, env);
+      if (path === '/api/admin/login' && method === 'POST') return await handleAdminLogin(request, env);
+      if (path === '/api/admin/logout' && method === 'POST') return await handleAdminLogout(request, env);
+      if (path === '/api/admin/events' && method === 'GET') return await handleAdminEventsList(request, env);
+      if (path === '/api/admin/events/create' && method === 'POST') return await handleAdminEventCreate(request, env);
+      if (path === '/api/admin/events/update' && method === 'POST') return await handleAdminEventUpdate(request, env);
+      if (path === '/api/admin/events/delete' && method === 'POST') return await handleAdminEventDelete(request, env);
     } catch (err) {
       return json({ ok: false, error: '서버 오류가 발생했습니다.', detail: String(err) }, 500);
     }
@@ -418,6 +433,160 @@ async function notifyAdminTelegram(env, text) {
   }
 }
 
+// ───────────────────────── 관리자 로그인 (이벤트 관리 전용, 20-28단계) ─────────────────────────
+// ADMIN_PASSWORD 환경변수가 있어야 동작함(20단계에서 관리자 로그인 자체를 없앴지만, 이번엔 사용자가
+// "이벤트 관리용 관리자 탭은 새로 만들어도 좋다"고 명시적으로 허용해서 이 기능 한정으로 재도입).
+// 세션은 별도 DB 테이블 없이 서명된 쿠키(HMAC, 비밀키=ADMIN_PASSWORD)로 처리 — 쿠키 값 자체가
+// 만료시각+서명이라 위조하려면 어차피 ADMIN_PASSWORD를 알아야 하므로(그러면 그냥 로그인하면 됨)
+// 별도 세션 테이블 없이도 안전함.
+const ADMIN_SESSION_MAX_AGE_SEC = 7 * 24 * 3600;
+
+function getCookie(request, name) {
+  const header = request.headers.get('Cookie') || '';
+  for (const part of header.split(';')) {
+    const idx = part.indexOf('=');
+    if (idx === -1) continue;
+    if (part.slice(0, idx).trim() === name) return decodeURIComponent(part.slice(idx + 1).trim());
+  }
+  return null;
+}
+
+async function createAdminToken(env) {
+  const exp = Date.now() + ADMIN_SESSION_MAX_AGE_SEC * 1000;
+  const sig = await hmacSha512Hex(env.ADMIN_PASSWORD, `admin:${exp}`);
+  return `${exp}.${sig}`;
+}
+
+async function verifyAdminToken(token, env) {
+  if (!token || !env.ADMIN_PASSWORD) return false;
+  const dot = token.indexOf('.');
+  if (dot === -1) return false;
+  const exp = Number(token.slice(0, dot));
+  const sig = token.slice(dot + 1);
+  if (!exp || Date.now() > exp) return false;
+  const expected = await hmacSha512Hex(env.ADMIN_PASSWORD, `admin:${exp}`);
+  return expected === sig;
+}
+
+async function requireAdmin(request, env) {
+  const token = getCookie(request, 'admin_session');
+  return await verifyAdminToken(token, env);
+}
+
+// 로컬 wrangler dev는 http://localhost라서 Secure 쿠키를 브라우저가 아예 저장 안 함 —
+// 실제 요청 스킴이 https일 때만 Secure를 붙여서, 운영(항상 https)은 그대로 안전하게 하고
+// 로컬 테스트에서도 로그인 쿠키가 정상 동작하도록 함.
+function cookieSecureAttr(request) {
+  return new URL(request.url).protocol === 'https:' ? ' Secure;' : '';
+}
+
+async function handleAdminLogin(request, env) {
+  if (!env.ADMIN_PASSWORD) {
+    return json({ ok: false, error: '관리자 기능이 아직 설정되지 않았습니다. ADMIN_PASSWORD 환경변수를 등록해주세요.' }, 500);
+  }
+  const body = await safeJson(request);
+  const password = typeof body.password === 'string' ? body.password : '';
+  if (password !== env.ADMIN_PASSWORD) {
+    return json({ ok: false, error: '비밀번호가 올바르지 않습니다.' }, 401);
+  }
+  const token = await createAdminToken(env);
+  return json({ ok: true }, 200, {
+    'Set-Cookie': `admin_session=${encodeURIComponent(token)}; Path=/; HttpOnly;${cookieSecureAttr(request)} SameSite=Strict; Max-Age=${ADMIN_SESSION_MAX_AGE_SEC}`,
+  });
+}
+
+async function handleAdminLogout(request, env) {
+  return json({ ok: true }, 200, {
+    'Set-Cookie': `admin_session=; Path=/; HttpOnly;${cookieSecureAttr(request)} SameSite=Strict; Max-Age=0`,
+  });
+}
+
+// ───────────────────────── 이벤트/공지 (20-28단계) ─────────────────────────
+
+const EVENT_TITLE_MAX = 200;
+const EVENT_DESC_MAX = 1000;
+const EVENT_EXCHANGE_MAX = 50;
+const EVENT_URL_MAX = 500;
+
+function isValidEventUrl(url) {
+  if (!url) return true; // 선택값
+  return typeof url === 'string' && url.length <= EVENT_URL_MAX && /^https?:\/\//.test(url);
+}
+
+function validateEventInput(body) {
+  const title = (body.title || '').trim();
+  const description = (body.description || '').trim();
+  const exchange = (body.exchange || 'gate').trim();
+  const image_url = (body.image_url || '').trim();
+  const link_url = (body.link_url || '').trim();
+  const status = body.status === 'inactive' ? 'inactive' : 'active';
+  const starts_at = Number.isFinite(body.starts_at) ? Math.trunc(body.starts_at) : null;
+  const ends_at = Number.isFinite(body.ends_at) ? Math.trunc(body.ends_at) : null;
+
+  if (!title || title.length > EVENT_TITLE_MAX) return { error: `제목은 1~${EVENT_TITLE_MAX}자로 입력해주세요.` };
+  if (description.length > EVENT_DESC_MAX) return { error: `설명은 ${EVENT_DESC_MAX}자 이하로 입력해주세요.` };
+  if (!exchange || exchange.length > EVENT_EXCHANGE_MAX) return { error: '거래소를 입력해주세요.' };
+  if (!isValidEventUrl(image_url)) return { error: '이미지 URL은 http(s)://로 시작해야 해요.' };
+  if (!isValidEventUrl(link_url)) return { error: '링크 URL은 http(s)://로 시작해야 해요.' };
+
+  return { value: { title, description, exchange, image_url, link_url, status, starts_at, ends_at } };
+}
+
+async function handleEventsPublic(request, env) {
+  if (!env.DB) return json({ ok: false, error: 'DB가 연결되지 않았습니다.' }, 500);
+  const rows = await env.DB.prepare(
+    `SELECT id, title, description, exchange, image_url, link_url, starts_at, ends_at FROM events
+     WHERE status = 'active' ORDER BY created_at DESC LIMIT 100`
+  ).all();
+  const now = Date.now();
+  const items = (rows.results || []).map((r) => ({ ...r, ended: !!(r.ends_at && r.ends_at < now) }));
+  return json({ ok: true, items });
+}
+
+async function handleAdminEventsList(request, env) {
+  if (!(await requireAdmin(request, env))) return json({ ok: false, error: '로그인이 필요합니다.' }, 401);
+  if (!env.DB) return json({ ok: false, error: 'DB가 연결되지 않았습니다.' }, 500);
+  const rows = await env.DB.prepare(`SELECT * FROM events ORDER BY created_at DESC LIMIT 200`).all();
+  return json({ ok: true, items: rows.results || [] });
+}
+
+async function handleAdminEventCreate(request, env) {
+  if (!(await requireAdmin(request, env))) return json({ ok: false, error: '로그인이 필요합니다.' }, 401);
+  if (!env.DB) return json({ ok: false, error: 'DB가 연결되지 않았습니다.' }, 500);
+  const body = await safeJson(request);
+  const { error, value } = validateEventInput(body);
+  if (error) return json({ ok: false, error }, 400);
+  await env.DB.prepare(
+    `INSERT INTO events (title, description, exchange, image_url, link_url, status, starts_at, ends_at, created_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+  ).bind(value.title, value.description, value.exchange, value.image_url, value.link_url, value.status, value.starts_at, value.ends_at, Date.now()).run();
+  return json({ ok: true });
+}
+
+async function handleAdminEventUpdate(request, env) {
+  if (!(await requireAdmin(request, env))) return json({ ok: false, error: '로그인이 필요합니다.' }, 401);
+  if (!env.DB) return json({ ok: false, error: 'DB가 연결되지 않았습니다.' }, 500);
+  const body = await safeJson(request);
+  const id = Number(body.id);
+  if (!id) return json({ ok: false, error: 'id가 필요합니다.' }, 400);
+  const { error, value } = validateEventInput(body);
+  if (error) return json({ ok: false, error }, 400);
+  await env.DB.prepare(
+    `UPDATE events SET title=?, description=?, exchange=?, image_url=?, link_url=?, status=?, starts_at=?, ends_at=? WHERE id=?`
+  ).bind(value.title, value.description, value.exchange, value.image_url, value.link_url, value.status, value.starts_at, value.ends_at, id).run();
+  return json({ ok: true });
+}
+
+async function handleAdminEventDelete(request, env) {
+  if (!(await requireAdmin(request, env))) return json({ ok: false, error: '로그인이 필요합니다.' }, 401);
+  if (!env.DB) return json({ ok: false, error: 'DB가 연결되지 않았습니다.' }, 500);
+  const body = await safeJson(request);
+  const id = Number(body.id);
+  if (!id) return json({ ok: false, error: 'id가 필요합니다.' }, 400);
+  await env.DB.prepare(`DELETE FROM events WHERE id=?`).bind(id).run();
+  return json({ ok: true });
+}
+
 // ───────────────────────── 스키마 자동 초기화 ─────────────────────────
 
 let schemaReady = false;
@@ -446,6 +615,18 @@ async function ensureSchema(env) {
   await env.DB.prepare(`CREATE TABLE IF NOT EXISTS payback_cursor (
     uid TEXT PRIMARY KEY,
     last_checked INTEGER NOT NULL
+  )`).run();
+  await env.DB.prepare(`CREATE TABLE IF NOT EXISTS events (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    title TEXT NOT NULL,
+    description TEXT,
+    exchange TEXT NOT NULL DEFAULT 'gate',
+    image_url TEXT,
+    link_url TEXT,
+    status TEXT NOT NULL DEFAULT 'active',
+    starts_at INTEGER,
+    ends_at INTEGER,
+    created_at INTEGER NOT NULL
   )`).run();
   await ensureBotSchema(env);
   schemaReady = true;
