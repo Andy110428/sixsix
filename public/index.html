@@ -25,6 +25,7 @@
     --gold: #f0b429;
     --danger: #ff5c7a;
     --radius: 18px;
+    --card-shadow: 0 24px 60px -28px rgba(0,0,0,0.7);
   }
   *{ box-sizing: border-box; }
   html{ scroll-behavior: smooth; background: var(--bg); font-size:17px; }
@@ -57,6 +58,7 @@
   .bg-glow{ position:fixed; z-index:-1; filter:blur(130px); opacity:0.22; border-radius:50%; pointer-events:none; }
   .glow-1{ width:560px; height:560px; top:-200px; left:-160px; background:var(--accent-a); }
   .glow-2{ width:620px; height:620px; top:10%; right:-220px; background:var(--accent-c); }
+  .bg-vignette{ position:fixed; inset:0; z-index:-1; pointer-events:none; background:radial-gradient(ellipse 60% 42% at 50% 0%, rgba(52,211,153,0.10), transparent 70%); }
 
   .wrap{ max-width:1180px; margin:0 auto; padding:0 24px; }
 
@@ -127,7 +129,7 @@
   /* benefits */
   .benefit-grid{ display:grid; grid-template-columns:1fr 1fr; gap:22px; }
   @media (max-width:760px){ .benefit-grid{ grid-template-columns:1fr; } }
-  .benefit-card{ background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); padding:32px; border-left:3px solid var(--accent-a); transition: transform .2s ease, border-color .2s ease; }
+  .benefit-card{ background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); padding:32px; border-left:3px solid var(--accent-a); box-shadow:var(--card-shadow); transition: transform .2s ease, border-color .2s ease; }
   .benefit-card:nth-child(2){ border-left-color: var(--accent-c); }
   .benefit-card:hover{ transform:translateY(-3px); }
   .benefit-icon{ font-size:2rem; margin-bottom:14px; }
@@ -145,37 +147,42 @@
   .promo-btn{ flex-shrink:0; }
   @media (max-width:520px){ .promo-banner{ flex-direction:column; align-items:stretch; text-align:center; } .promo-text{ flex-direction:column; } .promo-btn{ width:100%; } }
 
-  /* exchanges */
-  .ex-grid{ display:grid; grid-template-columns:1.6fr 1fr; gap:22px; align-items:start; }
-  @media (max-width:760px){ .ex-grid{ grid-template-columns:1fr; } }
-  .ex-card{ background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); padding:30px; display:flex; flex-direction:column; gap:17px; transition: transform .2s ease, border-color .2s ease; }
-  .ex-card:hover{ transform:translateY(-3px); border-color:rgba(255,255,255,0.2); }
-  .ex-card.soon{ border-style:dashed; opacity:0.6; padding:22px 24px; gap:10px; }
-  .ex-card.soon h3{ font-size:1.1rem; }
-  .ex-card.soon .desc{ font-size:0.88rem; margin-top:0; }
-  .ex-pill{ display:inline-flex; align-self:flex-start; padding:5px 13px; border-radius:999px; font-size:0.8rem; font-weight:700; letter-spacing:0.02em; border:1px solid; }
+  /* exchanges — 파트너 거래소 비교 테이블 스타일 */
+  .ex-table{ background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); box-shadow:var(--card-shadow); overflow:hidden; }
+  .ex-table-head{ display:grid; grid-template-columns:2.1fr 1fr 1.1fr 1.6fr; gap:14px; padding:16px 26px; font-size:0.84rem; font-weight:700; color:var(--text-dim); letter-spacing:0.02em; border-bottom:1px solid var(--line); background:rgba(255,255,255,0.015); }
+  @media (max-width:860px){ .ex-table-head{ display:none; } }
+  .ex-row-card{ border-bottom:1px solid var(--line); transition: background .2s ease; }
+  .ex-row-card:last-child{ border-bottom:none; }
+  .ex-row-card.active{ background:linear-gradient(90deg, rgba(52,211,153,0.07), transparent 60%); }
+  .ex-row-card.active:hover{ background:linear-gradient(90deg, rgba(52,211,153,0.12), transparent 65%); }
+  .ex-row-main{ display:grid; grid-template-columns:2.1fr 1fr 1.1fr 1.6fr; gap:14px; align-items:center; padding:22px 26px; }
+  @media (max-width:860px){ .ex-row-main{ grid-template-columns:1fr; gap:16px; padding:24px; } }
+  .ex-row-id{ display:flex; align-items:center; gap:14px; min-width:0; }
+  .ex-logo{ width:44px; height:44px; border-radius:12px; overflow:hidden; flex-shrink:0; box-shadow:0 3px 14px rgba(21,87,255,0.28); }
+  .ex-logo svg, .ex-logo img{ display:block; width:100%; height:100%; object-fit:cover; }
+  .ex-logo.placeholder{ background:var(--panel-soft); border:1px solid var(--line); display:flex; align-items:center; justify-content:center; font-size:1.15rem; box-shadow:none; }
+  .ex-row-id h3{ font-size:1.22rem; color:var(--text); margin-top:2px; }
+  .ex-row-card.soon .ex-row-id h3{ color:var(--text-dim); font-size:1.05rem; }
+  .ex-pill{ display:inline-flex; padding:4px 11px; border-radius:999px; font-size:0.74rem; font-weight:700; letter-spacing:0.02em; border:1px solid; }
   .ex-pill.active{ color:var(--accent-a); border-color:rgba(52,211,153,0.35); background:rgba(52,211,153,0.1); }
   .ex-pill.soon{ color:var(--text-dim); border-color:var(--line); background:rgba(255,255,255,0.03); }
-  .ex-card h3{ font-size:1.6rem; color:var(--accent-a); }
-  .ex-card.soon h3{ color:var(--text); }
-  .ex-card .desc{ color:var(--text-dim); font-size:1rem; margin-top:-8px; }
-  .ex-head{ display:flex; align-items:center; gap:14px; }
-  .ex-logo{ width:46px; height:46px; border-radius:12px; overflow:hidden; flex-shrink:0; box-shadow:0 3px 14px rgba(21,87,255,0.28); }
-  .ex-logo svg, .ex-logo img{ display:block; width:100%; height:100%; object-fit:cover; }
-  .ex-divider{ height:1px; background:var(--line); }
-  .ex-row{ display:flex; justify-content:space-between; align-items:center; font-size:1rem; }
-  .ex-row .label{ color:var(--text-dim); }
-  .ex-row .val{ font-family:'JetBrains Mono',monospace; font-weight:700; color:var(--gold); }
-  .ex-row .val.muted{ color:var(--text-dim); font-weight:600; font-family:'IBM Plex Sans KR',sans-serif; }
+  .ex-row-stat{ display:flex; flex-direction:column; gap:2px; }
+  .ex-row-stat b{ font-family:'JetBrains Mono',monospace; font-size:1.2rem; font-weight:800; color:var(--gold); }
+  .ex-row-stat.muted b{ color:var(--text-dim); font-family:'IBM Plex Sans KR',sans-serif; font-weight:700; font-size:1rem; }
+  .ex-row-stat span{ font-size:0.78rem; color:var(--text-dim); }
+  @media (max-width:860px){ .ex-row-stat{ flex-direction:row; align-items:baseline; gap:8px; } .ex-row-stat span{ order:-1; font-weight:600; } .ex-row-stat span::after{ content:':'; } }
+  .ex-row-actions{ display:flex; gap:8px; justify-content:flex-end; flex-wrap:wrap; }
+  @media (max-width:860px){ .ex-row-actions{ justify-content:stretch; } .ex-row-actions .btn, .ex-row-actions span{ flex:1; } }
+  .ex-row-link{ padding:0 26px 22px; }
   .ex-link-box{ display:flex; gap:8px; }
   .ex-link-box input{ flex:1; min-width:0; background:var(--panel-soft); border:1px solid var(--line); border-radius:10px; padding:11px 13px; color:var(--text-dim); font-family:'JetBrains Mono',monospace; font-size:0.84rem; }
-  .ex-actions{ display:flex; gap:8px; flex-wrap:wrap; }
-  .ex-actions .btn{ flex:1; }
+  .ex-desc-row{ padding:0 26px 18px; color:var(--text-dim); font-size:0.92rem; margin-top:-6px; }
+  @media (max-width:860px){ .ex-desc-row{ padding:0 24px 18px; } }
 
   /* payback */
   .payback-grid{ display:grid; grid-template-columns:1fr 1fr; gap:22px; align-items:start; }
   @media (max-width:860px){ .payback-grid{ grid-template-columns:1fr; } }
-  .payback-card{ background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); padding:30px; min-width:0; }
+  .payback-card{ background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); padding:30px; min-width:0; box-shadow:var(--card-shadow); }
   .payback-card h3{ font-size:1.1rem; margin-bottom:16px; }
   .payback-right-head{ display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; margin-bottom:16px; }
   .payback-right-head h3{ margin:0; }
@@ -217,17 +224,39 @@
   .prv-hint{ color:var(--text-dim); font-size:0.9rem; margin-top:18px; padding-top:18px; border-top:1px solid var(--line); }
   @media (max-width:480px){ .payback-modal{ padding:26px 20px; } }
 
-  /* how it works */
-  .how-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:20px; }
-  @media (max-width:860px){ .how-grid{ grid-template-columns:1fr; } }
-  .how-card{ background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); padding:28px; transition: transform .2s ease; }
-  .how-card:hover{ transform:translateY(-3px); }
-  .how-num{ width:36px; height:36px; border-radius:11px; display:flex; align-items:center; justify-content:center; font-family:'IBM Plex Sans KR',sans-serif; font-weight:800; font-size:1rem; background:linear-gradient(135deg, var(--accent-a), var(--accent-c)); color:#04120d; margin-bottom:18px; }
-  .how-card h3{ font-size:1.18rem; margin-bottom:9px; }
-  .how-card p{ color:var(--text-dim); font-size:0.98rem; }
+  /* how it works — 좌: 소개 텍스트 / 우: 단계 플로우 카드 (CashMine 참고, 아이콘 체인+콜아웃 구조만 차용) */
+  .how-layout{ display:grid; grid-template-columns:0.85fr 1.15fr; gap:40px; align-items:center; }
+  @media (max-width:900px){ .how-layout{ grid-template-columns:1fr; gap:30px; } }
+  .how-intro h2{ font-size:clamp(1.7rem, 3.6vw, 2.3rem); margin-bottom:14px; }
+  .how-intro p{ color:var(--text-dim); font-size:1.06rem; }
+  .how-flow-card{ background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); padding:30px; box-shadow:var(--card-shadow); }
+  .flow-steps{ display:flex; align-items:flex-start; gap:4px; }
+  @media (max-width:640px){ .flow-steps{ flex-direction:column; } }
+  .flow-step{ flex:1; display:flex; flex-direction:column; align-items:flex-start; gap:10px; min-width:0; }
+  .flow-icon{ width:40px; height:40px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:1.02rem; background:linear-gradient(135deg, var(--accent-a), var(--accent-c)); color:#04120d; flex-shrink:0; }
+  .flow-step h4{ font-size:1.02rem; font-weight:700; margin:0; }
+  .flow-step p{ color:var(--text-dim); font-size:0.86rem; margin:0; line-height:1.5; }
+  .flow-arrow{ display:flex; align-items:center; justify-content:center; color:var(--text-dim); font-size:1.2rem; padding-top:8px; flex-shrink:0; width:28px; }
+  @media (max-width:640px){ .flow-arrow{ transform:rotate(90deg); align-self:flex-start; margin-left:10px; width:auto; padding:2px 0; } }
+  .flow-callout{ margin-top:26px; padding:16px 18px; border-radius:12px; background:rgba(52,211,153,0.08); border:1px solid rgba(52,211,153,0.25); display:flex; align-items:flex-start; gap:10px; font-size:0.92rem; color:var(--text-dim); }
+  .flow-callout .check{ flex-shrink:0; }
+  .flow-callout b{ color:var(--text); }
+
+  /* 예상 페이백 계산기 */
+  .calc-card{ background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); padding:34px; max-width:640px; margin:0 auto; box-shadow:var(--card-shadow); }
+  .calc-inputs label{ display:block; font-size:0.94rem; font-weight:600; color:var(--text-dim); margin-bottom:14px; }
+  .calc-inputs input[type="range"]{ width:100%; accent-color:var(--accent-a); height:6px; cursor:pointer; }
+  .calc-volume-val{ text-align:right; font-family:'JetBrains Mono',monospace; font-weight:700; font-size:1.1rem; margin-top:8px; }
+  .calc-volume-val span{ color:var(--accent-a); }
+  .calc-result{ margin-top:26px; padding:18px 20px; border-radius:14px; background:var(--panel-soft); border:1px solid var(--line); display:flex; flex-direction:column; gap:12px; }
+  .calc-result-row{ display:flex; justify-content:space-between; align-items:center; font-size:0.96rem; color:var(--text-dim); }
+  .calc-result-row b{ font-family:'JetBrains Mono',monospace; font-size:1.05rem; color:var(--text); }
+  .calc-result-row.highlight{ padding-top:12px; border-top:1px solid var(--line); font-weight:600; color:var(--text); }
+  .calc-result-row.highlight b{ color:var(--accent-a); font-size:1.5rem; }
+  .calc-note{ color:var(--text-dim); font-size:0.78rem; margin:16px 0 0; line-height:1.6; }
 
   /* verify + telegram */
-  .verify-card{ background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); padding:38px; max-width:580px; margin:0 auto; }
+  .verify-card{ background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); padding:38px; max-width:580px; margin:0 auto; box-shadow:var(--card-shadow); }
   .payback-grid .verify-card{ max-width:none; margin:0; min-width:0; }
   .verify-step{ margin-bottom:24px; }
   .verify-step label{ display:block; font-size:0.94rem; font-weight:600; color:var(--text-dim); margin-bottom:9px; }
@@ -274,14 +303,15 @@
 <div class="bg-grid"></div>
 <div class="bg-glow glow-1"></div>
 <div class="bg-glow glow-2"></div>
+<div class="bg-vignette"></div>
 
 <header>
   <div class="nav">
     <a class="brand" href="#top"><span class="mark" aria-hidden="true"><svg viewBox="0 0 24 24" width="19" height="19"><defs><linearGradient id="markGradNav" x1="0" y1="0" x2="24" y2="24"><stop offset="0" stop-color="#34d399"/><stop offset="0.55" stop-color="#22c3b6"/><stop offset="1" stop-color="#2dd4ec"/></linearGradient><filter id="markGlowNav" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="0.9" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs><g filter="url(#markGlowNav)"><circle cx="7" cy="7" r="2.3" fill="none" stroke="url(#markGradNav)" stroke-width="1.7"/><circle cx="17" cy="17" r="2.3" fill="none" stroke="url(#markGradNav)" stroke-width="1.7"/><line x1="18" y1="6" x2="6" y2="18" stroke="url(#markGradNav)" stroke-width="1.7" stroke-linecap="round"/></g></svg></span>TEAM SIXX</a>
     <nav class="nav-links">
-      <a href="#benefits">혜택</a>
-      <a href="#how">이용 방법</a>
       <a href="#exchanges">거래소</a>
+      <a href="#how">이용 방법</a>
+      <a href="#calc">계산기</a>
       <a href="#verify">UID 확인</a>
       <a href="#payback">페이백 조회</a>
       <a href="#faq">FAQ</a>
@@ -292,9 +322,9 @@
       <button class="menu-btn" id="menu-btn" aria-expanded="false" aria-label="메뉴"><span></span><span></span><span></span></button>
     </div>
     <div class="menu-dropdown" id="menu-dropdown">
-      <a href="#benefits">혜택</a>
-      <a href="#how">이용 방법</a>
       <a href="#exchanges">거래소</a>
+      <a href="#how">이용 방법</a>
+      <a href="#calc">계산기</a>
       <a href="#verify">UID 확인</a>
       <a href="#payback">페이백 조회</a>
       <a href="#faq">FAQ</a>
@@ -363,37 +393,56 @@
     <div class="wrap">
       <div class="sec-head reveal">
         <div class="sec-label">— EXCHANGES</div>
-        <h2>지원 거래소</h2>
+        <h2>파트너 거래소</h2>
         <p>아래 전용 링크로 새로 가입해야 페이백 대상이 됩니다. 기존 계정은 인정되지 않아요.</p>
       </div>
-      <div class="ex-grid">
-        <div class="ex-card reveal">
-          <div class="ex-head">
-            <div class="ex-logo" aria-hidden="true">
-              <img src="/gate-logo.png" width="46" height="46" alt="" loading="lazy">
+      <div class="ex-table reveal">
+        <div class="ex-table-head">
+          <span>거래소</span>
+          <span>페이백율</span>
+          <span>정산 주기</span>
+          <span></span>
+        </div>
+        <div class="ex-row-card active">
+          <div class="ex-row-main">
+            <div class="ex-row-id">
+              <div class="ex-logo" aria-hidden="true">
+                <img src="/gate-logo.png" width="44" height="44" alt="" loading="lazy">
+              </div>
+              <div>
+                <span class="ex-pill active">운영중</span>
+                <h3>Gate.io</h3>
+              </div>
             </div>
-            <div>
-              <span class="ex-pill active">크립토 거래소</span>
-              <h3>Gate.io</h3>
+            <div class="ex-row-stat"><b>50%</b><span>페이백율</span></div>
+            <div class="ex-row-stat"><b>매일</b><span>1시간 내외</span></div>
+            <div class="ex-row-actions">
+              <a class="btn btn-primary btn-sm" href="https://www.gate.com/signup?ref_type=103&ref=TEAMSIXX" target="_blank" rel="noopener">가입하기 →</a>
+              <a class="btn btn-ghost btn-sm" href="#verify">UID 확인</a>
             </div>
           </div>
-          <p class="desc">글로벌 코인 현물·선물 거래소</p>
-          <div class="ex-divider"></div>
-          <div class="ex-row"><span class="label">페이백율</span><span class="val">50%</span></div>
-          <div class="ex-row"><span class="label">정산 방식</span><span class="val">매일 · 1시간 내외</span></div>
-          <div class="ex-link-box">
-            <input type="text" readonly id="gate-link" value="https://www.gate.com/signup?ref_type=103&ref=TEAMSIXX">
-            <button class="btn btn-ghost btn-sm" id="copy-gate-link">복사</button>
-          </div>
-          <div class="ex-actions">
-            <a class="btn btn-primary" href="https://www.gate.com/signup?ref_type=103&ref=TEAMSIXX" target="_blank" rel="noopener">가입하기 →</a>
-            <a class="btn btn-ghost" href="#verify">UID 확인</a>
+          <div class="ex-desc-row">글로벌 코인 현물·선물 거래소 — 전용 링크로 새로 가입해야 인정됩니다.</div>
+          <div class="ex-row-link">
+            <div class="ex-link-box">
+              <input type="text" readonly id="gate-link" value="https://www.gate.com/signup?ref_type=103&ref=TEAMSIXX">
+              <button class="btn btn-ghost btn-sm" id="copy-gate-link">복사</button>
+            </div>
           </div>
         </div>
-        <div class="ex-card soon reveal">
-          <span class="ex-pill soon">준비중</span>
-          <h3>다른 메이저 거래소</h3>
-          <p class="desc">더 좋은 조건의 파트너십을 준비하고 있어요. 곧 추가될 예정입니다.</p>
+        <div class="ex-row-card soon">
+          <div class="ex-row-main">
+            <div class="ex-row-id">
+              <div class="ex-logo placeholder" aria-hidden="true">🔒</div>
+              <div>
+                <span class="ex-pill soon">준비중</span>
+                <h3>다른 메이저 거래소</h3>
+              </div>
+            </div>
+            <div class="ex-row-stat muted"><b>—</b><span>페이백율</span></div>
+            <div class="ex-row-stat muted"><b>—</b><span>정산 주기</span></div>
+            <div class="ex-row-actions"><span class="btn btn-ghost btn-sm" style="opacity:0.5; pointer-events:none;">준비중</span></div>
+          </div>
+          <div class="ex-desc-row">더 좋은 조건의 파트너십을 준비하고 있어요. 곧 추가될 예정입니다.</div>
         </div>
       </div>
     </div>
@@ -401,27 +450,60 @@
 
   <section id="how">
     <div class="wrap">
-      <div class="sec-head reveal">
-        <div class="sec-label">— HOW IT WORKS</div>
-        <h2>이용 방법</h2>
-        <p>세 단계면 끝나요.</p>
+      <div class="how-layout">
+        <div class="how-intro reveal">
+          <div class="sec-label">— HOW IT WORKS</div>
+          <h2>거래소에 낸 수수료,<br>돌려받을 수 있어요</h2>
+          <p>전용 링크로 가입하고 평소처럼 거래하면, 그 수수료의 일부가 자동으로 페이백으로 쌓여요. 숨겨진 비용도, 거래 방식 변경도 없어요.</p>
+        </div>
+        <div class="how-flow-card reveal">
+          <div class="flow-steps">
+            <div class="flow-step">
+              <div class="flow-icon">1</div>
+              <h4>전용 링크로 가입</h4>
+              <p>거래소 카드의 전용 링크로 새 계정을 만들어요.</p>
+            </div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-step">
+              <div class="flow-icon">2</div>
+              <h4>UID 확인</h4>
+              <p>발급된 UID로 전용 링크 가입 여부를 바로 확인해요.</p>
+            </div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-step">
+              <div class="flow-icon">3</div>
+              <h4>텔레그램 입장 신청</h4>
+              <p>신청하면 운영자가 개별로 안내해드려요.</p>
+            </div>
+          </div>
+          <div class="flow-callout">
+            <span class="check">✅</span>
+            <span>페이백은 거래마다 계산돼 <b>매일, 1시간 내외</b>로 지급돼요. 정확한 지급 내역은 비공개 텔레그램에서 확인할 수 있어요.</span>
+          </div>
+        </div>
       </div>
-      <div class="how-grid">
-        <div class="how-card reveal">
-          <div class="how-num">1</div>
-          <h3>전용 링크로 가입</h3>
-          <p>위 거래소 카드의 전용 링크로 새 계정을 만들어주세요.</p>
+    </div>
+  </section>
+
+  <section id="calc">
+    <div class="wrap">
+      <div class="sec-head reveal">
+        <div class="sec-label">— CALCULATOR</div>
+        <h2>예상 페이백 계산기</h2>
+        <p>일 거래대금을 입력하면 예상 페이백 규모를 가늠해볼 수 있어요.</p>
+      </div>
+      <div class="calc-card reveal">
+        <div class="calc-inputs">
+          <label for="calc-volume">일 거래대금 (USDT)</label>
+          <input type="range" id="calc-volume" min="100" max="100000" step="100" value="5000">
+          <div class="calc-volume-val"><span id="calc-volume-display">5,000</span> USDT</div>
         </div>
-        <div class="how-card reveal">
-          <div class="how-num">2</div>
-          <h3>UID 확인</h3>
-          <p>발급된 UID를 입력하면 전용 링크 가입 여부를 바로 확인해드려요.</p>
+        <div class="calc-result">
+          <div class="calc-result-row"><span>1일 예상 페이백</span><b id="calc-daily">-</b></div>
+          <div class="calc-result-row"><span>1개월 예상 페이백</span><b id="calc-month">-</b></div>
+          <div class="calc-result-row highlight"><span>6개월 예상 페이백</span><b id="calc-6month">-</b></div>
         </div>
-        <div class="how-card reveal">
-          <div class="how-num">3</div>
-          <h3>비공개 텔레그램 입장 신청</h3>
-          <p>텔레그램 아이디를 입력해 신청하면 운영자가 개별 안내해드려요.</p>
-        </div>
+        <p class="calc-note">* 시장가 체결 기준 수수료율(약 0.05%)을 가정해 50% 페이백율을 적용한 추정치예요. 실제 수수료·거래 조건·VIP 등급에 따라 달라질 수 있어요.</p>
       </div>
     </div>
   </section>
@@ -847,6 +929,32 @@
   }
   load();
   setInterval(load, 20000);
+})();
+
+(function(){
+  var rangeEl = document.getElementById('calc-volume');
+  var volDisplay = document.getElementById('calc-volume-display');
+  var dailyEl = document.getElementById('calc-daily');
+  var monthEl = document.getElementById('calc-month');
+  var sixMonthEl = document.getElementById('calc-6month');
+  if(!rangeEl) return;
+
+  var FEE_RATE = 0.0005; // 시장가 체결 기준 가정 수수료율(추정)
+  var PAYBACK_RATE = 0.5; // 현재 Gate.io 페이백율
+
+  function fmt(n){
+    return Number(n).toLocaleString('en-US', { minimumFractionDigits:2, maximumFractionDigits:2 }) + ' USDT';
+  }
+  function render(){
+    var volume = Number(rangeEl.value);
+    volDisplay.textContent = volume.toLocaleString('en-US');
+    var dailyPayback = volume * FEE_RATE * PAYBACK_RATE;
+    dailyEl.textContent = fmt(dailyPayback);
+    monthEl.textContent = fmt(dailyPayback * 30);
+    sixMonthEl.textContent = fmt(dailyPayback * 182);
+  }
+  rangeEl.addEventListener('input', render);
+  render();
 })();
 </script>
 
