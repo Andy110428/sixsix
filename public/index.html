@@ -152,13 +152,13 @@
 
   /* promo banner — 이미 가입한 사람용 지름길 */
   .promo-wrap{ padding:0 0 84px; }
-  .promo-banner{ display:flex; align-items:center; justify-content:space-between; gap:20px; flex-wrap:wrap; background:linear-gradient(90deg, rgba(52,211,153,0.1), rgba(45,212,236,0.08)); border:1px solid rgba(52,211,153,0.3); border-radius:var(--radius); padding:26px 30px; transition: opacity .7s cubic-bezier(.16,.84,.44,1), transform .3s cubic-bezier(.16,.84,.44,1), border-color .2s ease; }
+  .promo-banner{ display:flex; align-items:center; justify-content:space-between; gap:18px; flex-wrap:wrap; background:linear-gradient(90deg, rgba(52,211,153,0.1), rgba(45,212,236,0.08)); border:1px solid rgba(52,211,153,0.3); border-radius:var(--radius); padding:18px 24px; transition: opacity .7s cubic-bezier(.16,.84,.44,1), transform .3s cubic-bezier(.16,.84,.44,1), border-color .2s ease; }
   .promo-banner:hover{ transform:translateY(-2px); border-color:rgba(52,211,153,0.5); }
-  .promo-text{ display:flex; align-items:center; gap:16px; }
-  .promo-icon{ font-size:1.8rem; flex-shrink:0; }
-  .promo-text h3{ font-size:1.14rem; margin-bottom:4px; }
-  .promo-text p{ color:var(--text-dim); font-size:0.96rem; margin:0; }
-  .promo-btn{ flex-shrink:0; }
+  .promo-text{ display:flex; align-items:center; gap:14px; }
+  .promo-icon{ font-size:1.5rem; flex-shrink:0; }
+  .promo-text h3{ font-size:0.98rem; margin-bottom:3px; }
+  .promo-text p{ color:var(--text-dim); font-size:0.84rem; margin:0; }
+  .promo-btn{ flex-shrink:0; padding:9px 16px; font-size:0.86rem; }
   @media (max-width:520px){ .promo-banner{ flex-direction:column; align-items:stretch; text-align:center; } .promo-text{ flex-direction:column; } .promo-btn{ width:100%; } }
 
   /* exchanges — 파트너 거래소 비교 테이블 스타일 */
@@ -240,6 +240,26 @@
   .prv-hint{ color:var(--text-dim); font-size:0.9rem; margin-top:18px; padding-top:18px; border-top:1px solid var(--line); }
   @media (max-width:480px){ .payback-modal{ padding:26px 20px; } }
 
+  /* 프로모 팝업 — 페이지 첫 방문 시 짧게 뜨는 이벤트 안내창 ("오늘 하루 보지 않기" 지원) */
+  .promo-popup-backdrop{ position:fixed; inset:0; z-index:210; background:rgba(5,6,8,0.78); backdrop-filter:blur(6px); display:flex; align-items:center; justify-content:center; padding:20px; opacity:0; visibility:hidden; transition:opacity .25s ease, visibility .25s ease; }
+  .promo-popup-backdrop[hidden]{ display:none; }
+  .promo-popup-backdrop.show{ opacity:1; visibility:visible; }
+  .promo-popup{ position:relative; width:100%; max-width:400px; background:var(--panel); border:1px solid rgba(52,211,153,0.3); border-radius:var(--radius); padding:30px 26px 26px; box-shadow:var(--card-shadow); transform:translateY(14px) scale(0.98); transition:transform .25s ease; }
+  .promo-popup-backdrop.show .promo-popup{ transform:translateY(0) scale(1); }
+  .promo-popup-close{ position:absolute; top:14px; right:14px; width:30px; height:30px; border-radius:50%; border:1px solid var(--line); background:rgba(255,255,255,0.04); color:var(--text-dim); font-size:0.94rem; cursor:pointer; display:flex; align-items:center; justify-content:center; }
+  .promo-popup-close:hover{ color:var(--text); border-color:rgba(255,255,255,0.3); }
+  .promo-popup-badge{ display:inline-flex; align-items:center; gap:6px; font-size:0.76rem; font-weight:700; color:var(--text-dim); margin-bottom:16px; }
+  .promo-popup-badge img{ width:18px; height:18px; border-radius:5px; display:block; }
+  .promo-popup-hero{ display:flex; align-items:center; gap:14px; margin-bottom:16px; }
+  .promo-popup-pct{ font-family:'JetBrains Mono',monospace; font-weight:800; font-size:2.6rem; background:linear-gradient(135deg, var(--accent-a), var(--accent-c)); -webkit-background-clip:text; background-clip:text; color:transparent; line-height:1; }
+  .promo-popup-hero h3{ font-size:1.08rem; margin-bottom:2px; }
+  .promo-popup-hero p{ color:var(--text-dim); font-size:0.8rem; margin:0; }
+  .promo-popup-desc{ color:var(--text-dim); font-size:0.88rem; line-height:1.6; margin:0 0 20px; }
+  .promo-popup .btn{ width:100%; margin-bottom:12px; justify-content:center; }
+  .promo-popup-dismiss{ display:block; width:100%; text-align:center; background:none; border:none; color:var(--text-dim); font-size:0.8rem; cursor:pointer; padding:4px; font-family:'IBM Plex Sans KR',sans-serif; }
+  .promo-popup-dismiss:hover{ color:var(--text); }
+  @media (max-width:480px){ .promo-popup{ padding:24px 20px 20px; } }
+
   /* how it works — 좌: 소개 텍스트 / 우: 단계 플로우 카드 (CashMine 참고, 아이콘 체인+콜아웃 구조만 차용) */
   .how-layout{ display:grid; grid-template-columns:0.85fr 1.15fr; gap:40px; align-items:center; }
   @media (max-width:900px){ .how-layout{ grid-template-columns:1fr; gap:30px; } }
@@ -272,7 +292,11 @@
   .calc-inputs input[type="range"]{ width:100%; accent-color:var(--accent-a); height:6px; cursor:pointer; }
   .calc-volume-val{ text-align:right; font-family:'JetBrains Mono',monospace; font-weight:700; font-size:1.1rem; margin-top:8px; }
   .calc-volume-val span{ color:var(--accent-a); }
-  .calc-result{ margin-top:26px; padding:18px 20px; border-radius:14px; background:var(--panel-soft); border:1px solid var(--line); display:flex; flex-direction:column; gap:12px; }
+  .calc-input-row{ margin-bottom:22px; }
+  .calc-input-row:last-child{ margin-bottom:0; }
+  .calc-volume-summary{ margin-top:22px; padding:13px 18px; border-radius:12px; background:rgba(52,211,153,0.08); border:1px solid rgba(52,211,153,0.25); font-size:0.88rem; color:var(--text-dim); display:flex; justify-content:space-between; align-items:center; gap:10px; }
+  .calc-volume-summary b{ font-family:'JetBrains Mono',monospace; color:var(--accent-a); font-size:1rem; }
+  .calc-result{ margin-top:18px; padding:18px 20px; border-radius:14px; background:var(--panel-soft); border:1px solid var(--line); display:flex; flex-direction:column; gap:12px; }
   .calc-result-row{ display:flex; justify-content:space-between; align-items:center; font-size:0.96rem; color:var(--text-dim); }
   .calc-result-row b{ font-family:'JetBrains Mono',monospace; font-size:1.05rem; color:var(--text); }
   .calc-result-row.highlight{ padding-top:12px; border-top:1px solid var(--line); font-weight:600; color:var(--text); }
@@ -548,7 +572,7 @@
       <div class="sec-head reveal">
         <div class="sec-label">— CALCULATOR</div>
         <h2>예상 페이백 계산기</h2>
-        <p>일 거래대금을 입력하면 예상 페이백 규모를 가늠해볼 수 있어요.</p>
+        <p>거래 원금과 레버리지, 하루 거래 횟수를 입력하면 예상 페이백 규모를 가늠해볼 수 있어요.</p>
       </div>
       <div class="calc-card reveal">
         <div class="calc-ex-picker">
@@ -556,16 +580,29 @@
           <div class="calc-ex-row" id="calc-ex-row"></div>
         </div>
         <div class="calc-inputs">
-          <label for="calc-volume">일 거래대금 (USDT)</label>
-          <input type="range" id="calc-volume" min="100" max="100000" step="100" value="5000">
-          <div class="calc-volume-val"><span id="calc-volume-display">5,000</span> USDT</div>
+          <div class="calc-input-row">
+            <label for="calc-principal">거래 원금 (USDT)</label>
+            <input type="range" id="calc-principal" min="50" max="10000" step="50" value="500">
+            <div class="calc-volume-val"><span id="calc-principal-display">500</span> USDT</div>
+          </div>
+          <div class="calc-input-row">
+            <label for="calc-leverage">레버리지</label>
+            <input type="range" id="calc-leverage" min="1" max="100" step="1" value="5">
+            <div class="calc-volume-val"><span id="calc-leverage-display">5</span>x</div>
+          </div>
+          <div class="calc-input-row">
+            <label for="calc-trades">하루 거래 횟수</label>
+            <input type="range" id="calc-trades" min="1" max="30" step="1" value="2">
+            <div class="calc-volume-val"><span id="calc-trades-display">2</span>회</div>
+          </div>
         </div>
+        <div class="calc-volume-summary">예상 일 거래대금 <b id="calc-volume-computed">-</b></div>
         <div class="calc-result">
           <div class="calc-result-row"><span>1일 예상 페이백</span><b id="calc-daily">-</b></div>
           <div class="calc-result-row"><span>1개월 예상 페이백</span><b id="calc-month">-</b></div>
           <div class="calc-result-row highlight"><span>6개월 예상 페이백</span><b id="calc-6month">-</b></div>
         </div>
-        <p class="calc-note">* 시장가 체결 기준 수수료율(약 0.05%)을 가정해 50% 페이백율을 적용한 추정치예요. 실제 수수료·거래 조건·VIP 등급에 따라 달라질 수 있어요.</p>
+        <p class="calc-note">* 거래 원금 × 레버리지 × 하루 거래 횟수로 추정한 일 거래대금에, 시장가 체결 기준 수수료율(약 0.05%)과 50% 페이백율을 적용한 추정치예요. 실제 수수료·거래 조건·VIP 등급에 따라 달라질 수 있어요.</p>
       </div>
     </div>
   </section>
@@ -636,6 +673,23 @@
         <button class="btn btn-primary" id="payback-modal-search-btn">조회하기</button>
       </div>
       <div id="payback-modal-result"></div>
+    </div>
+  </div>
+
+  <div class="promo-popup-backdrop" id="promo-popup-backdrop" hidden>
+    <div class="promo-popup">
+      <button class="promo-popup-close" id="promo-popup-close" aria-label="닫기">✕</button>
+      <div class="promo-popup-badge"><img src="/gate-logo.png" alt=""> TEAM SIXX × Gate.io</div>
+      <div class="promo-popup-hero">
+        <span class="promo-popup-pct">50%</span>
+        <div>
+          <h3>수수료 페이백</h3>
+          <p>전용 링크로 가입하면 바로 적용</p>
+        </div>
+      </div>
+      <p class="promo-popup-desc">지금 전용 링크로 Gate.io에 가입하면 거래 수수료의 <b style="color:var(--text);">50%</b>를 매일, 1시간 내외로 페이백 받을 수 있어요. UID만 확인되면 비공개 텔레그램 커뮤니티도 바로 신청할 수 있어요.</p>
+      <a href="#verify" class="btn btn-primary" id="promo-popup-cta">지금 확인하기 →</a>
+      <button class="promo-popup-dismiss" id="promo-popup-dismiss">오늘 하루 보지 않기</button>
     </div>
   </div>
 
@@ -1062,13 +1116,18 @@
 })();
 
 (function(){
-  var rangeEl = document.getElementById('calc-volume');
-  var volDisplay = document.getElementById('calc-volume-display');
+  var principalEl = document.getElementById('calc-principal');
+  var principalDisplay = document.getElementById('calc-principal-display');
+  var leverageEl = document.getElementById('calc-leverage');
+  var leverageDisplay = document.getElementById('calc-leverage-display');
+  var tradesEl = document.getElementById('calc-trades');
+  var tradesDisplay = document.getElementById('calc-trades-display');
+  var volumeComputedEl = document.getElementById('calc-volume-computed');
   var dailyEl = document.getElementById('calc-daily');
   var monthEl = document.getElementById('calc-month');
   var sixMonthEl = document.getElementById('calc-6month');
   var exRowEl = document.getElementById('calc-ex-row');
-  if(!rangeEl || !exRowEl) return;
+  if(!principalEl || !exRowEl) return;
 
   // 20-28단계: 거래소를 직접 고를 수 있게 — 지금은 Gate.io만 운영중이라 요율도 하나뿐이지만,
   // 다른 거래소가 추가되면 이 배열에 항목만 추가하면 계산기에 자동으로 선택지가 늘어남.
@@ -1104,15 +1163,21 @@
     return Number(n).toLocaleString('en-US', { minimumFractionDigits:2, maximumFractionDigits:2 }) + ' USDT';
   }
   function render(){
-    var volume = Number(rangeEl.value);
-    volDisplay.textContent = volume.toLocaleString('en-US');
+    var principal = Number(principalEl.value);
+    var leverage = Number(leverageEl.value);
+    var trades = Number(tradesEl.value);
+    principalDisplay.textContent = principal.toLocaleString('en-US');
+    leverageDisplay.textContent = leverage.toLocaleString('en-US');
+    tradesDisplay.textContent = trades.toLocaleString('en-US');
+    var volume = principal * leverage * trades;
+    volumeComputedEl.textContent = volume.toLocaleString('en-US') + ' USDT';
     var dailyPayback = volume * selected.feeRate * selected.paybackRate;
     dailyEl.textContent = fmt(dailyPayback);
     monthEl.textContent = fmt(dailyPayback * 30);
     sixMonthEl.textContent = fmt(dailyPayback * 182);
   }
   renderExButtons();
-  rangeEl.addEventListener('input', render);
+  [principalEl, leverageEl, tradesEl].forEach(function(el){ el.addEventListener('input', render); });
   render();
 })();
 
@@ -1337,6 +1402,48 @@
     .then(function(res){ return res.json(); })
     .then(function(data){ if(data.ok) showPanel(); })
     .catch(function(){});
+})();
+
+(function(){
+  var backdrop = document.getElementById('promo-popup-backdrop');
+  if(!backdrop) return;
+  var closeBtn = document.getElementById('promo-popup-close');
+  var dismissBtn = document.getElementById('promo-popup-dismiss');
+  var ctaBtn = document.getElementById('promo-popup-cta');
+  var STORAGE_KEY = 'teamsixx_popup_hide_until';
+
+  function isHiddenToday(){
+    try{
+      var until = localStorage.getItem(STORAGE_KEY);
+      return !!until && Date.now() < Number(until);
+    }catch(e){ return false; }
+  }
+  function hideToday(){
+    try{
+      var midnight = new Date();
+      midnight.setHours(24, 0, 0, 0);
+      localStorage.setItem(STORAGE_KEY, String(midnight.getTime()));
+    }catch(e){}
+  }
+  function open(){
+    backdrop.hidden = false;
+    requestAnimationFrame(function(){ backdrop.classList.add('show'); });
+    document.body.style.overflow = 'hidden';
+  }
+  function close(){
+    backdrop.classList.remove('show');
+    document.body.style.overflow = '';
+    setTimeout(function(){ backdrop.hidden = true; }, 250);
+  }
+  closeBtn.addEventListener('click', close);
+  backdrop.addEventListener('click', function(e){ if(e.target === backdrop) close(); });
+  dismissBtn.addEventListener('click', function(){ hideToday(); close(); });
+  ctaBtn.addEventListener('click', close);
+  document.addEventListener('keydown', function(e){ if(e.key === 'Escape' && !backdrop.hidden) close(); });
+
+  if(!isHiddenToday()){
+    setTimeout(open, 1400);
+  }
 })();
 </script>
 
