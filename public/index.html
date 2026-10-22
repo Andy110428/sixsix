@@ -117,22 +117,24 @@
   }
 
   /* 20-36단계: 모바일은 헤더의 "입장 신청" 알약이 햄버거 안에 숨어있어서 한눈에 안 보임 —
-     화면 하단에 항상 떠있는 신청 바를 추가해서 스크롤/메뉴 탭 없이 바로 보이게 함 */
+     화면 하단에 항상 떠있는 신청 바를 추가해서 스크롤/메뉴 탭 없이 바로 보이게 함.
+     20-38단계: "버튼이 너무 커" 피드백으로 크기를 전반적으로 줄이고, 문구도 스터디방 이름을
+     명시한 쪽으로 교체(클릭 시 #verify로 스크롤하지 않고 신청 모달을 바로 염). */
   .mobile-apply-bar{ display:none; }
   @media (max-width:860px){
     .mobile-apply-bar{
-      display:flex; align-items:center; justify-content:center; gap:8px;
-      position:fixed; left:14px; right:14px; bottom:14px; z-index:45;
+      display:flex; align-items:center; justify-content:center; gap:6px;
+      position:fixed; left:18px; right:18px; bottom:14px; z-index:45;
       background:linear-gradient(90deg, var(--accent-a), var(--accent-c)); color:#04120d;
-      font-weight:800; font-size:1rem; padding:15px 18px;
-      padding-bottom:calc(15px + env(safe-area-inset-bottom));
-      border-radius:999px; box-shadow:0 16px 36px -10px rgba(52,211,153,0.55);
+      font-weight:700; font-size:clamp(0.64rem, 3vw, 0.76rem); padding:9px 14px;
+      padding-bottom:calc(9px + env(safe-area-inset-bottom));
+      border-radius:999px; box-shadow:0 10px 24px -8px rgba(52,211,153,0.5);
       text-align:center; animation:applyBarPulse 2.6s ease-in-out infinite;
     }
     .mobile-apply-bar:active{ transform:scale(0.97); }
-    footer{ padding-bottom:calc(38px + 70px + env(safe-area-inset-bottom)); }
+    footer{ padding-bottom:calc(38px + 54px + env(safe-area-inset-bottom)); }
   }
-  @keyframes applyBarPulse{ 0%,100%{ box-shadow:0 16px 36px -10px rgba(52,211,153,0.55); } 50%{ box-shadow:0 16px 40px -6px rgba(52,211,153,0.85); } }
+  @keyframes applyBarPulse{ 0%,100%{ box-shadow:0 10px 24px -8px rgba(52,211,153,0.5); } 50%{ box-shadow:0 10px 26px -6px rgba(52,211,153,0.78); } }
   @media (prefers-reduced-motion: reduce){ .mobile-apply-bar{ animation:none; } }
 
   /* hero — CashMine 참고 스크린샷처럼 좌: 카피/CTA, 우: 파트너 거래소 표를 처음부터 바로 보여주는 split 레이아웃 (20-29단계) */
@@ -440,15 +442,15 @@
     <nav class="nav-links">
       <a href="#exchanges">거래소</a>
       <a href="#how">이용 방법</a>
-      <a href="#verify" class="nav-apply-link">📩 입장 신청</a>
+      <a href="#" class="js-open-uid-modal">✅ UID 확인</a>
       <div class="nav-drop">
         <button class="nav-drop-btn" type="button">도구 <span class="caret">▾</span></button>
         <div class="nav-drop-menu">
           <a href="#calc">📊 계산기</a>
-          <a href="#verify">✅ UID 확인</a>
           <a href="#payback">💰 페이백 조회</a>
         </div>
       </div>
+      <a href="#" class="nav-apply-link js-open-apply-modal">🔒 입장 신청</a>
       <a href="#events">이벤트</a>
       <a href="#faq">FAQ</a>
       <a href="#admin" class="nav-admin-link">관리자</a>
@@ -461,7 +463,8 @@
     <div class="menu-dropdown" id="menu-dropdown">
       <a href="#exchanges">거래소</a>
       <a href="#how">이용 방법</a>
-      <a href="#verify" class="nav-apply-link">📩 입장 신청 (UID 확인)</a>
+      <a href="#" class="js-open-uid-modal">✅ UID 확인</a>
+      <a href="#" class="nav-apply-link js-open-apply-modal">🔒 스터디방 입장 신청</a>
       <a href="#calc">계산기</a>
       <a href="#payback">페이백 조회</a>
       <a href="#events">이벤트</a>
@@ -541,15 +544,15 @@
 
   <section class="promo-wrap">
     <div class="wrap">
-      <a class="promo-banner reveal" href="#verify">
+      <a class="promo-banner reveal js-open-apply-modal" href="#">
         <div class="promo-text">
           <span class="promo-icon">📨</span>
           <div>
             <h3>이미 거래소에 가입하셨나요?</h3>
-            <p>UID만 확인되면 바로 비공개 채널 입장을 신청할 수 있어요.</p>
+            <p>UID만 확인되면 바로 비공개 빗각 스터디방 입장을 신청할 수 있어요.</p>
           </div>
         </div>
-        <span class="btn btn-primary promo-btn">채널 입장 신청하기 →</span>
+        <span class="btn btn-primary promo-btn">스터디방 입장 신청 →</span>
       </a>
     </div>
   </section>
@@ -635,54 +638,14 @@
     <div class="wrap">
       <div class="sec-head reveal">
         <div class="sec-label">— VERIFY</div>
-        <h2>📩 UID 확인 &amp; 비공개 텔레그램 입장 신청</h2>
-        <p><b>스터디방 입장 신청은 바로 여기서 해요.</b> UID 입력하면 가입 여부를 바로 확인하고, 확인되면 텔레그램 입장도 신청할 수 있어요.</p>
+        <h2>UID 확인 &amp; 스터디방 입장 신청</h2>
+        <p>UID 확인과 비공개 빗각 스터디방 입장 신청을 각각 따로 진행할 수 있어요.</p>
       </div>
       <div class="payback-grid">
-        <div class="verify-card reveal">
-          <div class="verify-step">
-            <div class="verify-step-head">
-              <span class="verify-step-num">1</span>
-              <label for="uid-input">Gate.io UID 확인</label>
-            </div>
-            <div class="verify-row">
-              <input type="text" id="uid-input" inputmode="numeric" placeholder="예: 12345678">
-              <button class="btn btn-primary" id="verify-btn">확인하기</button>
-            </div>
-            <div class="verify-result" id="verify-result"></div>
-          </div>
-          <div id="telegram-step" hidden>
-            <div class="verify-step">
-              <div class="verify-step-head">
-                <span class="verify-step-num">2</span>
-                <label>시드 예치 여부</label>
-              </div>
-              <p class="step-desc">스터디방 입장은 시드 예치가 완료돼야 가능해요. 예치를 마치셨으면 O를 선택해주세요.</p>
-              <div class="choice-row">
-                <button type="button" class="choice-btn" id="seed-o-btn">O</button>
-                <button type="button" class="choice-btn deny" id="seed-x-btn">X</button>
-              </div>
-              <div class="verify-result" id="seed-x-result"></div>
-            </div>
-            <div id="tg-id-step" hidden>
-              <div class="verify-step-head">
-                <span class="verify-step-num">3</span>
-                <label>텔레그램으로 신청</label>
-              </div>
-              <div id="tg-link-wrap">
-                <p class="step-desc">아래 버튼을 누르면 TEAM SIXX 봇 대화창이 열려요. <b>시작(Start)</b>만 누르면 신청 완료! 운영자 확인 후 봇이 초대 링크를 보내드려요.</p>
-                <a class="btn btn-primary" id="tg-link-btn" href="#" target="_blank" rel="noopener" aria-disabled="true">텔레그램으로 신청하기 →</a>
-              </div>
-              <div id="tg-manual-wrap" hidden>
-                <p class="step-desc">스터디방 입장을 원하시면 텔레그램 아이디를 입력해주세요.</p>
-                <div class="verify-row">
-                  <input type="text" id="tg-input" placeholder="예: @yourid">
-                  <button class="btn btn-primary" id="tg-submit-btn">신청하기</button>
-                </div>
-              </div>
-              <div class="verify-result" id="tg-result"></div>
-            </div>
-          </div>
+        <div class="payback-card payback-cta reveal">
+          <h3>🔒 비공개 빗각 스터디방</h3>
+          <p>UID 확인 후 전용 텔레그램방 입장을 신청할 수 있어요. 버튼을 누르면 신청 화면이 열려요.</p>
+          <button class="btn btn-primary js-open-apply-modal">입장 신청하기 →</button>
         </div>
         <div class="payback-card reveal" id="payback">
           <div class="payback-right-head">
@@ -696,6 +659,69 @@
       </div>
     </div>
   </section>
+
+  <div class="payback-modal-backdrop" id="uid-modal-backdrop" hidden>
+    <div class="payback-modal">
+      <button class="payback-modal-close" id="uid-modal-close" aria-label="닫기">✕</button>
+      <h3>✅ Gate.io UID 확인</h3>
+      <p style="color:var(--text-dim); font-size:0.9rem; margin:0 0 16px;">UID를 입력하면 전용 링크로 가입됐는지 바로 확인해드려요.</p>
+      <div class="verify-row">
+        <input type="text" id="uid-modal-input" inputmode="numeric" placeholder="예: 12345678">
+        <button class="btn btn-primary" id="uid-modal-check-btn">확인하기</button>
+      </div>
+      <div class="verify-result" id="uid-modal-result"></div>
+    </div>
+  </div>
+
+  <div class="payback-modal-backdrop" id="apply-modal-backdrop" hidden>
+    <div class="payback-modal" style="max-width:480px;">
+      <button class="payback-modal-close" id="apply-modal-close" aria-label="닫기">✕</button>
+      <h3>🔒 비공개 빗각 스터디방 입장 신청</h3>
+      <div class="verify-step">
+        <div class="verify-step-head">
+          <span class="verify-step-num">1</span>
+          <label for="uid-input">Gate.io UID 확인</label>
+        </div>
+        <div class="verify-row">
+          <input type="text" id="uid-input" inputmode="numeric" placeholder="예: 12345678">
+          <button class="btn btn-primary" id="verify-btn">확인하기</button>
+        </div>
+        <div class="verify-result" id="verify-result"></div>
+      </div>
+      <div id="telegram-step" hidden>
+        <div class="verify-step">
+          <div class="verify-step-head">
+            <span class="verify-step-num">2</span>
+            <label>시드 예치 여부</label>
+          </div>
+          <p class="step-desc">스터디방 입장은 시드 예치가 완료돼야 가능해요. 예치를 마치셨으면 O를 선택해주세요.</p>
+          <div class="choice-row">
+            <button type="button" class="choice-btn" id="seed-o-btn">O</button>
+            <button type="button" class="choice-btn deny" id="seed-x-btn">X</button>
+          </div>
+          <div class="verify-result" id="seed-x-result"></div>
+        </div>
+        <div id="tg-id-step" hidden>
+          <div class="verify-step-head">
+            <span class="verify-step-num">3</span>
+            <label>텔레그램으로 신청</label>
+          </div>
+          <div id="tg-link-wrap">
+            <p class="step-desc">아래 버튼을 누르면 TEAM SIXX 봇 대화창이 열려요. <b>시작(Start)</b>만 누르면 신청 완료! 운영자 확인 후 봇이 초대 링크를 보내드려요.</p>
+            <a class="btn btn-primary" id="tg-link-btn" href="#" target="_blank" rel="noopener" aria-disabled="true">텔레그램으로 신청하기 →</a>
+          </div>
+          <div id="tg-manual-wrap" hidden>
+            <p class="step-desc">스터디방 입장을 원하시면 텔레그램 아이디를 입력해주세요.</p>
+            <div class="verify-row">
+              <input type="text" id="tg-input" placeholder="예: @yourid">
+              <button class="btn btn-primary" id="tg-submit-btn">신청하기</button>
+            </div>
+          </div>
+          <div class="verify-result" id="tg-result"></div>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <div class="payback-modal-backdrop" id="payback-modal-backdrop" hidden>
     <div class="payback-modal">
@@ -855,7 +881,7 @@
 </footer>
 
 <a class="float-tg" href="https://t.me/team_sixx" target="_blank" rel="noopener" aria-label="텔레그램 문의">✈</a>
-<a class="mobile-apply-bar" href="#verify">📩 지금 입장 신청하기 →</a>
+<a class="mobile-apply-bar js-open-apply-modal" href="#">🔒 비공개 빗각 스터디방 입장 신청하기</a>
 
 <script>
 (function(){
@@ -927,6 +953,40 @@
   var tgSubmitBtn = document.getElementById('tg-submit-btn');
   var tgResult = document.getElementById('tg-result');
   var verifiedUid = null;
+
+  // 20-38단계: UID 확인/시드 예치/텔레그램 신청 3단계 플로우를 인라인 섹션에서
+  // 버튼 클릭으로 여는 모달(#apply-modal-backdrop)로 옮김 — 신청 상태는 모달을 열 때마다
+  // 깨끗하게 초기화해서, 이전에 조회했던 UID/결과가 남아있지 않게 함.
+  var applyBackdrop = document.getElementById('apply-modal-backdrop');
+  var applyCloseBtn = document.getElementById('apply-modal-close');
+
+  function openApplyModal(){
+    uidInput.value = '';
+    verifyResult.className = 'verify-result';
+    verifyResult.textContent = '';
+    telegramStep.hidden = true;
+    resetSeedChoice();
+    tgResult.className = 'verify-result';
+    tgInput.value = '';
+    verifiedUid = null;
+    tgLinkUid = null;
+    tgLinkBtn.setAttribute('aria-disabled', 'true');
+    applyBackdrop.hidden = false;
+    document.body.style.overflow = 'hidden';
+    uidInput.focus();
+  }
+  function closeApplyModal(){
+    applyBackdrop.hidden = true;
+    document.body.style.overflow = '';
+  }
+  document.querySelectorAll('.js-open-apply-modal').forEach(function(el){
+    el.addEventListener('click', function(e){ e.preventDefault(); openApplyModal(); });
+  });
+  if(applyCloseBtn) applyCloseBtn.addEventListener('click', closeApplyModal);
+  if(applyBackdrop) applyBackdrop.addEventListener('click', function(e){ if(e.target === applyBackdrop) closeApplyModal(); });
+  document.addEventListener('keydown', function(e){
+    if(e.key === 'Escape' && applyBackdrop && !applyBackdrop.hidden) closeApplyModal();
+  });
 
   function showResult(el, ok, text){
     el.textContent = text;
@@ -1041,6 +1101,62 @@
       })
       .catch(function(){ showResult(tgResult, false, '❌ 신청 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.'); })
       .finally(function(){ tgSubmitBtn.disabled = false; tgSubmitBtn.textContent = '신청하기'; });
+  });
+})();
+
+// 20-38단계: UID 확인만 단독으로 하는 모달 — 스터디방 신청(위 IIFE)과 완전히 분리되어
+// nav 메뉴를 통해서만 열림. 신청 플로우를 전혀 안 거치고 가입 여부만 가볍게 확인하고 싶을 때 씀.
+(function(){
+  var backdrop = document.getElementById('uid-modal-backdrop');
+  var closeBtn = document.getElementById('uid-modal-close');
+  var input = document.getElementById('uid-modal-input');
+  var checkBtn = document.getElementById('uid-modal-check-btn');
+  var resultEl = document.getElementById('uid-modal-result');
+  if(!backdrop) return;
+
+  function showResult(ok, text){
+    resultEl.textContent = text;
+    resultEl.className = 'verify-result show ' + (ok ? 'ok' : 'bad');
+  }
+  function openModal(){
+    input.value = '';
+    resultEl.className = 'verify-result';
+    resultEl.textContent = '';
+    backdrop.hidden = false;
+    document.body.style.overflow = 'hidden';
+    input.focus();
+  }
+  function closeModal(){
+    backdrop.hidden = true;
+    document.body.style.overflow = '';
+  }
+  function runCheck(){
+    var uid = (input.value || '').trim();
+    if(!uid){ showResult(false, 'UID를 입력해주세요.'); return; }
+    checkBtn.disabled = true;
+    checkBtn.textContent = '확인 중...';
+    fetch('/api/check-uid?uid=' + encodeURIComponent(uid), { credentials:'same-origin' })
+      .then(function(res){ return res.json(); })
+      .then(function(data){
+        if(data.ok && data.status === 'direct_referral'){
+          showResult(true, '✅ ' + data.message);
+        } else {
+          showResult(false, '❌ ' + (data.message || data.error || '확인할 수 없습니다.'));
+        }
+      })
+      .catch(function(){ showResult(false, '❌ 확인 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.'); })
+      .finally(function(){ checkBtn.disabled = false; checkBtn.textContent = '확인하기'; });
+  }
+
+  document.querySelectorAll('.js-open-uid-modal').forEach(function(el){
+    el.addEventListener('click', function(e){ e.preventDefault(); openModal(); });
+  });
+  closeBtn.addEventListener('click', closeModal);
+  backdrop.addEventListener('click', function(e){ if(e.target === backdrop) closeModal(); });
+  checkBtn.addEventListener('click', runCheck);
+  input.addEventListener('keydown', function(e){ if(e.key === 'Enter') runCheck(); });
+  document.addEventListener('keydown', function(e){
+    if(e.key === 'Escape' && !backdrop.hidden) closeModal();
   });
 })();
 
