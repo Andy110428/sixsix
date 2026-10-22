@@ -116,6 +116,25 @@
     .menu-btn{ display:flex; }
   }
 
+  /* 20-36단계: 모바일은 헤더의 "입장 신청" 알약이 햄버거 안에 숨어있어서 한눈에 안 보임 —
+     화면 하단에 항상 떠있는 신청 바를 추가해서 스크롤/메뉴 탭 없이 바로 보이게 함 */
+  .mobile-apply-bar{ display:none; }
+  @media (max-width:860px){
+    .mobile-apply-bar{
+      display:flex; align-items:center; justify-content:center; gap:8px;
+      position:fixed; left:14px; right:14px; bottom:14px; z-index:45;
+      background:linear-gradient(90deg, var(--accent-a), var(--accent-c)); color:#04120d;
+      font-weight:800; font-size:1rem; padding:15px 18px;
+      padding-bottom:calc(15px + env(safe-area-inset-bottom));
+      border-radius:999px; box-shadow:0 16px 36px -10px rgba(52,211,153,0.55);
+      text-align:center; animation:applyBarPulse 2.6s ease-in-out infinite;
+    }
+    .mobile-apply-bar:active{ transform:scale(0.97); }
+    footer{ padding-bottom:calc(38px + 70px + env(safe-area-inset-bottom)); }
+  }
+  @keyframes applyBarPulse{ 0%,100%{ box-shadow:0 16px 36px -10px rgba(52,211,153,0.55); } 50%{ box-shadow:0 16px 40px -6px rgba(52,211,153,0.85); } }
+  @media (prefers-reduced-motion: reduce){ .mobile-apply-bar{ animation:none; } }
+
   /* hero — CashMine 참고 스크린샷처럼 좌: 카피/CTA, 우: 파트너 거래소 표를 처음부터 바로 보여주는 split 레이아웃 (20-29단계) */
   .hero{ padding:44px 0 72px; text-align:left; }
   .hero-grid{ display:grid; grid-template-columns:0.8fr 1.2fr; gap:44px; align-items:center; }
@@ -403,6 +422,9 @@
 
   .float-tg{ position:fixed; right:22px; bottom:22px; width:56px; height:56px; border-radius:50%; background:linear-gradient(135deg, var(--accent-a), var(--accent-c)); display:flex; align-items:center; justify-content:center; font-size:1.45rem; box-shadow:0 10px 30px -8px rgba(52,211,153,0.5); z-index:40; transition:transform .15s ease; }
   .float-tg:hover{ transform:scale(1.08); }
+  /* 20-36단계: 모바일 하단 신청 바(.mobile-apply-bar)와 겹치지 않도록 위로 옮김 —
+     .float-tg 본체 정의 뒤에 둬야 캐스케이드 순서상 이 미디어쿼리가 이김(이 프로젝트에 반복된 패턴) */
+  @media (max-width:860px){ .float-tg{ bottom:84px; right:16px; width:48px; height:48px; font-size:1.2rem; } }
 </style>
 </head>
 <body>
@@ -833,6 +855,7 @@
 </footer>
 
 <a class="float-tg" href="https://t.me/team_sixx" target="_blank" rel="noopener" aria-label="텔레그램 문의">✈</a>
+<a class="mobile-apply-bar" href="#verify">📩 지금 입장 신청하기 →</a>
 
 <script>
 (function(){
