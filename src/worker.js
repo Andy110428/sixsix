@@ -402,9 +402,21 @@ async function syncPaybackFeed(env) {
         for (const item of list) {
           if ((item.commission_asset || 'USDT') !== 'USDT') continue;
           const amount = (parseFloat(item.commission_amount) || 0) * PAYBACK_RATIO;
-          await env.DB.prepare(
-            `INSERT OR IGNORE INTO payback_feed (uid, commission_time, amount_usdt, source, created_at) VALUES (?, ?, ?, ?, ?)`
-          ).bind(uid, item.commission_time, round2(amount), item.source || '', Date.now()).run();
+          // 20-35단계: commission_time이 이 필드에만 유일하게 가드 없이 그대로 bind되고 있었음 —
+          // Gate.io 응답에 이 필드가 비어있는(undefined) 레코드가 하나라도 섞이면 D1이
+          // "undefined는 바인딩 불가"로 즉시 던지고, 그 예외가 바깥 try/catch까지 튀어서
+          // 이 UID의 payback_cursor 갱신이 아예 실행되지 않은 채 함수가 끝나버림 — 다음 틱에도
+          // 똑같은 since로 같은 레코드를 다시 읽어 똑같이 실패하므로, 그 UID는 영구적으로
+          // 막혀버림(= 실시간 피드가 "멈춘" 것처럼 보이는 증상과 정확히 들어맞음). 레코드 하나당
+          // try/catch로 감싸서, 문제 있는 레코드 하나 때문에 같은 배치의 나머지 레코드나
+          // payback_cursor 갱신까지 막히지 않도록 함.
+          try {
+            await env.DB.prepare(
+              `INSERT OR IGNORE INTO payback_feed (uid, commission_time, amount_usdt, source, created_at) VALUES (?, ?, ?, ?, ?)`
+            ).bind(uid, item.commission_time ?? 0, round2(amount), item.source || '', Date.now()).run();
+          } catch (itemErr) {
+            console.error('syncPaybackFeed: skipping malformed commission record for uid', uid, String(itemErr));
+          }
         }
         if (list.length < 100) break;
         offset += 100;
