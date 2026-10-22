@@ -118,24 +118,22 @@
 
   /* 20-36단계: 모바일은 헤더의 "입장 신청" 알약이 햄버거 안에 숨어있어서 한눈에 안 보임 —
      화면 하단에 항상 떠있는 신청 바를 추가해서 스크롤/메뉴 탭 없이 바로 보이게 함.
-     20-38단계: "버튼이 너무 커" 피드백으로 크기를 전반적으로 줄이고, 문구도 스터디방 이름을
-     명시한 쪽으로 교체(클릭 시 #verify로 스크롤하지 않고 신청 모달을 바로 염). */
+     20-39단계: "화면을 축소해야 보인다/버튼이 너무 길다/걸리적거린다" 피드백으로,
+     화면 폭을 꽉 채우는 바 대신 글자 길이만큼만 차지하는 작은 알약으로 전면 축소하고
+     화면 하단 중앙에 작게 띄움. 펄스 애니메이션도 "걸리적거림"의 일부라 판단해 제거. */
   .mobile-apply-bar{ display:none; }
   @media (max-width:860px){
     .mobile-apply-bar{
-      display:flex; align-items:center; justify-content:center; gap:6px;
-      position:fixed; left:18px; right:18px; bottom:14px; z-index:45;
+      display:inline-flex; align-items:center; justify-content:center; gap:5px;
+      position:fixed; left:50%; bottom:14px; z-index:45; transform:translateX(-50%);
       background:linear-gradient(90deg, var(--accent-a), var(--accent-c)); color:#04120d;
-      font-weight:700; font-size:clamp(0.64rem, 3vw, 0.76rem); padding:9px 14px;
-      padding-bottom:calc(9px + env(safe-area-inset-bottom));
-      border-radius:999px; box-shadow:0 10px 24px -8px rgba(52,211,153,0.5);
-      text-align:center; animation:applyBarPulse 2.6s ease-in-out infinite;
+      font-weight:700; font-size:0.72rem; padding:8px 16px; white-space:nowrap;
+      padding-bottom:calc(8px + env(safe-area-inset-bottom));
+      border-radius:999px; box-shadow:0 8px 18px -8px rgba(52,211,153,0.45);
     }
-    .mobile-apply-bar:active{ transform:scale(0.97); }
-    footer{ padding-bottom:calc(38px + 54px + env(safe-area-inset-bottom)); }
+    .mobile-apply-bar:active{ transform:translateX(-50%) scale(0.96); }
+    footer{ padding-bottom:calc(38px + 44px + env(safe-area-inset-bottom)); }
   }
-  @keyframes applyBarPulse{ 0%,100%{ box-shadow:0 10px 24px -8px rgba(52,211,153,0.5); } 50%{ box-shadow:0 10px 26px -6px rgba(52,211,153,0.78); } }
-  @media (prefers-reduced-motion: reduce){ .mobile-apply-bar{ animation:none; } }
 
   /* hero — CashMine 참고 스크린샷처럼 좌: 카피/CTA, 우: 파트너 거래소 표를 처음부터 바로 보여주는 split 레이아웃 (20-29단계) */
   .hero{ padding:44px 0 72px; text-align:left; }
@@ -881,7 +879,7 @@
 </footer>
 
 <a class="float-tg" href="https://t.me/team_sixx" target="_blank" rel="noopener" aria-label="텔레그램 문의">✈</a>
-<a class="mobile-apply-bar js-open-apply-modal" href="#">🔒 비공개 빗각 스터디방 입장 신청하기</a>
+<a class="mobile-apply-bar js-open-apply-modal" href="#">🔒 비공개 스터디방 입장하기</a>
 
 <script>
 (function(){
