@@ -77,6 +77,11 @@
   .nav-links a:hover{ color:var(--text); }
   .nav-admin-link{ color:var(--text-dim); opacity:0.55; font-size:0.86rem !important; }
   .nav-admin-link:hover{ opacity:1; }
+  /* 20-35단계: "스터디방 신청 어디서 하냐"는 문의가 반복돼서, 네비에 숨겨진 드롭다운 대신
+     눈에 바로 띄는 전용 링크를 추가함 — 민트 톤 배경의 알약 뱃지로 다른 메뉴 글자들과 확실히 구분. */
+  .nav-apply-link{ color:var(--accent-a) !important; background:rgba(52,211,153,0.12); border:1px solid rgba(52,211,153,0.35); padding:6px 14px; border-radius:999px; font-size:0.92rem !important; }
+  .nav-apply-link:hover{ background:rgba(52,211,153,0.2); color:var(--accent-a) !important; }
+  .menu-dropdown .nav-apply-link{ color:var(--accent-a); background:rgba(52,211,153,0.1); border-radius:10px; padding:10px 14px; font-weight:800; }
   .nav-drop{ position:relative; }
   .nav-drop-btn{ background:none; border:none; padding:0; font:inherit; font-size:1rem; color:var(--text-dim); font-weight:600; cursor:pointer; display:inline-flex; align-items:center; gap:4px; }
   .nav-drop-btn:hover{ color:var(--text); }
@@ -307,11 +312,16 @@
   .calc-result-row.highlight b{ color:var(--accent-a); font-size:1.5rem; }
   .calc-note{ color:var(--text-dim); font-size:0.78rem; margin:16px 0 0; line-height:1.6; }
 
-  /* verify + telegram */
-  .verify-card{ background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); padding:38px; max-width:580px; margin:0 auto; box-shadow:var(--card-shadow); }
+  /* verify + telegram — 20-35단계: "스터디방 신청 어디서 하냐"는 문의가 반복돼서,
+     이 카드가 "그 신청하는 곳"이라는 걸 한눈에 알아볼 수 있도록 테두리를 강조색으로 키우고
+     각 단계에 큼직한 번호 배지를 달아 무심코 지나칠 수 없게 만듦. */
+  .verify-card{ background:var(--panel); border:1.5px solid rgba(52,211,153,0.4); border-radius:var(--radius); padding:38px; max-width:580px; margin:0 auto; box-shadow:var(--card-shadow), 0 0 0 4px rgba(52,211,153,0.06); }
   .payback-grid .verify-card{ max-width:none; margin:0; min-width:0; }
   .verify-step{ margin-bottom:24px; }
-  .verify-step label{ display:block; font-size:0.94rem; font-weight:600; color:var(--text-dim); margin-bottom:9px; }
+  .verify-step-head{ display:flex; align-items:center; gap:11px; margin-bottom:11px; }
+  .verify-step-num{ width:30px; height:30px; border-radius:50%; background:linear-gradient(135deg, var(--accent-a), var(--accent-c)); color:#04120d; font-weight:800; font-size:0.96rem; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .verify-step-head label{ margin:0; font-size:1.08rem; font-weight:800; color:var(--text); }
+  .verify-step label{ display:block; font-size:1.08rem; font-weight:800; color:var(--text); margin-bottom:9px; }
   .verify-row{ display:flex; gap:10px; }
   .verify-row input{ flex:1; min-width:0; background:var(--panel-soft); border:1px solid var(--line); border-radius:12px; padding:13px 15px; color:var(--text); font-family:'JetBrains Mono',monospace; font-size:1.02rem; }
   .verify-row input:focus{ outline:none; border-color:rgba(52,211,153,0.5); }
@@ -408,6 +418,7 @@
     <nav class="nav-links">
       <a href="#exchanges">거래소</a>
       <a href="#how">이용 방법</a>
+      <a href="#verify" class="nav-apply-link">📩 입장 신청</a>
       <div class="nav-drop">
         <button class="nav-drop-btn" type="button">도구 <span class="caret">▾</span></button>
         <div class="nav-drop-menu">
@@ -428,8 +439,8 @@
     <div class="menu-dropdown" id="menu-dropdown">
       <a href="#exchanges">거래소</a>
       <a href="#how">이용 방법</a>
+      <a href="#verify" class="nav-apply-link">📩 입장 신청 (UID 확인)</a>
       <a href="#calc">계산기</a>
-      <a href="#verify">UID 확인</a>
       <a href="#payback">페이백 조회</a>
       <a href="#events">이벤트</a>
       <a href="#faq">FAQ</a>
@@ -602,13 +613,16 @@
     <div class="wrap">
       <div class="sec-head reveal">
         <div class="sec-label">— VERIFY</div>
-        <h2>UID 확인 &amp; 비공개 텔레그램 입장 신청</h2>
-        <p>UID 입력하면 가입 여부를 바로 확인하고, 확인되면 텔레그램 입장도 신청할 수 있어요.</p>
+        <h2>📩 UID 확인 &amp; 비공개 텔레그램 입장 신청</h2>
+        <p><b>스터디방 입장 신청은 바로 여기서 해요.</b> UID 입력하면 가입 여부를 바로 확인하고, 확인되면 텔레그램 입장도 신청할 수 있어요.</p>
       </div>
       <div class="payback-grid">
         <div class="verify-card reveal">
           <div class="verify-step">
-            <label for="uid-input">① Gate.io UID</label>
+            <div class="verify-step-head">
+              <span class="verify-step-num">1</span>
+              <label for="uid-input">Gate.io UID 확인</label>
+            </div>
             <div class="verify-row">
               <input type="text" id="uid-input" inputmode="numeric" placeholder="예: 12345678">
               <button class="btn btn-primary" id="verify-btn">확인하기</button>
@@ -617,7 +631,10 @@
           </div>
           <div id="telegram-step" hidden>
             <div class="verify-step">
-              <label>② 시드 예치 여부</label>
+              <div class="verify-step-head">
+                <span class="verify-step-num">2</span>
+                <label>시드 예치 여부</label>
+              </div>
               <p class="step-desc">스터디방 입장은 시드 예치가 완료돼야 가능해요. 예치를 마치셨으면 O를 선택해주세요.</p>
               <div class="choice-row">
                 <button type="button" class="choice-btn" id="seed-o-btn">O</button>
@@ -626,7 +643,10 @@
               <div class="verify-result" id="seed-x-result"></div>
             </div>
             <div id="tg-id-step" hidden>
-              <label>③ 텔레그램으로 신청</label>
+              <div class="verify-step-head">
+                <span class="verify-step-num">3</span>
+                <label>텔레그램으로 신청</label>
+              </div>
               <div id="tg-link-wrap">
                 <p class="step-desc">아래 버튼을 누르면 TEAM SIXX 봇 대화창이 열려요. <b>시작(Start)</b>만 누르면 신청 완료! 운영자 확인 후 봇이 초대 링크를 보내드려요.</p>
                 <a class="btn btn-primary" id="tg-link-btn" href="#" target="_blank" rel="noopener" aria-disabled="true">텔레그램으로 신청하기 →</a>
