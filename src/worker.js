@@ -394,9 +394,18 @@ async function syncPaybackFeed(env) {
 
       // 레코드 단위로 그대로 적재(커미션 레코드 하나당 한 줄) — UNIQUE 제약이 중복 삽입을
       // 막아주므로 lookback으로 겹쳐서 다시 읽어도 안전함. 한 번에 최대 100건만 오므로,
-      // 그 구간에 100건 넘게 쌓였으면 최대 5페이지(500건)까지 이어서 가져옴.
+      // 그 구간에 100건 넘게 쌓였으면 여러 페이지로 이어서 가져옴.
+      // 20-37단계: 20-35단계 버그로 커서가 멈춰있던 동안 쌓였을 수 있는 "밀린 분량"을
+      // 한 번에 최대한 따라잡을 수 있도록 페이지 상한을 5(500건)→20(2000건)으로 올림. 그래도
+      // 못 따라잡을 만큼(2000건 넘게) 밀려있었다면 아래에서 커서를 now로 전진시키지 않고
+      // 그대로 둬서, 다음 틱에 같은 since로 다시 시도하게 함(완전히 못 건지는 것보단 나음 —
+      // 단, offset은 틱마다 0부터 다시 시작하므로 실질적으로는 "2000건 상한에 걸리는 극단적으로
+      // 활동 많은 UID"에서만 의미 있는 안전장치이고, 이 프로젝트 현재 규모에선 사실상 한 틱 안에
+      // 항상 다 따라잡힘).
       let offset = 0;
-      for (let p = 0; p < 5; p++) {
+      let exhausted = true;
+      const PAGE_CAP = 20;
+      for (let p = 0; p < PAGE_CAP; p++) {
         const list = await fetchPartnerCommissionHistory(uid, since, now, offset, env);
         if (!list.length) break;
         for (const item of list) {
@@ -420,12 +429,15 @@ async function syncPaybackFeed(env) {
         }
         if (list.length < 100) break;
         offset += 100;
+        if (p === PAGE_CAP - 1) exhausted = false; // 상한에 걸려서 더 남아있을 수 있음 — 커서 전진 보류
       }
 
-      await env.DB.prepare(
-        `INSERT INTO payback_cursor (uid, last_checked) VALUES (?, ?)
-         ON CONFLICT(uid) DO UPDATE SET last_checked = excluded.last_checked`
-      ).bind(uid, now).run();
+      if (exhausted) {
+        await env.DB.prepare(
+          `INSERT INTO payback_cursor (uid, last_checked) VALUES (?, ?)
+           ON CONFLICT(uid) DO UPDATE SET last_checked = excluded.last_checked`
+        ).bind(uid, now).run();
+      }
     } catch (e) {
       // 개별 UID 실패(권한 문제, 일시적 오류 등)는 건너뛰고 다음 UID 계속 처리 —
       // cursor를 안 건드리므로 다음 크론 때 같은 since부터(사실상 더 넓은 lookback으로) 자동 재시도됨.
