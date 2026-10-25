@@ -254,6 +254,12 @@
   .prv-hint{ color:var(--text-dim); font-size:0.9rem; margin-top:18px; padding-top:18px; border-top:1px solid var(--line); }
   @media (max-width:480px){ .payback-modal{ padding:26px 20px; } }
 
+  /* 20-40단계: "어느 거래소로 가입하셨나요?" 선택 모달 */
+  .exchange-choice-list{ display:flex; flex-direction:column; gap:10px; margin-top:4px; }
+  .exchange-choice-btn{ display:flex; align-items:center; gap:12px; width:100%; padding:14px 16px; border-radius:12px; border:1.5px solid var(--line); background:var(--panel-soft); color:var(--text); font-weight:700; font-size:1rem; font-family:'IBM Plex Sans KR',sans-serif; cursor:pointer; transition:border-color .15s ease, background .15s ease; }
+  .exchange-choice-btn:hover{ border-color:rgba(52,211,153,0.5); background:rgba(52,211,153,0.08); }
+  .exchange-choice-btn img{ width:28px; height:28px; border-radius:7px; display:block; }
+
   /* 프로모 팝업 — 관리자가 "팝업으로 표시"로 고른 이벤트 1건을 보여줌(20-34단계, 없으면 안 뜸).
      "오늘 하루 보지 않기" 지원. 내용이 이벤트별로 다르므로 레이아웃은 범용(이미지+제목+설명+CTA)으로. */
   .promo-popup-backdrop{ position:fixed; inset:0; z-index:210; background:rgba(5,6,8,0.78); backdrop-filter:blur(6px); display:flex; align-items:center; justify-content:center; padding:20px; opacity:0; visibility:hidden; transition:opacity .25s ease, visibility .25s ease; }
@@ -509,7 +515,7 @@
               <div class="ex-row-stat"><b>매일</b><span>1시간 내외</span></div>
               <div class="ex-row-actions">
                 <a class="btn btn-primary btn-sm" href="https://www.gate.com/signup?ref_type=103&ref=TEAMSIXX" target="_blank" rel="noopener">가입하기 →</a>
-                <a class="btn btn-ghost btn-sm" href="#verify">UID 확인</a>
+                <a href="#" class="btn btn-ghost btn-sm js-open-uid-modal">UID 확인</a>
               </div>
             </div>
             <div class="ex-desc-row">글로벌 코인 현물·선물 거래소 — 전용 링크로 새로 가입해야 인정됩니다.</div>
@@ -517,6 +523,32 @@
               <div class="ex-link-box">
                 <input type="text" readonly id="gate-link" value="https://www.gate.com/signup?ref_type=103&ref=TEAMSIXX">
                 <button class="btn btn-ghost btn-sm" id="copy-gate-link">복사</button>
+              </div>
+            </div>
+          </div>
+          <div class="ex-row-card active">
+            <div class="ex-row-main">
+              <div class="ex-row-id">
+                <div class="ex-logo" aria-hidden="true">
+                  <img src="/bydfi-logo.svg" width="44" height="44" alt="" loading="lazy">
+                </div>
+                <div>
+                  <span class="ex-pill active">운영중</span>
+                  <h3>BYDFi</h3>
+                </div>
+              </div>
+              <div class="ex-row-stat"><b>50%</b><span>페이백율</span></div>
+              <div class="ex-row-stat"><b>매일</b><span>1시간 내외</span></div>
+              <div class="ex-row-actions">
+                <a class="btn btn-primary btn-sm" href="https://promote.bydfi.com/b/teamsixx" target="_blank" rel="noopener">가입하기 →</a>
+                <a href="#" class="btn btn-ghost btn-sm js-open-bydfi-apply">UID 제출</a>
+              </div>
+            </div>
+            <div class="ex-desc-row">글로벌 코인 선물 거래소 — 전용 링크로 새로 가입해야 인정됩니다. BYDFi는 자동 확인 API가 없어서, UID를 제출하시면 운영자가 직접 확인 후 텔레그램으로 안내해드려요.</div>
+            <div class="ex-row-link">
+              <div class="ex-link-box">
+                <input type="text" readonly id="bydfi-link" value="https://promote.bydfi.com/b/teamsixx">
+                <button class="btn btn-ghost btn-sm" id="copy-bydfi-link">복사</button>
               </div>
             </div>
           </div>
@@ -716,6 +748,72 @@
             </div>
           </div>
           <div class="verify-result" id="tg-result"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 20-40단계: 전역 "입장 신청" 진입점(nav pill/프로모배너/모바일바)은 거래소가 2개(Gate.io/BYDFi)가
+       되면서 어디로 가입했는지부터 물어봐야 함 — 이 작은 선택 모달이 먼저 뜨고, 고른 쪽의 전용
+       모달(#apply-modal-backdrop 또는 #bydfi-modal-backdrop)로 이어짐. 거래소 카드 자체의 버튼은
+       이미 어느 거래소인지 알고 있으니 이 선택 단계를 건너뛰고 바로 해당 모달을 엶. -->
+  <div class="payback-modal-backdrop" id="exchange-choice-modal-backdrop" hidden>
+    <div class="payback-modal" style="max-width:400px;">
+      <button class="payback-modal-close" id="exchange-choice-close" aria-label="닫기">✕</button>
+      <h3>어느 거래소로 가입하셨나요?</h3>
+      <div class="exchange-choice-list">
+        <button type="button" class="exchange-choice-btn" id="choice-gate-btn">
+          <img src="/gate-logo.png" width="28" height="28" alt="">
+          <span>Gate.io</span>
+        </button>
+        <button type="button" class="exchange-choice-btn" id="choice-bydfi-btn">
+          <img src="/bydfi-logo.svg" width="28" height="28" alt="">
+          <span>BYDFi</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="payback-modal-backdrop" id="bydfi-modal-backdrop" hidden>
+    <div class="payback-modal" style="max-width:480px;">
+      <button class="payback-modal-close" id="bydfi-modal-close" aria-label="닫기">✕</button>
+      <h3>🔒 비공개 빗각 스터디방 입장 신청 (BYDFi)</h3>
+      <p style="color:var(--text-dim); font-size:0.88rem; margin:0 0 20px;">⚠️ BYDFi는 자동 확인 API가 없어서, 제출하시면 운영자가 직접 확인한 후 텔레그램으로 안내해드려요.</p>
+      <div class="verify-step">
+        <div class="verify-step-head">
+          <span class="verify-step-num">1</span>
+          <label for="bydfi-uid-input">BYDFi UID 입력</label>
+        </div>
+        <div class="verify-row">
+          <input type="text" id="bydfi-uid-input" placeholder="BYDFi UID">
+          <button class="btn btn-primary" id="bydfi-next-btn">다음</button>
+        </div>
+        <div class="verify-result" id="bydfi-uid-result"></div>
+      </div>
+      <div id="bydfi-telegram-step" hidden>
+        <div class="verify-step">
+          <div class="verify-step-head">
+            <span class="verify-step-num">2</span>
+            <label>시드 예치 여부</label>
+          </div>
+          <p class="step-desc">스터디방 입장은 시드 예치가 완료돼야 가능해요. 예치를 마치셨으면 O를 선택해주세요.</p>
+          <div class="choice-row">
+            <button type="button" class="choice-btn" id="bydfi-seed-o-btn">O</button>
+            <button type="button" class="choice-btn deny" id="bydfi-seed-x-btn">X</button>
+          </div>
+          <div class="verify-result" id="bydfi-seed-x-result"></div>
+        </div>
+        <div id="bydfi-tg-id-step" hidden>
+          <div class="verify-step-head">
+            <span class="verify-step-num">3</span>
+            <label>텔레그램으로 제출</label>
+          </div>
+          <p class="step-desc">텔레그램 아이디를 입력해주세요. BYDFi 가입을 확인한 후 운영자가 개별로 연락드려요.</p>
+          <div class="verify-row">
+            <input type="text" id="bydfi-tg-input" placeholder="예: @yourid">
+            <button class="btn btn-primary" id="bydfi-tg-submit-btn">제출하기</button>
+          </div>
+          <div class="verify-result" id="bydfi-tg-result"></div>
         </div>
       </div>
     </div>
@@ -923,19 +1021,23 @@
 })();
 
 (function(){
-  var copyBtn = document.getElementById('copy-gate-link');
-  var linkInput = document.getElementById('gate-link');
-  if(!copyBtn || !linkInput) return;
-  copyBtn.addEventListener('click', function(){
-    linkInput.select();
-    linkInput.setSelectionRange(0, 99999);
-    var done = function(){ copyBtn.textContent = '복사됨!'; setTimeout(function(){ copyBtn.textContent = '복사'; }, 1500); };
-    if(navigator.clipboard && navigator.clipboard.writeText){
-      navigator.clipboard.writeText(linkInput.value).then(done).catch(function(){ document.execCommand('copy'); done(); });
-    } else {
-      document.execCommand('copy'); done();
-    }
-  });
+  function wireCopy(btnId, inputId){
+    var copyBtn = document.getElementById(btnId);
+    var linkInput = document.getElementById(inputId);
+    if(!copyBtn || !linkInput) return;
+    copyBtn.addEventListener('click', function(){
+      linkInput.select();
+      linkInput.setSelectionRange(0, 99999);
+      var done = function(){ copyBtn.textContent = '복사됨!'; setTimeout(function(){ copyBtn.textContent = '복사'; }, 1500); };
+      if(navigator.clipboard && navigator.clipboard.writeText){
+        navigator.clipboard.writeText(linkInput.value).then(done).catch(function(){ document.execCommand('copy'); done(); });
+      } else {
+        document.execCommand('copy'); done();
+      }
+    });
+  }
+  wireCopy('copy-gate-link', 'gate-link');
+  wireCopy('copy-bydfi-link', 'bydfi-link');
 })();
 
 (function(){
@@ -977,9 +1079,11 @@
     applyBackdrop.hidden = true;
     document.body.style.overflow = '';
   }
-  document.querySelectorAll('.js-open-apply-modal').forEach(function(el){
-    el.addEventListener('click', function(e){ e.preventDefault(); openApplyModal(); });
-  });
+  // 20-40단계: 거래소가 Gate.io+BYDFi 2개로 늘어나면서, 전역 "입장 신청" 진입점(.js-open-apply-modal)은
+  // 더 이상 Gate 모달을 직접 열지 않고 먼저 거래소 선택 모달을 거침(아래 별도 IIFE) — 그 선택 모달이
+  // "Gate.io"를 고르면 이 함수를 호출해야 해서, 의도적으로 window에 노출함(IIFE 스코프 밖에서 쓰라고
+  // 일부러 공개하는 것 — 20-22단계에서 겪은 "모르고 다른 IIFE의 지역함수를 잘못 참조"하는 사고와는 다름).
+  window.openApplyModal = openApplyModal;
   if(applyCloseBtn) applyCloseBtn.addEventListener('click', closeApplyModal);
   if(applyBackdrop) applyBackdrop.addEventListener('click', function(e){ if(e.target === applyBackdrop) closeApplyModal(); });
   document.addEventListener('keydown', function(e){
@@ -1158,6 +1262,139 @@
   });
 })();
 
+// 20-40단계: BYDFi 가입 신청 모달 — Gate.io 모달(위)과 똑같은 3단계 UX(UID→시드예치→텔레그램)를
+// 쓰지만, BYDFi는 레퍼럴 확인 공개 API가 없어서 1단계가 "확인"이 아니라 그냥 "다음"임(서버 검증 없이
+// 바로 다음 단계로 넘어감) — 실제 확인은 운영자가 BYDFi 어필리에이트 대시보드에서 수동으로 함.
+(function(){
+  var backdrop = document.getElementById('bydfi-modal-backdrop');
+  var closeBtn = document.getElementById('bydfi-modal-close');
+  var uidInput = document.getElementById('bydfi-uid-input');
+  var uidResult = document.getElementById('bydfi-uid-result');
+  var nextBtn = document.getElementById('bydfi-next-btn');
+  var telegramStep = document.getElementById('bydfi-telegram-step');
+  var seedOBtn = document.getElementById('bydfi-seed-o-btn');
+  var seedXBtn = document.getElementById('bydfi-seed-x-btn');
+  var seedXResult = document.getElementById('bydfi-seed-x-result');
+  var tgIdStep = document.getElementById('bydfi-tg-id-step');
+  var tgInput = document.getElementById('bydfi-tg-input');
+  var tgSubmitBtn = document.getElementById('bydfi-tg-submit-btn');
+  var tgResult = document.getElementById('bydfi-tg-result');
+  if(!backdrop) return;
+  var submittedUid = null;
+
+  function showResult(el, ok, text){
+    el.textContent = text;
+    el.className = 'verify-result show ' + (ok ? 'ok' : 'bad');
+  }
+  function resetSeedChoice(){
+    seedOBtn.classList.remove('selected');
+    seedXBtn.classList.remove('selected');
+    seedXResult.className = 'verify-result';
+    tgIdStep.hidden = true;
+  }
+  function openModal(){
+    uidInput.value = '';
+    uidResult.className = 'verify-result';
+    uidResult.textContent = '';
+    telegramStep.hidden = true;
+    resetSeedChoice();
+    tgResult.className = 'verify-result';
+    tgInput.value = '';
+    submittedUid = null;
+    backdrop.hidden = false;
+    document.body.style.overflow = 'hidden';
+    uidInput.focus();
+  }
+  function closeModal(){
+    backdrop.hidden = true;
+    document.body.style.overflow = '';
+  }
+  window.openBydfiModal = openModal;
+
+  nextBtn.addEventListener('click', function(){
+    var uid = (uidInput.value || '').trim();
+    if(!uid){ showResult(uidResult, false, 'UID를 입력해주세요.'); return; }
+    submittedUid = uid;
+    showResult(uidResult, true, '✅ 접수됐어요. 다음 단계로 진행해주세요.');
+    telegramStep.hidden = false;
+    resetSeedChoice();
+  });
+  seedOBtn.addEventListener('click', function(){
+    seedOBtn.classList.add('selected');
+    seedXBtn.classList.remove('selected');
+    seedXResult.className = 'verify-result';
+    tgIdStep.hidden = false;
+  });
+  seedXBtn.addEventListener('click', function(){
+    seedXBtn.classList.add('selected');
+    seedOBtn.classList.remove('selected');
+    tgIdStep.hidden = true;
+    showResult(seedXResult, false, '❌ 시드 예치 후 다시 신청해주세요.');
+  });
+  tgSubmitBtn.addEventListener('click', function(){
+    var tg = (tgInput.value || '').trim();
+    if(!submittedUid){ showResult(tgResult, false, '먼저 UID를 입력해주세요.'); return; }
+    if(!tg){ showResult(tgResult, false, '텔레그램 아이디를 입력해주세요.'); return; }
+    tgSubmitBtn.disabled = true;
+    tgSubmitBtn.textContent = '제출 중...';
+    fetch('/api/bydfi-join', {
+      method:'POST', credentials:'same-origin',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ uid: submittedUid, telegram_id: tg })
+    })
+      .then(function(res){ return res.json(); })
+      .then(function(data){
+        if(data.ok){
+          showResult(tgResult, true, '✅ 접수됐어요! BYDFi 가입 확인 후 텔레그램으로 안내드릴게요.');
+          tgInput.value = '';
+        } else {
+          showResult(tgResult, false, '❌ ' + (data.error || '제출 중 오류가 발생했습니다.'));
+        }
+      })
+      .catch(function(){ showResult(tgResult, false, '❌ 제출 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.'); })
+      .finally(function(){ tgSubmitBtn.disabled = false; tgSubmitBtn.textContent = '제출하기'; });
+  });
+
+  document.querySelectorAll('.js-open-bydfi-apply').forEach(function(el){
+    el.addEventListener('click', function(e){ e.preventDefault(); openModal(); });
+  });
+  closeBtn.addEventListener('click', closeModal);
+  backdrop.addEventListener('click', function(e){ if(e.target === backdrop) closeModal(); });
+  document.addEventListener('keydown', function(e){
+    if(e.key === 'Escape' && !backdrop.hidden) closeModal();
+  });
+})();
+
+// 20-40단계: 전역 "입장 신청" 진입점(nav pill/프로모배너/#verify버튼/모바일바)이 열어야 할 모달을
+// Gate.io/BYDFi 중 고르게 하는 선택 모달 — 고른 쪽의 전용 모달은 window.openApplyModal /
+// window.openBydfiModal로(위 두 IIFE가 의도적으로 노출해둠) 염.
+(function(){
+  var backdrop = document.getElementById('exchange-choice-modal-backdrop');
+  var closeBtn = document.getElementById('exchange-choice-close');
+  var gateBtn = document.getElementById('choice-gate-btn');
+  var bydfiBtn = document.getElementById('choice-bydfi-btn');
+  if(!backdrop) return;
+
+  function openModal(){
+    backdrop.hidden = false;
+    document.body.style.overflow = 'hidden';
+  }
+  function closeModal(){
+    backdrop.hidden = true;
+    document.body.style.overflow = '';
+  }
+  document.querySelectorAll('.js-open-apply-modal').forEach(function(el){
+    el.addEventListener('click', function(e){ e.preventDefault(); openModal(); });
+  });
+  closeBtn.addEventListener('click', closeModal);
+  backdrop.addEventListener('click', function(e){ if(e.target === backdrop) closeModal(); });
+  gateBtn.addEventListener('click', function(){ closeModal(); if(window.openApplyModal) window.openApplyModal(); });
+  bydfiBtn.addEventListener('click', function(){ closeModal(); if(window.openBydfiModal) window.openBydfiModal(); });
+  document.addEventListener('keydown', function(e){
+    if(e.key === 'Escape' && !backdrop.hidden) closeModal();
+  });
+})();
+
 (function(){
   var openBtn = document.getElementById('payback-open-btn');
   var backdrop = document.getElementById('payback-modal-backdrop');
@@ -1297,6 +1534,7 @@
   // 다른 거래소가 추가되면 이 배열에 항목만 추가하면 계산기에 자동으로 선택지가 늘어남.
   var EXCHANGES = [
     { id:'gate', name:'Gate.io', logo:'/gate-logo.png', feeRate:0.0005, paybackRate:0.5, active:true },
+    { id:'bydfi', name:'BYDFi', logo:'/bydfi-logo.svg', feeRate:0.0005, paybackRate:0.5, active:true },
     { id:'soon', name:'준비중', logo:null, feeRate:0, paybackRate:0, active:false }
   ];
   var selected = EXCHANGES.filter(function(e){ return e.active; })[0] || EXCHANGES[0];

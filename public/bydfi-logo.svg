@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 44 44" width="44" height="44">
+  <defs>
+    <linearGradient id="bydfiGrad" x1="0" y1="0" x2="44" y2="44" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#4f6bff"/>
+      <stop offset="1" stop-color="#7c3aed"/>
+    </linearGradient>
+  </defs>
+  <rect width="44" height="44" rx="10" fill="url(#bydfiGrad)"/>
+  <path d="M13 30 L22 14 L31 30 L24.5 30 L22 25.2 L19.5 30 Z" fill="#ffffff" opacity="0.95"/>
+</svg>

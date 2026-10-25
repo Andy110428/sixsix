@@ -40,6 +40,15 @@ CREATE TABLE IF NOT EXISTS payback_cursor (
   last_checked INTEGER NOT NULL   -- epoch 초 (Gate.io API 파라미터와 단위 통일)
 );
 
+-- 2026-10-25 20-40단계: BYDFi 가입 신청(수동 확인) 테이블 추가. BYDFi는 Gate.io 같은 공개
+-- 레퍼럴확인 API가 없어서 서버 재검증 없이 그냥 저장 + 운영자 알림만 보냄.
+CREATE TABLE IF NOT EXISTS bydfi_join_requests (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  uid TEXT NOT NULL,              -- BYDFi UID (서버 검증 없음 — 운영자가 수동 확인)
+  telegram_id TEXT NOT NULL,
+  created_at INTEGER NOT NULL     -- epoch ms
+);
+
 -- 2026-10-11 20-16단계: 스터디방 관리 봇(src/study-bot.js) 테이블 4개 추가.
 
 -- 사이트에서 발급하는 1회용 봇 딥링크 토큰(24시간 유효) — 신청자가 봇에서 "시작"을 누르면 소비됨.

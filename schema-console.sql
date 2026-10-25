@@ -5,6 +5,13 @@ CREATE TABLE IF NOT EXISTS telegram_join_requests (
   created_at INTEGER NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS bydfi_join_requests (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  uid TEXT NOT NULL,
+  telegram_id TEXT NOT NULL,
+  created_at INTEGER NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS known_uids (
   uid TEXT PRIMARY KEY,
   first_seen INTEGER NOT NULL

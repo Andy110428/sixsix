@@ -5,6 +5,9 @@
 //   POST /api/telegram-join         UID + 텔레그램 아이디로 전용 텔레그램방 가입 신청
 //                                    → 서버가 UID를 다시 한 번 검증(direct_referral만 허용)하고
 //                                      telegram_join_requests에 저장 + 운영자에게 텔레그램 알림
+//   POST /api/bydfi-join            BYDFi UID + 텔레그램 아이디 제출 (20-40단계) — BYDFi는 공개
+//                                    레퍼럴확인 API가 없어서 서버 재검증 없이 bydfi_join_requests에
+//                                    저장 + 운영자에게 "수동 확인 필요" 알림만 보냄
 //   GET  /api/payback-total?uid=... 그 UID의 누적 페이백 추정액 조회 (아래 "페이백 계산 방식" 참고)
 //   GET  /api/payback-feed          최근 페이백 내역 공개 피드 (UID 마스킹, 최대 300건, 20-26단계)
 //   POST /api/telegram-link         UID 재검증 후 스터디방 신청용 1회용 봇 딥링크 발급 (study-bot.js)
@@ -86,6 +89,7 @@ export default {
 
       if (path === '/api/check-uid' && method === 'GET') return await handleCheckUid(request, env);
       if (path === '/api/telegram-join' && method === 'POST') return await handleTelegramJoin(request, env);
+      if (path === '/api/bydfi-join' && method === 'POST') return await handleBydfiJoin(request, env);
       if (path === '/api/payback-total' && method === 'GET') return await handlePaybackTotal(request, env);
       if (path === '/api/payback-feed' && method === 'GET') return await handlePaybackFeed(request, env);
       if (path === '/api/telegram-link' && method === 'POST') return await handleTelegramLink(request, env, botDeps);
@@ -228,6 +232,39 @@ async function handleTelegramJoin(request, env) {
   ).bind(uid, telegramId, Date.now()).run();
 
   await notifyAdminTelegram(env, `📨 텔레그램 전용방 가입 신청\nUID: ${uid}\n텔레그램: ${telegramId}`);
+
+  return json({ ok: true });
+}
+
+// ───────────────────────── BYDFi 가입 신청 (수동 확인) ─────────────────────────
+// 20-40단계: BYDFi는 Gate.io의 rebate/user/sub_relation 같은 "레퍼럴 즉시 확인" 공개 API가
+// 없음(조사 결과 — 레퍼럴/서브어필리에이트 관리는 웹 대시보드 전용이고 거기서도 UID가 가려져 표시됨).
+// 그래서 서버에서 재검증하지 않고 그냥 저장 + 알림만 보냄 — 실제 "전용 링크로 가입했는지"는
+// 운영자가 BYDFi 어필리에이트 대시보드에서 직접 확인 후 텔레그램으로 개별 안내함.
+function isValidExchangeUid(uid) {
+  // Gate.io 전용 숫자 UID 검증(/^[0-9]{3,15}$/)과 달리, BYDFi UID 형식은 공식 문서로 확인 못해서
+  // 범용 영숫자 포맷으로만 느슨하게 검증함 — 실제 포맷과 다르면 추후 조정 필요.
+  return typeof uid === 'string' && /^[a-zA-Z0-9_-]{2,30}$/.test(uid.trim());
+}
+
+async function handleBydfiJoin(request, env) {
+  if (!env.DB) return json({ ok: false, error: 'DB가 연결되지 않았습니다.' }, 500);
+  const body = await safeJson(request);
+  const uid = (body.uid || '').trim();
+  const telegramId = (body.telegram_id || '').trim();
+
+  if (!isValidExchangeUid(uid)) {
+    return json({ ok: false, error: 'UID를 2~30자로 입력해주세요.' }, 400);
+  }
+  if (!isValidTelegramId(telegramId)) {
+    return json({ ok: false, error: '텔레그램 아이디를 2~100자로 입력해주세요.' }, 400);
+  }
+
+  await env.DB.prepare(
+    `INSERT INTO bydfi_join_requests (uid, telegram_id, created_at) VALUES (?, ?, ?)`
+  ).bind(uid, telegramId, Date.now()).run();
+
+  await notifyAdminTelegram(env, `🆕 BYDFi 가입 확인 요청 (수동 확인 필요)\nUID: ${uid}\n텔레그램: ${telegramId}\n\n⚠️ BYDFi는 자동 확인 API가 없어요 — 어필리에이트 대시보드에서 직접 확인 후 개별 안내해주세요.`);
 
   return json({ ok: true });
 }
@@ -647,6 +684,12 @@ let schemaReady = false;
 async function ensureSchema(env) {
   if (schemaReady) return;
   await env.DB.prepare(`CREATE TABLE IF NOT EXISTS telegram_join_requests (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    uid TEXT NOT NULL,
+    telegram_id TEXT NOT NULL,
+    created_at INTEGER NOT NULL
+  )`).run();
+  await env.DB.prepare(`CREATE TABLE IF NOT EXISTS bydfi_join_requests (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     uid TEXT NOT NULL,
     telegram_id TEXT NOT NULL,
