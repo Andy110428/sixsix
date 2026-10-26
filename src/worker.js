@@ -8,6 +8,8 @@
 //   POST /api/bydfi-join            BYDFi UID + 텔레그램 아이디 제출 (20-40단계) — BYDFi는 공개
 //                                    레퍼럴확인 API가 없어서 서버 재검증 없이 bydfi_join_requests에
 //                                    저장 + 운영자에게 "수동 확인 필요" 알림만 보냄
+//   GET  /api/check-uid-bitget?uid=... Bitget UID가 전용 링크로 가입했는지 확인 (20-51단계, 고정 IP 중계 서버
+//                                    경유 — 성공 시 Gate와 같은 status:'direct_referral', 중계기 문제면 fallback:true)
 //   POST /api/bitget-join            Bitget UID + 텔레그램 아이디 제출 — bitget_join_requests에 저장 +
 //                                    운영자 알림. 20-50단계부터 고정 IP 중계 서버(jarvis-core)를 거쳐
 //                                    어필리에이트 customer-list로 자동 확인한 결과를 알림에 함께 표시함
@@ -97,6 +99,7 @@ export default {
       if (path === '/api/check-uid' && method === 'GET') return await handleCheckUid(request, env);
       if (path === '/api/telegram-join' && method === 'POST') return await handleTelegramJoin(request, env);
       if (path === '/api/bydfi-join' && method === 'POST') return await handleBydfiJoin(request, env);
+      if (path === '/api/check-uid-bitget' && method === 'GET') return await handleCheckUidBitget(request, env);
       if (path === '/api/bitget-join' && method === 'POST') return await handleBitgetJoin(request, env);
       if (path === '/api/payback-total' && method === 'GET') return await handlePaybackTotal(request, env);
       if (path === '/api/payback-feed' && method === 'GET') return await handlePaybackFeed(request, env);
@@ -132,6 +135,7 @@ const botDeps = {
   safeJson: (...a) => safeJson(...a),
   checkGateReferral: (...a) => checkGateReferral(...a),
   fetchPartnerCommissionHistory: (...a) => fetchPartnerCommissionHistory(...a),
+  checkBitgetViaRelay: (...a) => checkBitgetViaRelay(...a),
 };
 
 // ───────────────────────── Gate.io API 공통 ─────────────────────────
@@ -317,6 +321,25 @@ function bitgetCheckLine(check) {
   if (check.status === 'not_customer') return '❌ 자동 확인: 고객 목록에 없어요 (가입 30일 지난 고객일 수 있으니 대시보드에서 한 번 더 확인).';
   if (check.status === 'error') return `⚠️ 자동 확인 실패 (${check.detail}) — 어필리에이트 대시보드에서 직접 확인해주세요.`;
   return '⚠️ 자동 확인 미설정(BITGET_RELAY_TOKEN 없음) — 어필리에이트 대시보드에서 직접 확인해주세요.';
+}
+
+// 20-51단계: 스터디방 신청 모달 1단계와 UID 확인 모달에서 쓰는 Bitget 실시간 확인.
+// 프론트가 Gate용 코드를 그대로 재사용할 수 있게 성공 응답 모양을 handleCheckUid와 맞춤(status:'direct_referral').
+// 중계기가 꺼져 있거나 토큰이 없으면 fallback:true — 프론트는 그때 수동 신청(bitget-join)으로 진행시킴.
+// known_uids에는 넣지 않음(그 테이블은 Gate 커미션 피드 크론 전용이라 Bitget UID가 섞이면 안 됨).
+async function handleCheckUidBitget(request, env) {
+  const uid = (new URL(request.url).searchParams.get('uid') || '').trim();
+  if (!/^[0-9]{4,20}$/.test(uid)) return json({ ok: false, error: 'UID는 숫자만 입력해주세요.' }, 400);
+  const check = await checkBitgetViaRelay(uid, env);
+  if (check.status === 'customer') {
+    return json({ ok: true, uid, status: 'direct_referral', message: 'Bitget 전용 링크로 가입한 회원입니다.' });
+  }
+  if (check.status === 'not_customer') {
+    return json({ ok: false, uid, status: 'not_my_referral',
+      message: '전용 링크로 가입한 Bitget 회원으로 확인되지 않아요. 가입 직후라면 잠시 후 다시 시도해주세요.' }, 403);
+  }
+  return json({ ok: false, fallback: true,
+    message: '지금은 Bitget 자동 확인이 잠시 안 돼요. 수동 신청으로 진행해주세요.', detail: check.detail || check.status }, 503);
 }
 
 async function handleBitgetJoin(request, env) {

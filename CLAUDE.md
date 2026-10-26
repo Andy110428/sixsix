@@ -1415,6 +1415,25 @@ extra_usdt       = received_usdt - generic20_usdt        (50% 요율 덕분에 �
 
 **다음 후보(사용자 결정)**: 자동 확인이 안정적이면 Gate처럼 1단계에서 바로 확인하는 UX(20-44단계 코드, git 히스토리)로 되돌리는 것 — 지금은 운영 알림에만 반영.
 
+## 20-51단계: Bitget도 Gate.io처럼 UID 확인 → 스터디방 신청까지 자동화 (2026-10-26, 클라우드 자비스 세션)
+
+사용자 요청: "UID 기능 구현 완료했으면 스터디방까지 자동으로 신청 가능하게, BYDFi는 제외". 20-50단계 중계 서버를 이용해 Bitget을 Gate와 같은 흐름으로 만듦.
+
+**백엔드**
+- `GET /api/check-uid-bitget?uid=` (worker.js `handleCheckUidBitget`): 중계기로 확인. 성공 응답은 Gate `handleCheckUid`와 같은 모양(`status:'direct_referral'`)이라 프론트 코드를 그대로 재사용. 고객 아님 → 403 `not_my_referral`, 중계기 미설정/오류 → 503 `fallback:true`. **known_uids에는 넣지 않음**(Gate 커미션 피드 크론 전용 테이블).
+- `POST /api/telegram-link`에 `exchange:'bitget'` 추가(study-bot.js `handleTelegramLink`): Bitget이면 중계기로 재검증 후 딥링크 발급, 중계기 문제면 `fallback:true`(프론트가 @아이디 수동 제출로 대체). `botDeps`에 `checkBitgetViaRelay` 추가.
+- `tg_link_tokens`/`tg_members`에 `exchange TEXT NOT NULL DEFAULT 'gate'` 컬럼 추가(`ensureBotSchema`에서 ALTER, "duplicate column" 에러는 무시 — D1에 ADD COLUMN IF NOT EXISTS 없음). 기존 행은 전부 gate.
+- 봇 `/start` 처리: 거래소를 회원에 저장, 같은 UID 중복 신청 검사를 (uid, exchange) 기준으로, 신청 기록은 Bitget이면 `bitget_join_requests`에(Gate는 기존대로 `telegram_join_requests`), 운영자 알림에 "거래소: Bitget (전용 링크 가입 자동 확인 ✅)" 표시. `memberLabel`에도 거래소명 표시.
+- **크론 활동 검사(runMembershipCheck)는 Bitget 회원을 건너뜀** — customer-list가 "가입 30일 이내"만 조회될 수 있어서 오래된 정상 고객을 "레퍼럴 아님"으로 잘못 내보낼 위험 + Bitget 거래 기록은 아직 중계기로 조회 안 함. Bitget 회원은 운영자가 직접 관리, 봇은 입장/퇴장 기록만.
+
+**프론트(public/index.html)**
+- Bitget 신청 모달을 Gate 모달과 같은 구조로 되돌림: 1단계 "확인하기"(→ check-uid-bitget, 고객 아니면 여기서 막힘), 3단계 봇 딥링크 버튼(`#bitget-tg-link-wrap`), 수동 제출 폼(`#bitget-tg-manual-wrap`)은 fallback일 때만. 두 wrap은 hidden 속성만으로 토글(반복 버그 패턴 회피 — display 주는 클래스 없음).
+- 통합 UID 확인 모달: Bitget을 `MANUAL_EXCHANGES` → `ENDPOINTS`로 이동(수동은 BYDFi만 남음). 거래소 표의 Bitget 버튼 "UID 제출" → "UID 확인", 설명 문구 수정.
+
+**검증**: `node --check`(worker/study-bot/인라인 스크립트), 로컬 하네스(`node:sqlite` 인메모리 D1 + 실제 중계기 호출 + 텔레그램 API 목업)로 12개 시나리오 통과 — 고객 확인/비고객 차단/잘못된 UID/중계기 미설정 fallback/비고객 딥링크 거절/고객 딥링크 발급/토큰 exchange 저장/봇 시작 시 bitget 회원 저장/bitget_join_requests 기록/운영자 알림 내용/크론이 Bitget 회원을 건너뜀/스키마 마이그레이션 재실행 안전. ⚠️ 브라우저(Playwright) 실화면 검증과 `wrangler deploy --dry-run`은 이 서버 RAM(1GB) 문제로 못 함 — 배포 후 실제 사이트에서 확인 필요.
+
+**BYDFi**: 여전히 공개 레퍼럴 확인 API 없음(20-40단계) — 수동 유지.
+
 ## 환경변수 목록 (Cloudflare 대시보드 Settings > Variables and Secrets)
 
 ```

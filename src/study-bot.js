@@ -75,6 +75,15 @@ export async function ensureBotSchema(env) {
     key TEXT PRIMARY KEY,
     value TEXT
   )`).run();
+  // 20-51단계: Bitget 회원도 같은 봇 흐름을 쓰게 되면서 어느 거래소 UID인지 같이 저장함(기존 행은 gate).
+  // D1(SQLite)은 ADD COLUMN IF NOT EXISTS가 없어서, 이미 있으면 나는 "duplicate column" 에러는 무시함.
+  for (const table of ['tg_link_tokens', 'tg_members']) {
+    try {
+      await env.DB.prepare(`ALTER TABLE ${table} ADD COLUMN exchange TEXT NOT NULL DEFAULT 'gate'`).run();
+    } catch (e) {
+      if (!/duplicate column/i.test(String(e && e.message))) throw e;
+    }
+  }
 }
 
 async function kvGet(env, key) {
@@ -125,8 +134,12 @@ function displayName(u) {
   const name = [u.first_name, u.last_name].filter(Boolean).join(' ');
   return (u.username ? '@' + u.username : '(아이디 없음)') + (name ? ` ${name}` : '');
 }
+const EXCHANGE_NAMES = { gate: 'Gate.io', bitget: 'Bitget' };
+function exchangeName(ex) {
+  return EXCHANGE_NAMES[ex] || EXCHANGE_NAMES.gate;
+}
 function memberLabel(m) {
-  return `${m.username ? '@' + m.username : '(아이디 없음)'}${m.first_name ? ' ' + m.first_name : ''} · UID ${m.uid}`;
+  return `${m.username ? '@' + m.username : '(아이디 없음)'}${m.first_name ? ' ' + m.first_name : ''} · ${exchangeName(m.exchange)} UID ${m.uid}`;
 }
 
 function botEnabled(env) {
@@ -141,30 +154,44 @@ function randomToken() {
 }
 
 export async function handleTelegramLink(request, env, deps) {
-  const { json, safeJson, checkGateReferral } = deps;
+  const { json, safeJson, checkGateReferral, checkBitgetViaRelay } = deps;
   if (!botEnabled(env)) {
     return json({ ok: false, fallback: true, error: '텔레그램 봇 신청이 아직 준비되지 않았어요.' }, 503);
   }
   const body = await safeJson(request);
   const uid = String(body.uid || '').trim();
-  if (!/^[0-9]{3,15}$/.test(uid)) return json({ ok: false, error: 'UID는 숫자만 입력해주세요.' }, 400);
+  const exchange = body.exchange === 'bitget' ? 'bitget' : 'gate';
 
-  let referral;
-  try {
-    referral = await checkGateReferral(uid, env);
-  } catch (err) {
-    return json({ ok: false, error: err.message || 'Gate.io 조회 중 오류', detail: err.detail }, err.status || 500);
-  }
-  if (referral.status !== 'direct_referral') {
-    return json({ ok: false, error: '전용 링크로 가입이 확인된 UID만 신청할 수 있습니다.' }, 403);
+  if (exchange === 'bitget') {
+    // 20-51단계: Bitget은 고정 IP 중계 서버로 재검증(worker.js checkBitgetViaRelay). 중계기 문제면
+    // fallback:true를 돌려줘서 프론트가 예전 수동 제출(@아이디 → /api/bitget-join)로 자동 대체하게 함.
+    if (!/^[0-9]{4,20}$/.test(uid)) return json({ ok: false, error: 'UID는 숫자만 입력해주세요.' }, 400);
+    const check = await checkBitgetViaRelay(uid, env);
+    if (check.status === 'not_customer') {
+      return json({ ok: false, error: '전용 링크로 가입이 확인된 UID만 신청할 수 있습니다.' }, 403);
+    }
+    if (check.status !== 'customer') {
+      return json({ ok: false, fallback: true, error: 'Bitget 자동 확인이 잠시 안 돼요.' }, 503);
+    }
+  } else {
+    if (!/^[0-9]{3,15}$/.test(uid)) return json({ ok: false, error: 'UID는 숫자만 입력해주세요.' }, 400);
+    let referral;
+    try {
+      referral = await checkGateReferral(uid, env);
+    } catch (err) {
+      return json({ ok: false, error: err.message || 'Gate.io 조회 중 오류', detail: err.detail }, err.status || 500);
+    }
+    if (referral.status !== 'direct_referral') {
+      return json({ ok: false, error: '전용 링크로 가입이 확인된 UID만 신청할 수 있습니다.' }, 403);
+    }
   }
 
   const username = await getBotUsername(env);
   if (!username) return json({ ok: false, fallback: true, error: '텔레그램 봇 정보를 불러오지 못했어요.' }, 503);
 
   const token = randomToken();
-  await env.DB.prepare(`INSERT INTO tg_link_tokens (token, uid, created_at) VALUES (?, ?, ?)`)
-    .bind(token, uid, Date.now()).run();
+  await env.DB.prepare(`INSERT INTO tg_link_tokens (token, uid, created_at, exchange) VALUES (?, ?, ?, ?)`)
+    .bind(token, uid, Date.now(), exchange).run();
 
   return json({ ok: true, url: `https://t.me/${username}?start=${token}` });
 }
@@ -239,45 +266,47 @@ async function handlePrivate(msg, env, origin) {
 async function handleStartToken(token, msg, env, origin) {
   const from = msg.from;
   const now = Date.now();
-  const row = await env.DB.prepare(`SELECT uid, created_at, used_at FROM tg_link_tokens WHERE token = ?`).bind(token).first();
+  const row = await env.DB.prepare(`SELECT uid, created_at, used_at, exchange FROM tg_link_tokens WHERE token = ?`).bind(token).first();
   if (!row || row.used_at || now - row.created_at > LINK_TOKEN_TTL_MS) {
     return sendText(env, from.id, `신청 링크가 만료됐거나 이미 사용됐어요. 사이트에서 다시 신청해주세요.\n${origin}/#verify`);
   }
 
+  const exchange = row.exchange || 'gate';
   const taken = await env.DB.prepare(
-    `SELECT user_id FROM tg_members WHERE uid = ? AND user_id != ? AND status IN ('pending', 'approved')`
-  ).bind(row.uid, from.id).first();
+    `SELECT user_id FROM tg_members WHERE uid = ? AND exchange = ? AND user_id != ? AND status IN ('pending', 'approved')`
+  ).bind(row.uid, exchange, from.id).first();
   if (taken) {
-    await notifyAdmin(env, `⚠️ 이미 다른 텔레그램 계정(숫자 ID ${taken.user_id})에 연결된 UID ${row.uid}로 신청 시도\n시도한 계정: ${displayName(from)} (숫자 ID ${from.id})`);
+    await notifyAdmin(env, `⚠️ 이미 다른 텔레그램 계정(숫자 ID ${taken.user_id})에 연결된 ${exchangeName(exchange)} UID ${row.uid}로 신청 시도\n시도한 계정: ${displayName(from)} (숫자 ID ${from.id})`);
     return sendText(env, from.id, '이 UID는 이미 다른 텔레그램 계정으로 신청돼 있어요. 운영자에게 문의해주세요.');
   }
 
-  const existing = await env.DB.prepare(`SELECT status, uid, in_group FROM tg_members WHERE user_id = ?`).bind(from.id).first();
+  const existing = await env.DB.prepare(`SELECT status, uid, exchange, in_group FROM tg_members WHERE user_id = ?`).bind(from.id).first();
   await env.DB.prepare(`UPDATE tg_link_tokens SET used_at = ? WHERE token = ?`).bind(now, token).run();
 
-  if (existing && existing.status === 'approved' && existing.uid === row.uid) {
+  if (existing && existing.status === 'approved' && existing.uid === row.uid && (existing.exchange || 'gate') === exchange) {
     return sendText(env, from.id, existing.in_group
       ? '이미 승인된 계정이에요. 스터디방에서 만나요!'
       : '이미 승인된 계정이에요. 초대 링크가 만료됐다면 운영자에게 문의해주세요.');
   }
 
   await env.DB.prepare(
-    `INSERT INTO tg_members (user_id, uid, username, first_name, status, linked_at)
-     VALUES (?, ?, ?, ?, 'pending', ?)
+    `INSERT INTO tg_members (user_id, uid, username, first_name, status, linked_at, exchange)
+     VALUES (?, ?, ?, ?, 'pending', ?, ?)
      ON CONFLICT(user_id) DO UPDATE SET uid = excluded.uid, username = excluded.username,
        first_name = excluded.first_name, status = 'pending', linked_at = excluded.linked_at,
-       warned_at = NULL, flagged_at = NULL, flag_reason = NULL`
-  ).bind(from.id, row.uid, from.username || null, from.first_name || null, now).run();
+       exchange = excluded.exchange, warned_at = NULL, flagged_at = NULL, flag_reason = NULL`
+  ).bind(from.id, row.uid, from.username || null, from.first_name || null, now, exchange).run();
 
-  // 예전 신청 기록 테이블에도 남겨둠(D1 콘솔에서 한 곳만 봐도 되도록)
-  await env.DB.prepare(`INSERT INTO telegram_join_requests (uid, telegram_id, created_at) VALUES (?, ?, ?)`)
+  // 예전 신청 기록 테이블에도 남겨둠(D1 콘솔에서 한 곳만 봐도 되도록) — 거래소별 테이블에 맞춰 기록
+  const joinTable = exchange === 'bitget' ? 'bitget_join_requests' : 'telegram_join_requests';
+  await env.DB.prepare(`INSERT INTO ${joinTable} (uid, telegram_id, created_at) VALUES (?, ?, ?)`)
     .bind(row.uid, `${from.username ? '@' + from.username : '(아이디 없음)'} #${from.id}`, now).run();
 
   await sendText(env, from.id,
     '✅ 스터디방 입장 신청이 접수됐어요!\n운영자가 시드 예치를 확인한 뒤 이 대화창으로 초대 링크를 보내드릴게요.');
 
   await notifyAdmin(env,
-    `📨 스터디방 입장 신청\nUID: ${row.uid}\n텔레그램: ${displayName(from)}\n숫자 ID: ${from.id}` +
+    `📨 스터디방 입장 신청\n거래소: ${exchangeName(exchange)} (전용 링크 가입 자동 확인 ✅)\nUID: ${row.uid}\n텔레그램: ${displayName(from)}\n숫자 ID: ${from.id}` +
     (existing && existing.status === 'kicked' ? '\n(이전에 내보내진 적 있는 계정)' : ''),
     { reply_markup: { inline_keyboard: [[
       { text: '✅ 승인 (초대 링크 발송)', callback_data: `ap:${from.id}` },
@@ -536,6 +565,12 @@ async function checkMember(m, env, deps, autokick, now) {
   if (st.error) throw new Error('getChatMember failed');
   if (st.gone) { await markLeft(env, m.user_id); return setChecked(); }
   if (st.admin) return setChecked();
+
+  // 20-51단계: Bitget 회원은 활동 검사 대상에서 뺌 — customer-list는 문서 버전에 따라 "가입 30일 이내"만
+  // 조회될 수 있어서, 오래된 정상 고객이 "레퍼럴 아님"으로 잘못 잡혀 내보내질 위험이 있고, 거래 기록
+  // (Gate의 commission_history에 해당하는 것)도 중계기로 아직 조회하지 않음. 그래서 Bitget 회원은
+  // 운영자가 직접 관리하고, 봇은 그룹 입장/퇴장 기록만 함.
+  if (m.exchange === 'bitget') return setChecked();
 
   let reason = null;
   let warn = false;
