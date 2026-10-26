@@ -1434,6 +1434,14 @@ extra_usdt       = received_usdt - generic20_usdt        (50% 요율 덕분에 �
 
 **BYDFi**: 여전히 공개 레퍼럴 확인 API 없음(20-40단계) — 수동 유지.
 
+## 20-52단계: 예상 페이백 계산기 + 실시간 페이백 피드 화면에서 제거 (2026-10-26, 클라우드 자비스 세션)
+
+사용자 요청 "계산기와 실시간 페백 내역은 걍 없애줘".
+- `<section id="calc">`(예상 페이백 계산기) 통째로 삭제 + 계산기 IIFE + `.calc-*` CSS 삭제. nav의 "도구 ▾" 드롭다운은 항목이 "페이백 조회" 하나만 남아서 드롭다운 없이 일반 링크(`💰 페이백 조회` → `#payback`)로 바꿈, 모바일 메뉴의 "계산기" 링크 삭제. (`.nav-drop*` CSS는 지금 안 쓰이지만 남겨둠 — 무해)
+- `#verify`의 "실시간 페이백 내역" 피드(목록 + `/api/payback-feed`를 부르던 IIFE + `.feed-*` CSS) 삭제. 같은 카드에 있던 "내 누적 조회"(`#payback-open-btn` → 페이백 조회 모달, `/api/payback-total`)는 유지 — 카드를 `payback-cta` 스타일의 "💰 내 누적 페이백 조회" 카드로 바꿈.
+- **백엔드는 그대로 둠**: `GET /api/payback-feed` 라우트와 1분 크론(`syncPaybackFeed`, payback_feed 적재)은 아직 살아있음 — 화면에서 안 쓰이니 Gate API 호출만 낭비되는 상태. 지울지는 사용자 결정(크론 문자열 `* * * * *` 제거 + 라우트/함수 정리).
+- 검증: 인라인 스크립트 `node --check`, `<section>` 열고 닫기 개수 일치(8/8), 삭제한 id/클래스 참조 grep 0건.
+
 ## 환경변수 목록 (Cloudflare 대시보드 Settings > Variables and Secrets)
 
 ```
