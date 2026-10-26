@@ -309,20 +309,39 @@ function base64FromBuffer(buffer) {
 // `openssl pkcs8 -topk8 ...`로 변환 필요). `BITGET_API_RSA_PRIVATE_KEY` 환경변수가 설정돼
 // 있으면 RSA로, 없으면 기존 HMAC(`BITGET_API_SECRET`)으로 자동 분기함.
 async function bitgetRsaSignBase64(privateKeyPem, message) {
-  const base64Key = privateKeyPem.replace(
-    /-----BEGIN (RSA )?PRIVATE KEY-----|-----END (RSA )?PRIVATE KEY-----|\s+/g,
-    ''
-  );
-  const binary = atob(base64Key);
+  // 20-48단계: Cloudflare 시크릿에 여러 줄 PEM을 저장할 때, 실제 줄바꿈이 사라지거나
+  // "\n"이라는 리터럴 두 글자(백슬래시+n)로 바뀌어 들어오는 경우가 있었음(흔한 환경변수
+  // 함정) — 기존엔 `\s+` 제거만 했어서 이 리터럴 백슬래시가 base64 문자가 아니라서
+  // atob()가 그대로 터졌음. 먼저 리터럴 \r\n/\n을 실제 줄바꿈으로 되돌린 뒤 헤더/푸터(공개키를
+  // 잘못 넣었을 경우까지 전부 걸러서 atob() 에러 대신 더 명확한 에러가 나도록)와 공백을 제거함.
+  const normalized = privateKeyPem.replace(/\\r\\n/g, '\n').replace(/\\n/g, '\n');
+  const base64Key = normalized
+    .replace(/-----BEGIN [^-]*-----/g, '')
+    .replace(/-----END [^-]*-----/g, '')
+    .replace(/\s+/g, '');
+  if (!base64Key) {
+    throw new Error('BITGET_API_RSA_PRIVATE_KEY 값이 비어있거나 형식이 올바르지 않습니다.');
+  }
+  let binary;
+  try {
+    binary = atob(base64Key);
+  } catch (e) {
+    throw new Error('BITGET_API_RSA_PRIVATE_KEY가 올바른 base64 PEM 형식이 아니에요 — 저장할 때 줄바꿈이 깨졌거나 값이 일부만 복사됐을 수 있어요. 다시 전체를 복사해서 저장해주세요.');
+  }
   const bytes = new Uint8Array(binary.length);
   for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-  const key = await crypto.subtle.importKey(
-    'pkcs8',
-    bytes.buffer,
-    { name: 'RSASSA-PKCS1-v1_5', hash: { name: 'SHA-256' } },
-    false,
-    ['sign']
-  );
+  let key;
+  try {
+    key = await crypto.subtle.importKey(
+      'pkcs8',
+      bytes.buffer,
+      { name: 'RSASSA-PKCS1-v1_5', hash: { name: 'SHA-256' } },
+      false,
+      ['sign']
+    );
+  } catch (e) {
+    throw new Error('BITGET_API_RSA_PRIVATE_KEY를 PKCS8 개인키로 인식할 수 없어요 — 공개키를 잘못 넣었거나 PKCS1("RSA PRIVATE KEY") 형식일 수 있어요. 전달받은 PKCS8 개인키 파일 내용을 다시 확인해주세요.');
+  }
   const sigBuf = await crypto.subtle.sign({ name: 'RSASSA-PKCS1-v1_5' }, key, new TextEncoder().encode(message));
   return base64FromBuffer(sigBuf);
 }
