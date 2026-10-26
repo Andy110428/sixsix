@@ -49,6 +49,15 @@ CREATE TABLE IF NOT EXISTS bydfi_join_requests (
   created_at INTEGER NOT NULL     -- epoch ms
 );
 
+-- 2026-10-26 20-44단계: Bitget 가입 신청(자동 확인) 테이블 추가. Bitget은 어필리에이트
+-- customer-list API로 UID 포함 여부를 서버가 자동 재검증한 뒤에만 저장함(Gate.io와 동일 패턴).
+CREATE TABLE IF NOT EXISTS bitget_join_requests (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  uid TEXT NOT NULL,              -- Bitget UID (서버가 자동 재검증한 UID만 저장됨)
+  telegram_id TEXT NOT NULL,
+  created_at INTEGER NOT NULL     -- epoch ms
+);
+
 -- 2026-10-11 20-16단계: 스터디방 관리 봇(src/study-bot.js) 테이블 4개 추가.
 
 -- 사이트에서 발급하는 1회용 봇 딥링크 토큰(24시간 유효) — 신청자가 봇에서 "시작"을 누르면 소비됨.

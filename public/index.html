@@ -458,10 +458,11 @@
       <a href="#studyroom">스터디방</a>
       <a href="#exchanges">거래소</a>
       <a href="#how">입장 방법</a>
-      <a href="#" class="js-open-uid-modal">✅ UID 확인</a>
+      <a href="#" class="js-open-uid-modal">✅ Gate.io UID 확인</a>
       <div class="nav-drop">
         <button class="nav-drop-btn" type="button">도구 <span class="caret">▾</span></button>
         <div class="nav-drop-menu">
+          <a href="#" class="js-open-bitget-uid-modal">✅ Bitget UID 확인</a>
           <a href="#calc">📊 계산기</a>
           <a href="#payback">💰 페이백 조회</a>
         </div>
@@ -480,7 +481,8 @@
       <a href="#studyroom">스터디방</a>
       <a href="#exchanges">거래소</a>
       <a href="#how">입장 방법</a>
-      <a href="#" class="js-open-uid-modal">✅ UID 확인</a>
+      <a href="#" class="js-open-uid-modal">✅ Gate.io UID 확인</a>
+      <a href="#" class="js-open-bitget-uid-modal">✅ Bitget UID 확인</a>
       <a href="#" class="nav-apply-link js-open-apply-modal">🔒 스터디방 입장 신청</a>
       <a href="#calc">계산기</a>
       <a href="#payback">페이백 조회</a>
@@ -562,6 +564,32 @@
               <div class="ex-link-box">
                 <input type="text" readonly id="bydfi-link" value="https://promote.bydfi.com/b/teamsixx">
                 <button class="btn btn-ghost btn-sm" id="copy-bydfi-link">복사</button>
+              </div>
+            </div>
+          </div>
+          <div class="ex-row-card active">
+            <div class="ex-row-main">
+              <div class="ex-row-id">
+                <div class="ex-logo" aria-hidden="true">
+                  <img src="/bitget-logo.png" width="44" height="44" alt="" loading="lazy">
+                </div>
+                <div>
+                  <span class="ex-pill active">운영중</span>
+                  <h3>Bitget</h3>
+                </div>
+              </div>
+              <div class="ex-row-stat"><b>20%</b><span>페이백율</span></div>
+              <div class="ex-row-stat"><b>매일</b><span>1시간 내외</span></div>
+              <div class="ex-row-actions">
+                <a class="btn btn-primary btn-sm" href="https://partner.bitget.com/bg/teamsixx" target="_blank" rel="noopener">가입하기 →</a>
+                <a href="#" class="btn btn-ghost btn-sm js-open-bitget-uid-modal">UID 확인</a>
+              </div>
+            </div>
+            <div class="ex-desc-row">글로벌 코인 현물·선물 거래소 — 전용 링크로 새로 가입해야 인정됩니다.</div>
+            <div class="ex-row-link">
+              <div class="ex-link-box">
+                <input type="text" readonly id="bitget-link" value="https://partner.bitget.com/bg/teamsixx">
+                <button class="btn btn-ghost btn-sm" id="copy-bitget-link">복사</button>
               </div>
             </div>
           </div>
@@ -748,6 +776,19 @@
     </div>
   </div>
 
+  <div class="payback-modal-backdrop" id="bitget-uid-modal-backdrop" hidden>
+    <div class="payback-modal">
+      <button class="payback-modal-close" id="bitget-uid-modal-close" aria-label="닫기">✕</button>
+      <h3>✅ Bitget UID 확인</h3>
+      <p style="color:var(--text-dim); font-size:0.9rem; margin:0 0 16px;">UID를 입력하면 전용 링크로 가입됐는지 바로 확인해드려요.</p>
+      <div class="verify-row">
+        <input type="text" id="bitget-uid-modal-input" placeholder="Bitget UID">
+        <button class="btn btn-primary" id="bitget-uid-modal-check-btn">확인하기</button>
+      </div>
+      <div class="verify-result" id="bitget-uid-modal-result"></div>
+    </div>
+  </div>
+
   <div class="payback-modal-backdrop" id="apply-modal-backdrop" hidden>
     <div class="payback-modal" style="max-width:480px;">
       <button class="payback-modal-close" id="apply-modal-close" aria-label="닫기">✕</button>
@@ -815,6 +856,10 @@
           <img src="/bydfi-logo.png" width="28" height="28" alt="">
           <span>BYDFi</span>
         </button>
+        <button type="button" class="exchange-choice-btn" id="choice-bitget-btn">
+          <img src="/bitget-logo.png" width="28" height="28" alt="">
+          <span>Bitget</span>
+        </button>
       </div>
     </div>
   </div>
@@ -859,6 +904,50 @@
             <button class="btn btn-primary" id="bydfi-tg-submit-btn">제출하기</button>
           </div>
           <div class="verify-result" id="bydfi-tg-result"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="payback-modal-backdrop" id="bitget-modal-backdrop" hidden>
+    <div class="payback-modal" style="max-width:480px;">
+      <button class="payback-modal-close" id="bitget-modal-close" aria-label="닫기">✕</button>
+      <h3>🔒 비공개 스터디방 입장 신청 (Bitget)</h3>
+      <div class="verify-step">
+        <div class="verify-step-head">
+          <span class="verify-step-num">1</span>
+          <label for="bitget-uid-input">Bitget UID 확인</label>
+        </div>
+        <div class="verify-row">
+          <input type="text" id="bitget-uid-input" placeholder="Bitget UID">
+          <button class="btn btn-primary" id="bitget-verify-btn">확인하기</button>
+        </div>
+        <div class="verify-result" id="bitget-verify-result"></div>
+      </div>
+      <div id="bitget-telegram-step" hidden>
+        <div class="verify-step">
+          <div class="verify-step-head">
+            <span class="verify-step-num">2</span>
+            <label>시드 예치 여부</label>
+          </div>
+          <p class="step-desc">스터디방 입장은 시드 예치가 완료돼야 가능해요. 예치를 마치셨으면 O를 선택해주세요.</p>
+          <div class="choice-row">
+            <button type="button" class="choice-btn" id="bitget-seed-o-btn">O</button>
+            <button type="button" class="choice-btn deny" id="bitget-seed-x-btn">X</button>
+          </div>
+          <div class="verify-result" id="bitget-seed-x-result"></div>
+        </div>
+        <div id="bitget-tg-id-step" hidden>
+          <div class="verify-step-head">
+            <span class="verify-step-num">3</span>
+            <label>텔레그램으로 신청</label>
+          </div>
+          <p class="step-desc">텔레그램 아이디를 입력해주세요.</p>
+          <div class="verify-row">
+            <input type="text" id="bitget-tg-input" placeholder="예: @yourid">
+            <button class="btn btn-primary" id="bitget-tg-submit-btn">신청하기</button>
+          </div>
+          <div class="verify-result" id="bitget-tg-result"></div>
         </div>
       </div>
     </div>
@@ -946,7 +1035,7 @@
         </details>
         <details class="faq-item reveal">
           <summary>다른 거래소도 지원하나요?</summary>
-          <p>현재는 Gate.io와 BYDFi를 지원하고, 다른 메이저 거래소도 준비 중이에요. 추가되는 대로 이 페이지에 반영할게요.</p>
+          <p>현재는 Gate.io·BYDFi·Bitget을 지원하고, 다른 메이저 거래소도 준비 중이에요. 추가되는 대로 이 페이지에 반영할게요.</p>
         </details>
         <details class="faq-item reveal">
           <summary>페이백 요율이 얼마인가요?</summary>
@@ -1091,6 +1180,7 @@
   }
   wireCopy('copy-gate-link', 'gate-link');
   wireCopy('copy-bydfi-link', 'bydfi-link');
+  wireCopy('copy-bitget-link', 'bitget-link');
 })();
 
 (function(){
@@ -1315,6 +1405,62 @@
   });
 })();
 
+// 20-44단계: Bitget UID 확인만 단독으로 하는 모달 — 위 Gate.io 전용 모달과 같은 패턴,
+// /api/check-uid-bitget만 호출하고 스터디방 신청 플로우로 안 이어짐. nav 메뉴를 통해서만 열림.
+(function(){
+  var backdrop = document.getElementById('bitget-uid-modal-backdrop');
+  var closeBtn = document.getElementById('bitget-uid-modal-close');
+  var input = document.getElementById('bitget-uid-modal-input');
+  var checkBtn = document.getElementById('bitget-uid-modal-check-btn');
+  var resultEl = document.getElementById('bitget-uid-modal-result');
+  if(!backdrop) return;
+
+  function showResult(ok, text){
+    resultEl.textContent = text;
+    resultEl.className = 'verify-result show ' + (ok ? 'ok' : 'bad');
+  }
+  function openModal(){
+    input.value = '';
+    resultEl.className = 'verify-result';
+    resultEl.textContent = '';
+    backdrop.hidden = false;
+    document.body.style.overflow = 'hidden';
+    input.focus();
+  }
+  function closeModal(){
+    backdrop.hidden = true;
+    document.body.style.overflow = '';
+  }
+  function runCheck(){
+    var uid = (input.value || '').trim();
+    if(!uid){ showResult(false, 'UID를 입력해주세요.'); return; }
+    checkBtn.disabled = true;
+    checkBtn.textContent = '확인 중...';
+    fetch('/api/check-uid-bitget?uid=' + encodeURIComponent(uid), { credentials:'same-origin' })
+      .then(function(res){ return res.json(); })
+      .then(function(data){
+        if(data.ok && data.status === 'direct_referral'){
+          showResult(true, '✅ ' + data.message);
+        } else {
+          showResult(false, '❌ ' + (data.message || data.error || '확인할 수 없습니다.'));
+        }
+      })
+      .catch(function(){ showResult(false, '❌ 확인 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.'); })
+      .finally(function(){ checkBtn.disabled = false; checkBtn.textContent = '확인하기'; });
+  }
+
+  document.querySelectorAll('.js-open-bitget-uid-modal').forEach(function(el){
+    el.addEventListener('click', function(e){ e.preventDefault(); openModal(); });
+  });
+  closeBtn.addEventListener('click', closeModal);
+  backdrop.addEventListener('click', function(e){ if(e.target === backdrop) closeModal(); });
+  checkBtn.addEventListener('click', runCheck);
+  input.addEventListener('keydown', function(e){ if(e.key === 'Enter') runCheck(); });
+  document.addEventListener('keydown', function(e){
+    if(e.key === 'Escape' && !backdrop.hidden) closeModal();
+  });
+})();
+
 // 20-40단계: BYDFi 가입 신청 모달 — Gate.io 모달(위)과 똑같은 3단계 UX(UID→시드예치→텔레그램)를
 // 쓰지만, BYDFi는 레퍼럴 확인 공개 API가 없어서 1단계가 "확인"이 아니라 그냥 "다음"임(서버 검증 없이
 // 바로 다음 단계로 넘어감) — 실제 확인은 운영자가 BYDFi 어필리에이트 대시보드에서 수동으로 함.
@@ -1418,14 +1564,129 @@
   });
 })();
 
+// 20-44단계: Bitget 가입 신청 모달 — Gate.io 모달과 똑같은 3단계 UX(UID→시드예치→텔레그램)이고,
+// Bitget도 자동 확인 API(checkBitgetReferral)가 있어서 1단계가 BYDFi처럼 "다음"이 아니라 Gate.io처럼
+// 실제 "확인하기"(서버 재검증)임.
+(function(){
+  var backdrop = document.getElementById('bitget-modal-backdrop');
+  var closeBtn = document.getElementById('bitget-modal-close');
+  var uidInput = document.getElementById('bitget-uid-input');
+  var verifyBtn = document.getElementById('bitget-verify-btn');
+  var verifyResult = document.getElementById('bitget-verify-result');
+  var telegramStep = document.getElementById('bitget-telegram-step');
+  var seedOBtn = document.getElementById('bitget-seed-o-btn');
+  var seedXBtn = document.getElementById('bitget-seed-x-btn');
+  var seedXResult = document.getElementById('bitget-seed-x-result');
+  var tgIdStep = document.getElementById('bitget-tg-id-step');
+  var tgInput = document.getElementById('bitget-tg-input');
+  var tgSubmitBtn = document.getElementById('bitget-tg-submit-btn');
+  var tgResult = document.getElementById('bitget-tg-result');
+  if(!backdrop) return;
+  var verifiedUid = null;
+
+  function showResult(el, ok, text){
+    el.textContent = text;
+    el.className = 'verify-result show ' + (ok ? 'ok' : 'bad');
+  }
+  function resetSeedChoice(){
+    seedOBtn.classList.remove('selected');
+    seedXBtn.classList.remove('selected');
+    seedXResult.className = 'verify-result';
+    tgIdStep.hidden = true;
+  }
+  function openModal(){
+    uidInput.value = '';
+    verifyResult.className = 'verify-result';
+    verifyResult.textContent = '';
+    telegramStep.hidden = true;
+    resetSeedChoice();
+    tgResult.className = 'verify-result';
+    tgInput.value = '';
+    verifiedUid = null;
+    backdrop.hidden = false;
+    document.body.style.overflow = 'hidden';
+    uidInput.focus();
+  }
+  function closeModal(){
+    backdrop.hidden = true;
+    document.body.style.overflow = '';
+  }
+  window.openBitgetModal = openModal;
+
+  verifyBtn.addEventListener('click', function(){
+    var uid = (uidInput.value || '').trim();
+    if(!uid){ showResult(verifyResult, false, 'UID를 입력해주세요.'); return; }
+    verifyBtn.disabled = true;
+    verifyBtn.textContent = '확인 중...';
+    telegramStep.hidden = true;
+    resetSeedChoice();
+    verifiedUid = null;
+    fetch('/api/check-uid-bitget?uid=' + encodeURIComponent(uid), { credentials:'same-origin' })
+      .then(function(res){ return res.json(); })
+      .then(function(data){
+        if(data.ok && data.status === 'direct_referral'){
+          showResult(verifyResult, true, '✅ ' + data.message);
+          verifiedUid = uid;
+          telegramStep.hidden = false;
+        } else {
+          showResult(verifyResult, false, '❌ ' + (data.message || data.error || '확인할 수 없습니다.'));
+        }
+      })
+      .catch(function(){ showResult(verifyResult, false, '❌ 확인 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.'); })
+      .finally(function(){ verifyBtn.disabled = false; verifyBtn.textContent = '확인하기'; });
+  });
+  seedOBtn.addEventListener('click', function(){
+    seedOBtn.classList.add('selected');
+    seedXBtn.classList.remove('selected');
+    seedXResult.className = 'verify-result';
+    tgIdStep.hidden = false;
+  });
+  seedXBtn.addEventListener('click', function(){
+    seedXBtn.classList.add('selected');
+    seedOBtn.classList.remove('selected');
+    tgIdStep.hidden = true;
+    showResult(seedXResult, false, '❌ 시드 예치 후 다시 신청해주세요.');
+  });
+  tgSubmitBtn.addEventListener('click', function(){
+    var tg = (tgInput.value || '').trim();
+    if(!verifiedUid){ showResult(tgResult, false, '먼저 UID 확인을 완료해주세요.'); return; }
+    if(!tg){ showResult(tgResult, false, '텔레그램 아이디를 입력해주세요.'); return; }
+    tgSubmitBtn.disabled = true;
+    tgSubmitBtn.textContent = '신청 중...';
+    fetch('/api/bitget-join', {
+      method:'POST', credentials:'same-origin',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ uid: verifiedUid, telegram_id: tg })
+    })
+      .then(function(res){ return res.json(); })
+      .then(function(data){
+        if(data.ok){
+          showResult(tgResult, true, '✅ 신청이 접수됐습니다! 곧 텔레그램으로 연락드릴게요.');
+          tgInput.value = '';
+        } else {
+          showResult(tgResult, false, '❌ ' + (data.error || '신청 중 오류가 발생했습니다.'));
+        }
+      })
+      .catch(function(){ showResult(tgResult, false, '❌ 신청 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.'); })
+      .finally(function(){ tgSubmitBtn.disabled = false; tgSubmitBtn.textContent = '신청하기'; });
+  });
+
+  closeBtn.addEventListener('click', closeModal);
+  backdrop.addEventListener('click', function(e){ if(e.target === backdrop) closeModal(); });
+  document.addEventListener('keydown', function(e){
+    if(e.key === 'Escape' && !backdrop.hidden) closeModal();
+  });
+})();
+
 // 20-40단계: 전역 "입장 신청" 진입점(nav pill/프로모배너/#verify버튼/모바일바)이 열어야 할 모달을
-// Gate.io/BYDFi 중 고르게 하는 선택 모달 — 고른 쪽의 전용 모달은 window.openApplyModal /
-// window.openBydfiModal로(위 두 IIFE가 의도적으로 노출해둠) 염.
+// Gate.io/BYDFi/Bitget 중 고르게 하는 선택 모달 — 고른 쪽의 전용 모달은 window.openApplyModal /
+// window.openBydfiModal / window.openBitgetModal로(위 IIFE들이 의도적으로 노출해둠) 염.
 (function(){
   var backdrop = document.getElementById('exchange-choice-modal-backdrop');
   var closeBtn = document.getElementById('exchange-choice-close');
   var gateBtn = document.getElementById('choice-gate-btn');
   var bydfiBtn = document.getElementById('choice-bydfi-btn');
+  var bitgetBtn = document.getElementById('choice-bitget-btn');
   if(!backdrop) return;
 
   function openModal(){
@@ -1443,6 +1704,7 @@
   backdrop.addEventListener('click', function(e){ if(e.target === backdrop) closeModal(); });
   gateBtn.addEventListener('click', function(){ closeModal(); if(window.openApplyModal) window.openApplyModal(); });
   bydfiBtn.addEventListener('click', function(){ closeModal(); if(window.openBydfiModal) window.openBydfiModal(); });
+  bitgetBtn.addEventListener('click', function(){ closeModal(); if(window.openBitgetModal) window.openBitgetModal(); });
   document.addEventListener('keydown', function(e){
     if(e.key === 'Escape' && !backdrop.hidden) closeModal();
   });
@@ -1588,6 +1850,7 @@
   var EXCHANGES = [
     { id:'gate', name:'Gate.io', logo:'/gate-logo.png', feeRate:0.0005, paybackRate:0.5, active:true },
     { id:'bydfi', name:'BYDFi', logo:'/bydfi-logo.png', feeRate:0.0005, paybackRate:0.5, active:true },
+    { id:'bitget', name:'Bitget', logo:'/bitget-logo.png', feeRate:0.0005, paybackRate:0.2, active:true },
     { id:'soon', name:'준비중', logo:null, feeRate:0, paybackRate:0, active:false }
   ];
   var selected = EXCHANGES.filter(function(e){ return e.active; })[0] || EXCHANGES[0];

@@ -8,6 +8,12 @@
 //   POST /api/bydfi-join            BYDFi UID + 텔레그램 아이디 제출 (20-40단계) — BYDFi는 공개
 //                                    레퍼럴확인 API가 없어서 서버 재검증 없이 bydfi_join_requests에
 //                                    저장 + 운영자에게 "수동 확인 필요" 알림만 보냄
+//   GET  /api/check-uid-bitget?uid=... Bitget UID가 전용 링크로 가입했는지 확인 (20-44단계, 어필리에이트
+//                                    customer-list API로 그 UID가 내 고객 목록에 있는지만 확인 — Gate.io처럼
+//                                    관계 종류(직속/간접)까지 세분화해서 알려주지는 않음, 베타)
+//   POST /api/bitget-join            Bitget UID + 텔레그램 아이디로 전용 텔레그램방 가입 신청 →
+//                                    서버가 UID를 다시 한 번 검증 후 bitget_join_requests에 저장 +
+//                                    운영자에게 텔레그램 알림 (Gate.io와 동일하게 자동 재검증, 20-44단계)
 //   GET  /api/payback-total?uid=... 그 UID의 누적 페이백 추정액 조회 (아래 "페이백 계산 방식" 참고)
 //   GET  /api/payback-feed          최근 페이백 내역 공개 피드 (UID 마스킹, 최대 300건, 20-26단계)
 //   POST /api/telegram-link         UID 재검증 후 스터디방 신청용 1회용 봇 딥링크 발급 (study-bot.js)
@@ -39,10 +45,12 @@
 //
 // 환경변수(Settings > Variables and Secrets):
 //   GATE_API_KEY, GATE_API_SECRET        Gate.io 파트너 API (레퍼럴 확인 + 커미션 내역 조회, Rebate 권한만 필요 — 출금 권한 불필요)
+//   BITGET_API_KEY, BITGET_API_SECRET, BITGET_API_PASSPHRASE  Bitget 어필리에이트 API (20-44단계, UID 자동 확인용 —
+//                                    일반 개인 API 키 + 어필리에이트 권한 필요, 출금 권한 불필요)
 //   TELEGRAM_BOT_TOKEN, TELEGRAM_ADMIN_CHAT_ID  (선택) 가입 신청 알림 — 없으면 신청 저장만 되고 알림은 생략됨
 //   TELEGRAM_WEBHOOK_SECRET, TELEGRAM_GROUP_CHAT_ID  (선택) 스터디방 관리 봇 — 자세한 건 study-bot.js 맨 위 주석
 // 필요한 바인딩: D1 데이터베이스 → env.DB
-//   (telegram_join_requests / known_uids / payback_feed / payback_cursor 테이블 사용)
+//   (telegram_join_requests / bydfi_join_requests / bitget_join_requests / known_uids / payback_feed / payback_cursor 테이블 사용)
 //
 // Cron(scheduled): MEMBERSHIP_CRON이면 스터디방 활동 검사(study-bot.js), 그 외엔 1분마다(Cloudflare Cron Trigger가 허용하는 최소 간격) known_uids에 쌓인 UID들의 최근 커미션 내역을 조회해서 payback_feed에 적재함
 //   (실시간 피드용 — wrangler.jsonc의 triggers.crons 참고. 20-24단계부터 커미션 레코드 단위로 그대로
@@ -90,6 +98,8 @@ export default {
       if (path === '/api/check-uid' && method === 'GET') return await handleCheckUid(request, env);
       if (path === '/api/telegram-join' && method === 'POST') return await handleTelegramJoin(request, env);
       if (path === '/api/bydfi-join' && method === 'POST') return await handleBydfiJoin(request, env);
+      if (path === '/api/check-uid-bitget' && method === 'GET') return await handleCheckUidBitget(request, env);
+      if (path === '/api/bitget-join' && method === 'POST') return await handleBitgetJoin(request, env);
       if (path === '/api/payback-total' && method === 'GET') return await handlePaybackTotal(request, env);
       if (path === '/api/payback-feed' && method === 'GET') return await handlePaybackFeed(request, env);
       if (path === '/api/telegram-link' && method === 'POST') return await handleTelegramLink(request, env, botDeps);
@@ -265,6 +275,141 @@ async function handleBydfiJoin(request, env) {
   ).bind(uid, telegramId, Date.now()).run();
 
   await notifyAdminTelegram(env, `🆕 BYDFi 가입 확인 요청 (수동 확인 필요)\nUID: ${uid}\n텔레그램: ${telegramId}\n\n⚠️ BYDFi는 자동 확인 API가 없어요 — 어필리에이트 대시보드에서 직접 확인 후 개별 안내해주세요.`);
+
+  return json({ ok: true });
+}
+
+// ───────────────────────── Bitget API 공통 (서명: HMAC-SHA256 + Base64, 20-44단계) ─────────────────────────
+// Gate.io(HMAC-SHA512, hex)와 서명 알고리즘 자체가 다름 — Bitget은 timestamp+method+requestPath+body
+// 문자열을 HMAC-SHA256으로 서명한 뒤 Base64로 인코딩해서 ACCESS-KEY/ACCESS-SIGN/ACCESS-TIMESTAMP/
+// ACCESS-PASSPHRASE 헤더로 전송하는 방식(공개적으로 안정적으로 알려진 Bitget API v2 공통 규격).
+// ⚠️ 이 세션은 egress 제약으로 bitget.com 공식 문서 원문을 못 읽어서(gate.com/bydfi.com과 동일한 제약,
+// WebFetch 시도 전부 DNS 단계에서 실패) 공개적으로 알려진 규격을 기반으로 구현함 — 실제 키로 응답을
+// 검증한 적은 없는 베타. 호출해서 서명 오류(권한/서명 불일치 등)가 나면 이 함수의 서명 문자열
+// 조합 순서나 헤더명부터 의심할 것.
+
+async function hmacSha256Base64(secret, message) {
+  const enc = new TextEncoder();
+  const key = await crypto.subtle.importKey('raw', enc.encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+  const sig = await crypto.subtle.sign('HMAC', key, enc.encode(message));
+  return base64FromBuffer(sig);
+}
+
+function base64FromBuffer(buffer) {
+  const bytes = new Uint8Array(buffer);
+  let binary = '';
+  for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+  return btoa(binary);
+}
+
+async function bitgetApiPost(path, bodyObj, env) {
+  const KEY = env.BITGET_API_KEY;
+  const SECRET = env.BITGET_API_SECRET;
+  const PASSPHRASE = env.BITGET_API_PASSPHRASE;
+  if (!KEY || !SECRET || !PASSPHRASE) {
+    const err = new Error('서버에 Bitget API 키가 설정되지 않았습니다.');
+    err.status = 500;
+    throw err;
+  }
+
+  const host = 'https://api.bitget.com';
+  const method = 'POST';
+  const timestamp = Date.now().toString();
+  const bodyStr = JSON.stringify(bodyObj || {});
+  const signStr = `${timestamp}${method}${path}${bodyStr}`;
+  const sign = await hmacSha256Base64(SECRET, signStr);
+
+  const res = await fetch(`${host}${path}`, {
+    method,
+    headers: {
+      'Content-Type': 'application/json',
+      'ACCESS-KEY': KEY,
+      'ACCESS-SIGN': sign,
+      'ACCESS-TIMESTAMP': timestamp,
+      'ACCESS-PASSPHRASE': PASSPHRASE,
+      locale: 'en-US',
+    },
+    body: bodyStr,
+  });
+
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok || (data && typeof data.code === 'string' && data.code !== '00000')) {
+    const err = new Error('Bitget API 오류');
+    err.status = res.ok ? 502 : res.status;
+    err.detail = data;
+    throw err;
+  }
+  return data;
+}
+
+// ───────────────────────── Bitget UID 확인 (자동, 어필리에이트 customer-list 기반) ─────────────────────────
+// Bitget은 Gate.io의 sub_relation처럼 관계 종류(직속/간접/에이전트)를 세분화해서 알려주는 API가 아니라,
+// 내 어필리에이트 고객 목록(customer-list)에서 그 UID를 검색해 "찾으면 내 추천인, 못 찾으면 아님" 식의
+// 단순 포함 여부 확인만 가능함(20-44단계 조사 — 공식 문서 원문 미확인). 응답 필드명이 확정되지 않아서
+// 여러 응답 형태(data가 배열 그대로 / data.list / data.customerList / data.rows / data.records)를
+// 방어적으로 다 처리함 — 실제 키로 호출해본 뒤 맞는 형태로 좁혀야 할 수 있음.
+function extractBitgetCustomerList(data) {
+  const d = data && data.data;
+  if (Array.isArray(d)) return d;
+  if (d && Array.isArray(d.list)) return d.list;
+  if (d && Array.isArray(d.customerList)) return d.customerList;
+  if (d && Array.isArray(d.rows)) return d.rows;
+  if (d && Array.isArray(d.records)) return d.records;
+  return [];
+}
+
+async function checkBitgetReferral(uid, env) {
+  const data = await bitgetApiPost('/api/v2/broker/customer-list', { uid: String(uid), pageNo: '1', pageSize: '20' }, env);
+  const list = extractBitgetCustomerList(data);
+  const found = list.some((item) => String(item.uid ?? item.userId ?? item.customerUid ?? '') === String(uid));
+  if (found) {
+    return { status: 'direct_referral', message: '전용 링크로 가입한 회원입니다.' };
+  }
+  return { status: 'not_my_referral', message: '전용 링크로 가입한 회원이 아니거나, 등록되지 않은 UID입니다.' };
+}
+
+async function handleCheckUidBitget(request, env) {
+  const url = new URL(request.url);
+  const uid = (url.searchParams.get('uid') || '').trim();
+  if (!isValidExchangeUid(uid)) {
+    return json({ ok: false, error: 'UID를 2~30자로 입력해주세요.' }, 400);
+  }
+  try {
+    const result = await checkBitgetReferral(uid, env);
+    return json({ ok: true, uid, ...result });
+  } catch (err) {
+    return json({ ok: false, error: err.message || 'Bitget 조회 중 오류', detail: err.detail }, err.status || 500);
+  }
+}
+
+async function handleBitgetJoin(request, env) {
+  if (!env.DB) return json({ ok: false, error: 'DB가 연결되지 않았습니다.' }, 500);
+  const body = await safeJson(request);
+  const uid = (body.uid || '').trim();
+  const telegramId = (body.telegram_id || '').trim();
+
+  if (!isValidExchangeUid(uid)) {
+    return json({ ok: false, error: 'UID를 2~30자로 입력해주세요.' }, 400);
+  }
+  if (!isValidTelegramId(telegramId)) {
+    return json({ ok: false, error: '텔레그램 아이디를 2~100자로 입력해주세요.' }, 400);
+  }
+
+  let referral;
+  try {
+    referral = await checkBitgetReferral(uid, env);
+  } catch (err) {
+    return json({ ok: false, error: err.message || 'Bitget 조회 중 오류', detail: err.detail }, err.status || 500);
+  }
+  if (referral.status !== 'direct_referral') {
+    return json({ ok: false, error: '전용 링크로 가입이 확인된 UID만 신청할 수 있습니다. 먼저 UID 확인을 통과해주세요.' }, 403);
+  }
+
+  await env.DB.prepare(
+    `INSERT INTO bitget_join_requests (uid, telegram_id, created_at) VALUES (?, ?, ?)`
+  ).bind(uid, telegramId, Date.now()).run();
+
+  await notifyAdminTelegram(env, `📨 Bitget 텔레그램 전용방 가입 신청\nUID: ${uid}\n텔레그램: ${telegramId}`);
 
   return json({ ok: true });
 }
@@ -690,6 +835,12 @@ async function ensureSchema(env) {
     created_at INTEGER NOT NULL
   )`).run();
   await env.DB.prepare(`CREATE TABLE IF NOT EXISTS bydfi_join_requests (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    uid TEXT NOT NULL,
+    telegram_id TEXT NOT NULL,
+    created_at INTEGER NOT NULL
+  )`).run();
+  await env.DB.prepare(`CREATE TABLE IF NOT EXISTS bitget_join_requests (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     uid TEXT NOT NULL,
     telegram_id TEXT NOT NULL,

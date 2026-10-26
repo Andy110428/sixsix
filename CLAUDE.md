@@ -1278,11 +1278,37 @@ extra_usdt       = received_usdt - generic20_usdt        (50% 요율 덕분에 �
 - "빗각"이라는 기법 자체를 스터디방 소개 콘텐츠(`#studyroom`의 "트레이딩 교육" 카드 등)에 구체적으로 언급하고 싶다면("빗각 기법도 가르쳐요" 식으로) 요청해주면 반영 가능 — 이번엔 "완전 제거"로 확정했으므로 추가하지 않음.
 - 이번 오류가 20-12단계(2026-10-10)부터 20-42단계(2026-10-25)까지 약 2주, 여러 단계에 걸쳐 반복 사용됐던 걸 보면, 사용자가 쓰는 용어(특히 고유명사/업계 전문 용어)를 그대로 받아 반복 사용하기 전에 "이게 커뮤니티 이름인지, 기법/상품 이름인지" 같은 범주를 한 번 더 확인하는 습관이 비슷한 재발을 줄일 수 있음.
 
+## 20-44단계: 세 번째 파트너 거래소 Bitget 추가 — 어필리에이트 customer-list API로 자동 확인 (2026-10-26)
+
+사용자가 Bitget 앱 로고 스크린샷과 함께 레퍼럴 링크(`https://partner.bitget.com/bg/teamsixx`), 20% 페이백율을 전달 — 20단계부터 TODO로 남아있던 "다른 거래소 추가"의 두 번째(BYDFi 20-40단계) 다음 세 번째 사례.
+
+**BYDFi(수동 확인)와 달리 자동 확인으로 결정**: 사용자가 "자동으로 할껀데, 사용자 생성api 로 해야해 시스템 생성 API 로 해야해"라고 명확히 자동 검증을 원함을 밝혀서, 배경 조사 에이전트를 둘 보내 확인함 — (1) Bitget에는 Gate.io의 `rebate/user/sub_relation`만큼 정교하진 않지만 어필리에이트 `customer-list` API(`POST /api/v2/broker/customer-list`)가 있고, UID로 필터링해서 "내 고객 목록에 있는지"만 이진(binary)으로 확인 가능함(관계 종류까지 세분화한 Gate.io의 1~5 type 코드 같은 건 없음). (2) "사용자 생성 API vs 시스템 생성 API" 구분은 Bitget의 서브계정(기관용) 전용 용어이고 이 어필리에이트 엔드포인트와는 무관함 — 일반 개인 API 키로 충분하다는 걸 확인하고 사용자에게 "일반 개인 API 키로 진행"을 추천해 확정받음.
+
+**⚠️ 이번에도 공식 문서 원문은 못 읽음**: `bitget.com`이 이 세션에서 Gate.io/BYDFi와 동일하게 egress 전면 차단(DNS 단계부터 실패) — web.archive.org 경유도 도구 차원에서 막혀있어서 우회 불가. 그래서 Bitget API v2의 공개적으로 안정적으로 알려진 서명 규격(HMAC-SHA256, Base64 인코딩, `timestamp+method+requestPath+body` 문자열 서명, `ACCESS-KEY`/`ACCESS-SIGN`/`ACCESS-TIMESTAMP`/`ACCESS-PASSPHRASE` 헤더 — Gate.io의 HMAC-SHA512+hex와는 전혀 다른 알고리즘)를 기반으로 구현함. 응답 필드명(`customer-list`가 정확히 어떤 키 아래 배열을 내려주는지)도 확정 못해서, `extractBitgetCustomerList()`가 `data`/`data.list`/`data.customerList`/`data.rows`/`data.records` 등 여러 형태를 방어적으로 다 처리하도록 짬 — **실제 키로 호출해보기 전까지는 베타**(이 프로젝트의 다른 모든 거래소 개인/파트너 데이터 연동과 동일한 리스크 등급).
+
+**구현**:
+- `src/worker.js`: `bitgetApiPost()`(HMAC-SHA256+Base64 서명 공통 헬퍼) → `checkBitgetReferral(uid, env)`(customer-list를 uid로 필터해서 포함 여부만 확인, `direct_referral`/`not_my_referral` 중 하나로 매핑) → `GET /api/check-uid-bitget`(단독 UID 확인) / `POST /api/bitget-join`(UID+텔레그램 아이디 제출 시 서버가 `checkBitgetReferral()`로 **다시 한 번 재검증**한 뒤에만 `bitget_join_requests`에 저장 + 운영자 텔레그램 알림 — Gate.io와 동일한 "서버 재검증" 패턴, BYDFi의 "검증 없이 그냥 저장"과는 다름). `isValidExchangeUid()`(BYDFi용으로 이미 있던 영숫자 2~30자 느슨한 검증)를 그대로 재사용.
+- `bitget_join_requests` 테이블을 `ensureSchema()`/`schema.sql`/`schema-console.sql`에 추가(구조는 `bydfi_join_requests`와 동일).
+- `public/index.html`: 거래소 테이블(히어로 우측)에 Bitget 행을 BYDFi와 "준비중" 사이에 추가(20%, 매일·1시간 내외 — ⚠️ 정산 주기는 Gate.io/BYDFi와 같다고 가정한 것일 뿐 Bitget 실제 데이터로 확인된 적 없음, 페이백율이 20%로 다른 두 거래소의 절반 수준인 걸 감안하면 이 가정이 틀렸을 수 있음). Gate.io와 같은 2단 구조로 **단독 UID 확인 모달**(`#bitget-uid-modal-backdrop`, nav "도구" 드롭다운 전용)과 **3단계 입장 신청 모달**(`#bitget-modal-backdrop`, 1단계가 BYDFi의 "다음"이 아니라 Gate.io처럼 실제 "확인하기"로 서버 재검증) 둘 다 만듦. 거래소 선택 모달(`#exchange-choice-modal-backdrop`)에 Bitget 버튼 추가, `window.openBitgetModal` 노출. 계산기 `EXCHANGES` 배열에 Bitget 항목 추가(`paybackRate:0.2`). FAQ "다른 거래소도 지원하나요?" 답변에 Bitget 추가.
+- `public/bitget-logo.png`: 사용자가 보내준 로고 스크린샷(517×511, 이미 배경 없는 깔끔한 아이콘)을 192×192로 리사이즈만 해서 사용 — Gate.io/BYDFi 때와 달리 폰 스크린샷의 배경/캡션을 크롭해낼 필요가 없었음(이미지 자체가 풀블리드 아이콘).
+
+로컬 `wrangler dev` + Playwright로 데스크톱(1440px)/모바일(390px) 둘 다 확인: 거래소 테이블 행 순서(Gate.io→BYDFi→Bitget→준비중), Bitget 로고 정상 로드, 단독 UID 확인 모달이 행 버튼으로 열리고(로컬엔 키 없어서 "서버에 Bitget API 키가 설정되지 않았습니다" 에러로 구조만 확인), 거래소 선택 모달에 3개 버튼(Gate.io/BYDFi/Bitget)이 뜨고 Bitget 선택 시 전용 3단계 모달이 열리는 것, API 응답을 mock 처리해서 UID 확인→시드 예치 O→텔레그램 제출까지 전체 플로우가 끝까지 정상 동작하는 것, 가로 오버플로우 0px(데스크톱/모바일)인 것까지 확인. `node --check` + `wrangler deploy --dry-run`(결과: assets 4개 파일 — index.html/gate-logo.png/bydfi-logo.png/bitget-logo.png) 검증 후 배포.
+
+### 다음에 볼 것
+- **사용자 확인 필요(최우선)**: `BITGET_API_KEY`/`BITGET_API_SECRET`/`BITGET_API_PASSPHRASE`를 Cloudflare 대시보드에 설정한 뒤, 실제 Bitget UID로 `/#payback`이 아니라 "Bitget UID 확인" 모달에서 직접 조회해서 정상적으로 `direct_referral`이 뜨는지 확인 필요 — 서명 규격/응답 파싱 전부 미검증 베타라서, 권한 오류(403/401)나 서명 불일치 오류가 나면 가장 먼저 의심할 곳은 `bitgetApiPost()`의 서명 문자열 조합 순서와 헤더명(공식 문서를 못 읽어서 확정 못한 부분).
+- Bitget 어필리에이트 프로그램 승인(사용자가 이미 API 키를 발급받았다는 건 승인이 끝났다는 뜻일 가능성이 높지만, 혹시 `customer-list` 호출 시 권한 부족 오류가 나면 Bitget 어필리에이트 프로그램 자체의 승인 상태를 대시보드에서 확인해볼 것).
+- 정산 주기("매일·1시간 내외")는 Gate.io/BYDFi와 동일하다고 가정한 것 — Bitget은 페이백율이 20%로 다른 두 거래소(50%)와 다른 걸 보면 운영 조건 자체가 다를 가능성이 있음, 실제로 다르다는 게 확인되면 거래소 카드 문구를 수정해야 함.
+- `checkBitgetReferral()`의 "found in list = 내 추천인" 판정이 실제로 신규 가입자만 걸러내는지, 아니면 Bitget에 이미 있던 기존 계정도 걸릴 수 있는지는 확인 안 됨(Gate.io의 `type=3` direct_referral처럼 "신규 가입" 여부를 명시적으로 구분하는 필드가 없어 보임) — 실 키로 테스트하면서 눈여겨볼 지점.
+- Bitget 가입자도 Gate.io/BYDFi와 동일하게 스터디방 입장 가능하다고 전제하고 구현함(세 거래소 모두 같은 운영팀이 운영하는 레퍼럴 프로그램이라는 전제) — 별도 확인 요청은 안 했음, 다르게 운영하고 싶다면 알려주면 됨.
+
 ## 환경변수 목록 (Cloudflare 대시보드 Settings > Variables and Secrets)
 
 ```
 GATE_API_KEY            Gate.io API 키 (UID 확인용)
 GATE_API_SECRET         Gate.io API 시크릿
+BITGET_API_KEY          (20-44단계) Bitget 어필리에이트 API 키 — customer-list로 UID 자동 확인용
+BITGET_API_SECRET       (20-44단계) Bitget API 시크릿
+BITGET_API_PASSPHRASE   (20-44단계) Bitget API 키 발급 시 직접 설정한 Passphrase(8~32자 영숫자) — 키/시크릿과 별개로 꼭 필요
 TELEGRAM_BOT_TOKEN      (선택) 텔레그램 가입 신청 알림용 봇 토큰 — 없으면 알림만 생략되고 신청 저장은 항상 됨
 TELEGRAM_ADMIN_CHAT_ID  (선택) 알림 받을 chat_id — 위와 세트로 필요. 스터디방 봇에서는 "운영자 본인 개인 user_id"로도 쓰임(관리 명령/승인 버튼 권한)
 TELEGRAM_WEBHOOK_SECRET (선택, 20-16) 스터디방 봇 웹훅 비밀값 — setWebhook의 secret_token과 같아야 함. 없으면 봇 기능 꺼지고 사이트는 @아이디 입력 방식
@@ -1296,6 +1322,7 @@ ADMIN_PASSWORD          (20-28단계부터 다시 사용) 이벤트 관리 탭(/
 
 - 협력 거래소는 Gate.io부터 시작, 반드시 전용 레퍼럴 링크로 신규 가입해야 인정 (기존 계정/다른 경로 가입은 페이백 대상 아님)
 - 현재 Gate.io 페이백율 50%(2026-10-08 20-4단계에서 20%→50% 인상) — Gate.io에서 해줄 수 있는 최대 요율, 매일 1시간 내외(변동 가능)로 정산
-- 다른 메이저 거래소(OKX/바이비트 등)도 추가 예정이나 아직 확정 전이라 사이트에는 이름 없이 "준비중"으로만 노출
+- BYDFi(20-40단계)도 50% 페이백, Bitget(20-44단계)은 20% 페이백 — 거래소마다 요율이 다름
+- 다른 메이저 거래소도 추가 예정이나 아직 확정 전이라 사이트에는 이름 없이 "준비중"으로만 노출
 - 거래소 가입 확인된 사람 대상 전용 텔레그램방 운영 — 가입 신청(UID+텔레그램 아이디)이 오면 운영자가 텔레그램 봇 알림으로 받아서 개별 안내
 - 관리자 전용 웹 대시보드는 더 이상 없음 — 텔레그램 알림이 운영 인터페이스의 전부
