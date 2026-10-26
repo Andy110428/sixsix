@@ -1379,15 +1379,32 @@ extra_usdt       = received_usdt - generic20_usdt        (50% 요율 덕분에 �
 - **사용자 확인 필요(최우선)**: 배포 후 Bitget UID로 다시 테스트해서 이번엔 어떤 메시지가 뜨는지 확인 — ① 더 이상 `atob()` 에러가 아니라 정상 동작하면 줄바꿈 문제가 원인이었던 것, ② "PKCS8 개인키로 인식할 수 없어요" 같은 새 안내가 뜨면 공개키를 잘못 넣었을 가능성이 높으니 20-47단계에서 `SendUserFile`로 전달한 PKCS8 개인키 파일 내용을 다시 확인, ③ 여전히 `{"cloudflare":"block"}`이 뜨면 20-46단계의 WAF 차단 이슈가 남아있는 것(서명 문제 해결과 무관).
 - Cloudflare Secret에 여러 줄 PEM 값을 저장할 때 리터럴 `\n`으로 깨지는 문제는 Bitget RSA 키 하나만의 문제가 아니라 **이 프로젝트에서 앞으로 또 다른 멀티라인 비밀값(PEM/인증서 등)을 저장할 일이 생기면 재발할 수 있는 패턴** — 그때도 이번과 같은 "리터럴 이스케이프 시퀀스를 실제 문자로 되돌리는 정규화" 방어를 먼저 넣는 걸 고려할 것.
 
+## 20-49단계: Bitget 자동 확인을 포기하고 BYDFi식 수동 확인으로 전환 (2026-10-26)
+
+20-48단계에서 `atob()` 크래시를 고친 뒤 사용자가 RSA 키를 Cloudflare에 다시 저장하고 재테스트했는데, 이번엔 **"PKCS8 개인키로 인식할 수 없어요"** 에러가 뜸. 확인해보니 20-47단계에서 전달한 PKCS8 개인키 파일 자체는 지금 배포된 함수로 정확히 서명이 통과하는 걸 재검증했음(Node 스크립트로 재확인, 서명 성공) — 즉 **파일은 정상이고, Cloudflare에 저장된 값이 그 파일과 다른 것(공개키를 잘못 넣었거나 복사 과정에서 변형된 것)**이 원인으로 보여서, 개인키 파일을 다시 명확한 안내(첫 줄이 정확히 `-----BEGIN PRIVATE KEY-----`인지 확인)와 함께 재전달함.
+
+재전달 후 다시 테스트한 결과, **서명 단계는 통과했지만 이번엔 `HTTP 403 {"cloudflare":"block"}`**이 다시 뜸 — 20-46단계에서 이미 진단했던 것과 동일한 네트워크/WAF 차단. 즉 RSA 서명 자체는(키를 제대로 넣으면) 정상 동작하지만, **Bitget API 앞의 Cloudflare WAF가 Cloudflare Workers의 발신 요청 자체를 계속 차단**하고 있다는 게 다시 확인됨 — 서명 방식(HMAC→RSA)을 바꿔도 이 차단은 전혀 해결되지 않았음(20-47단계에서 이미 "서로 무관한 문제"라고 적어뒀던 우려가 실제로 맞았음).
+
+사용자가 "화이트리스트를 설정해볼까?"라고 물어봐서, **Bitget API 키 설정의 IP 화이트리스트(계정 인증 레이어)와 이번 차단(Cloudflare 엣지 WAF 레이어)은 완전히 다른 레이어**라는 점, 그리고 **Cloudflare Workers는 고정 발신 IP가 없어서 IP 화이트리스트 자체가 구조적으로 안정적인 해결책이 못 된다**는 점을 설명함. AskUserQuestion으로 확인한 결과 사용자가 **"BYDFi처럼 수동 확인 전환 (추천)"**을 선택 — Bitget API를 아예 호출하지 않는 쪽으로 방향을 바꿈.
+
+**구현 — Bitget을 BYDFi와 완전히 동일한 패턴으로 전환**:
+- **`src/worker.js`**: 20-44~20-48단계에서 쌓아온 Bitget 자동 확인 관련 코드를 전부 삭제 — `hmacSha256Base64`/`base64FromBuffer`/`bitgetRsaSignBase64`/`bitgetApiPost`/`extractBitgetCustomerList`/`checkBitgetReferral`/`handleCheckUidBitget`, 그리고 `/api/check-uid-bitget` 라우트. `handleBitgetJoin()`을 BYDFi의 `handleBydfiJoin()`과 동일한 구조로 재작성 — `checkBitgetReferral()` 재검증 없이 `isValidExchangeUid()` 형식 검증만 하고 `bitget_join_requests`에 저장 + 운영자에게 "⚠️ Bitget은 Cloudflare WAF가 자동 확인 API를 차단해서 수동 확인으로 전환했어요" 알림만 보냄. 상단 API 주석과 환경변수 목록에서 `BITGET_API_KEY`/`BITGET_API_SECRET`/`BITGET_API_RSA_PRIVATE_KEY`/`BITGET_API_PASSPHRASE` 관련 설명을 "더 이상 안 읽힘"으로 정리.
+- **`public/index.html`**: ① 통합 UID 확인 모달(`#uid-modal-backdrop`, 20-45단계)의 BYDFi 전용 안내(`uid-modal-bydfi-note`)를 **BYDFi/Bitget 공용 안내**(`uid-modal-manual-note` + `uid-modal-manual-text`/`uid-modal-manual-apply-link`)로 일반화 — `MANUAL_EXCHANGES = { bydfi: {...}, bitget: {...} }` 맵을 두고, 드롭다운에서 이 중 하나를 고르면 입력창을 숨기고 그 거래소 이름이 들어간 안내 문구 + "{거래소명} 입장 신청하러 가기 →" 버튼을 동적으로 채움(거래소가 더 늘어나도 맵에 한 줄만 추가하면 됨). ② Bitget 전용 입장 신청 모달(`#bitget-modal-backdrop`)을 BYDFi 모달과 동일한 구조로 재작성 — 1단계가 "확인하기"(서버 재검증) 대신 "다음"(그냥 다음 단계로), `/api/bitget-join` 호출은 유지하되 사전 검증 호출(`/api/check-uid-bitget`) 자체가 없어짐. ③ 거래소 비교 테이블의 Bitget 행 버튼을 "UID 확인"(통합 모달 경유) → **"UID 제출"**(BYDFi 행과 동일하게 `js-open-bitget-apply` 클래스로 입장 신청 모달에 바로 연결)로 변경, 설명 문구에도 "Bitget은 자동 확인 API가 없어서..." 안내를 추가해 Gate.io와 다르다는 걸 명확히 함.
+
+로컬 `wrangler dev` + Playwright로 전체 플로우 검증: 통합 UID 모달에서 Bitget 선택 시 입력창이 사라지고 "Bitget는 자동 확인을 지원하지 않아요..." 안내 + "Bitget 입장 신청하러 가기 →" 버튼이 뜨는 것, 그 버튼 클릭 시 UID 모달이 닫히고 Bitget 입장 신청 모달이 바로 열리는 것, 1단계 버튼이 "다음"인 것, UID 입력→다음→시드 O→텔레그램 제출(API mock)까지 전체 플로우가 끝까지 정상 동작하는 것("✅ 접수됐어요! Bitget 가입 확인 후 텔레그램으로 안내드릴게요" 메시지 확인), 거래소 테이블의 "UID 제출" 버튼으로도 같은 모달이 바로 열리는 것, 데스크톱(1440px)/모바일(390px) 가로 오버플로우 0px인 것까지 전부 확인. `node --check` + `wrangler deploy --dry-run`(번들 59.01 KiB — 서명 관련 죽은 코드가 빠지면서 65.15 KiB에서 줄어듦) 검증, 병합 전 `git log origin/main`으로 다른 세션의 동시 커밋 없는지 확인(20-17단계 교훈) 후 배포.
+
+### 다음에 볼 것
+- **운영자가 직접 해야 할 일**: `bitget_join_requests`에 신청이 들어오면(또는 텔레그램 알림이 오면) Bitget 어필리에이트 대시보드에 로그인해서 그 UID가 전용 링크로 가입한 고객인지 직접 대조 확인한 뒤 텔레그램으로 개별 안내 — BYDFi와 완전히 같은 운영 방식.
+- Bitget의 RSA 키/API 키(`BITGET_API_KEY`/`BITGET_API_SECRET`/`BITGET_API_RSA_PRIVATE_KEY`/`BITGET_API_PASSPHRASE`)는 더 이상 코드에서 안 쓰이므로, Cloudflare 대시보드에서 지워도 무해함(지우지 않아도 문제 없음 — 코드가 안 읽음).
+- 혹시 나중에 Bitget이나 Cloudflare 쪽에서 이 WAF 차단이 풀리거나, Bitget이 서버-간 통합용 별도 엔드포인트/화이트리스트를 지원하게 되면, 20-44단계의 자동 확인 코드(이번에 삭제됨)를 git 히스토리에서 복구해서 다시 시도할 수 있음 — 다만 그 경우에도 20-47/20-48단계에서 겪은 RSA 서명/PEM 이스케이프 함정은 그대로 참고할 것.
+- 이번 일로 "거래소 API 자동 연동"을 시도하기 전에, **그 거래소 API가 Cloudflare로 보호되고 있는지, 서버-간(S2S) 호출에 대한 봇 차단 정책이 있는지**를 먼저 확인하는 게 이 프로젝트에 재발 가능한 패턴(Gate.io는 지금까지 문제없이 동작 중이지만 검증된 적 없음, BYDFi는 애초에 관련 API가 없음)으로 남음.
+
 ## 환경변수 목록 (Cloudflare 대시보드 Settings > Variables and Secrets)
 
 ```
 GATE_API_KEY            Gate.io API 키 (UID 확인용)
 GATE_API_SECRET         Gate.io API 시크릿
-BITGET_API_KEY          (20-44단계) Bitget 어필리에이트 API 키 — customer-list로 UID 자동 확인용
-BITGET_API_SECRET       (20-44단계, HMAC 방식일 때만) Bitget API 시크릿 — RSA 방식(아래)을 쓰면 안 읽힘
-BITGET_API_RSA_PRIVATE_KEY (20-47단계, RSA 방식일 때만) Bitget이 RSA 공개키 제출 방식을 요구하는 경우용 — PKCS8 PEM 개인키 전체(줄바꿈 포함) 그대로 붙여넣기. 설정돼 있으면 이게 우선, 없으면 BITGET_API_SECRET(HMAC)으로 자동 대체됨
-BITGET_API_PASSPHRASE   (20-44단계) Bitget API 키 발급 시 직접 설정한 Passphrase(8~32자 영숫자) — HMAC/RSA 둘 다 공통으로 필요
+(Bitget은 20-49단계부터 BYDFi와 동일하게 수동 확인 방식 — BITGET_API_KEY/BITGET_API_SECRET/BITGET_API_RSA_PRIVATE_KEY/BITGET_API_PASSPHRASE 전부 코드에서 더 이상 안 읽힘, 대시보드에 남아있어도 무해)
 TELEGRAM_BOT_TOKEN      (선택) 텔레그램 가입 신청 알림용 봇 토큰 — 없으면 알림만 생략되고 신청 저장은 항상 됨
 TELEGRAM_ADMIN_CHAT_ID  (선택) 알림 받을 chat_id — 위와 세트로 필요. 스터디방 봇에서는 "운영자 본인 개인 user_id"로도 쓰임(관리 명령/승인 버튼 권한)
 TELEGRAM_WEBHOOK_SECRET (선택, 20-16) 스터디방 봇 웹훅 비밀값 — setWebhook의 secret_token과 같아야 함. 없으면 봇 기능 꺼지고 사이트는 @아이디 입력 방식

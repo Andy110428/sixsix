@@ -589,10 +589,10 @@
               <div class="ex-row-stat"><b>매일</b><span>1시간 내외</span></div>
               <div class="ex-row-actions">
                 <a class="btn btn-primary btn-sm" href="https://partner.bitget.com/bg/teamsixx" target="_blank" rel="noopener">가입하기 →</a>
-                <a href="#" class="btn btn-ghost btn-sm js-open-uid-modal" data-exchange="bitget">UID 확인</a>
+                <a href="#" class="btn btn-ghost btn-sm js-open-bitget-apply">UID 제출</a>
               </div>
             </div>
-            <div class="ex-desc-row">글로벌 코인 현물·선물 거래소 — 전용 링크로 새로 가입해야 인정됩니다.</div>
+            <div class="ex-desc-row">글로벌 코인 현물·선물 거래소 — 전용 링크로 새로 가입해야 인정됩니다. Bitget은 자동 확인 API가 없어서, UID를 제출하시면 운영자가 직접 확인 후 텔레그램으로 안내해드려요.</div>
             <div class="ex-row-link">
               <div class="ex-link-box">
                 <input type="text" readonly id="bitget-link" value="https://partner.bitget.com/bg/teamsixx">
@@ -786,9 +786,9 @@
         <input type="text" id="uid-modal-input" placeholder="UID를 입력하세요">
         <button class="btn btn-primary" id="uid-modal-check-btn">확인하기</button>
       </div>
-      <div class="verify-result" id="uid-modal-bydfi-note">
-        BYDFi는 자동 확인을 지원하지 않아요. 입장 신청 폼에서 UID를 제출하시면 운영자가 직접 확인 후 안내해드려요.
-        <div style="margin-top:10px;"><a href="#" class="btn btn-primary btn-sm" id="uid-modal-bydfi-apply-link">BYDFi 입장 신청하러 가기 →</a></div>
+      <div class="verify-result" id="uid-modal-manual-note">
+        <span id="uid-modal-manual-text"></span>
+        <div style="margin-top:10px;"><a href="#" class="btn btn-primary btn-sm" id="uid-modal-manual-apply-link"></a></div>
       </div>
       <div class="verify-result" id="uid-modal-result"></div>
     </div>
@@ -918,16 +918,17 @@
     <div class="payback-modal" style="max-width:480px;">
       <button class="payback-modal-close" id="bitget-modal-close" aria-label="닫기">✕</button>
       <h3>🔒 비공개 스터디방 입장 신청 (Bitget)</h3>
+      <p style="color:var(--text-dim); font-size:0.88rem; margin:0 0 20px;">⚠️ Bitget은 자동 확인 API가 없어서, 제출하시면 운영자가 직접 확인한 후 텔레그램으로 안내해드려요.</p>
       <div class="verify-step">
         <div class="verify-step-head">
           <span class="verify-step-num">1</span>
-          <label for="bitget-uid-input">Bitget UID 확인</label>
+          <label for="bitget-uid-input">Bitget UID 입력</label>
         </div>
         <div class="verify-row">
           <input type="text" id="bitget-uid-input" placeholder="Bitget UID">
-          <button class="btn btn-primary" id="bitget-verify-btn">확인하기</button>
+          <button class="btn btn-primary" id="bitget-next-btn">다음</button>
         </div>
-        <div class="verify-result" id="bitget-verify-result"></div>
+        <div class="verify-result" id="bitget-uid-result"></div>
       </div>
       <div id="bitget-telegram-step" hidden>
         <div class="verify-step">
@@ -945,12 +946,12 @@
         <div id="bitget-tg-id-step" hidden>
           <div class="verify-step-head">
             <span class="verify-step-num">3</span>
-            <label>텔레그램으로 신청</label>
+            <label>텔레그램으로 제출</label>
           </div>
-          <p class="step-desc">텔레그램 아이디를 입력해주세요.</p>
+          <p class="step-desc">텔레그램 아이디를 입력해주세요. Bitget 가입을 확인한 후 운영자가 개별로 연락드려요.</p>
           <div class="verify-row">
             <input type="text" id="bitget-tg-input" placeholder="예: @yourid">
-            <button class="btn btn-primary" id="bitget-tg-submit-btn">신청하기</button>
+            <button class="btn btn-primary" id="bitget-tg-submit-btn">제출하기</button>
           </div>
           <div class="verify-result" id="bitget-tg-result"></div>
         </div>
@@ -1357,9 +1358,11 @@
 // 20-45단계: UID 확인만 단독으로 하는 모달 — 스터디방 신청(위 IIFE)과 완전히 분리되어
 // nav 메뉴를 통해서만 열림. 거래소가 3개(Gate.io/BYDFi/Bitget)로 늘어나면서 거래소마다 따로
 // 만들던 "UID 확인" 모달(20-38/20-44단계)을 드롭다운 하나로 통합함 — 거래소가 더 늘어나도
-// <option> 하나만 추가하면 되는 구조. Gate.io/Bitget은 자동 확인 API가 있어서 그대로 조회하고,
-// BYDFi는 공개 레퍼럴확인 API가 없어서(20-40단계) 안내 문구 + 입장 신청 모달로 바로 연결하는
-// 버튼만 보여줌(조회할 게 없으므로 입력창/확인버튼 자체를 숨김).
+// <option> 하나만 추가하면 되는 구조. Gate.io는 자동 확인 API가 있어서 그대로 조회하고,
+// BYDFi/Bitget은 자동 확인 API가 없어서(BYDFi는 20-40단계부터, Bitget은 Cloudflare WAF가
+// 서버간 호출을 차단해서 20-49단계부터) 안내 문구 + 입장 신청 모달로 바로 연결하는 버튼만
+// 보여줌(조회할 게 없으므로 입력창/확인버튼 자체를 숨김) — MANUAL_EXCHANGES에 하나 추가하면
+// 됨, 자동 확인 거래소가 수동으로 바뀌어도 이 한 곳만 고치면 됨.
 (function(){
   var backdrop = document.getElementById('uid-modal-backdrop');
   var closeBtn = document.getElementById('uid-modal-close');
@@ -1367,12 +1370,17 @@
   var checkRow = document.getElementById('uid-modal-check-row');
   var input = document.getElementById('uid-modal-input');
   var checkBtn = document.getElementById('uid-modal-check-btn');
-  var bydfiNote = document.getElementById('uid-modal-bydfi-note');
-  var bydfiApplyLink = document.getElementById('uid-modal-bydfi-apply-link');
+  var manualNote = document.getElementById('uid-modal-manual-note');
+  var manualText = document.getElementById('uid-modal-manual-text');
+  var manualApplyLink = document.getElementById('uid-modal-manual-apply-link');
   var resultEl = document.getElementById('uid-modal-result');
   if(!backdrop) return;
 
-  var ENDPOINTS = { gate:'/api/check-uid', bitget:'/api/check-uid-bitget' };
+  var ENDPOINTS = { gate:'/api/check-uid' };
+  var MANUAL_EXCHANGES = {
+    bydfi: { name:'BYDFi', open:function(){ if(window.openBydfiModal) window.openBydfiModal(); } },
+    bitget: { name:'Bitget', open:function(){ if(window.openBitgetModal) window.openBitgetModal(); } }
+  };
 
   function showResult(ok, text){
     resultEl.textContent = text;
@@ -1400,12 +1408,15 @@
   function syncExchangeView(){
     var ex = exchangeSelect.value;
     clearResult();
-    if(ex === 'bydfi'){
+    var manual = MANUAL_EXCHANGES[ex];
+    if(manual){
       checkRow.hidden = true;
-      bydfiNote.className = 'verify-result show';
+      manualText.textContent = manual.name + '는 자동 확인을 지원하지 않아요. 입장 신청 폼에서 UID를 제출하시면 운영자가 직접 확인 후 안내해드려요.';
+      manualApplyLink.textContent = manual.name + ' 입장 신청하러 가기 →';
+      manualNote.className = 'verify-result show';
     } else {
       checkRow.hidden = false;
-      bydfiNote.className = 'verify-result';
+      manualNote.className = 'verify-result';
     }
   }
   function openModal(presetExchange){
@@ -1449,10 +1460,11 @@
   checkBtn.addEventListener('click', runCheck);
   input.addEventListener('keydown', function(e){ if(e.key === 'Enter') runCheck(); });
   exchangeSelect.addEventListener('change', syncExchangeView);
-  bydfiApplyLink.addEventListener('click', function(e){
+  manualApplyLink.addEventListener('click', function(e){
     e.preventDefault();
+    var manual = MANUAL_EXCHANGES[exchangeSelect.value];
     closeModal();
-    if(window.openBydfiModal) window.openBydfiModal();
+    if(manual) manual.open();
   });
   document.addEventListener('keydown', function(e){
     if(e.key === 'Escape' && !backdrop.hidden) closeModal();
@@ -1562,15 +1574,16 @@
   });
 })();
 
-// 20-44단계: Bitget 가입 신청 모달 — Gate.io 모달과 똑같은 3단계 UX(UID→시드예치→텔레그램)이고,
-// Bitget도 자동 확인 API(checkBitgetReferral)가 있어서 1단계가 BYDFi처럼 "다음"이 아니라 Gate.io처럼
-// 실제 "확인하기"(서버 재검증)임.
+// 20-44단계에서 자동 확인(checkBitgetReferral)으로 만들었던 Bitget 가입 신청 모달을,
+// Bitget API 앞 Cloudflare WAF가 서버간 호출을 계속 차단해서(20-46단계) 20-49단계부터
+// BYDFi와 동일한 수동 확인 패턴으로 전환함 — 1단계가 "확인하기"가 아니라 "다음"(서버 검증 없이
+// 바로 다음 단계로 넘어감), 실제 확인은 운영자가 Bitget 어필리에이트 대시보드에서 수동으로 함.
 (function(){
   var backdrop = document.getElementById('bitget-modal-backdrop');
   var closeBtn = document.getElementById('bitget-modal-close');
   var uidInput = document.getElementById('bitget-uid-input');
-  var verifyBtn = document.getElementById('bitget-verify-btn');
-  var verifyResult = document.getElementById('bitget-verify-result');
+  var uidResult = document.getElementById('bitget-uid-result');
+  var nextBtn = document.getElementById('bitget-next-btn');
   var telegramStep = document.getElementById('bitget-telegram-step');
   var seedOBtn = document.getElementById('bitget-seed-o-btn');
   var seedXBtn = document.getElementById('bitget-seed-x-btn');
@@ -1580,26 +1593,11 @@
   var tgSubmitBtn = document.getElementById('bitget-tg-submit-btn');
   var tgResult = document.getElementById('bitget-tg-result');
   if(!backdrop) return;
-  var verifiedUid = null;
+  var submittedUid = null;
 
   function showResult(el, ok, text){
     el.textContent = text;
     el.className = 'verify-result show ' + (ok ? 'ok' : 'bad');
-  }
-  // Bitget API가 아직 베타라서, 실패 시 서버가 같이 내려주는 원본 응답(detail)을 그대로
-  // 덧붙여 보여줌 — DevTools 없이도 바로 원인 파악 가능(20-45단계, uid-modal IIFE와 동일 패턴).
-  function detailSuffix(data){
-    if(!data || data.detail == null) return '';
-    try {
-      var d = data.detail;
-      if (typeof d === 'object') {
-        var code = d.code || d.msg_code || d.error_code || '';
-        var msg = d.msg || d.message || '';
-        var parts = [code, msg].filter(Boolean);
-        return parts.length ? ' (' + parts.join(': ') + ')' : ' (' + JSON.stringify(d) + ')';
-      }
-      return ' (' + String(d) + ')';
-    } catch(e){ return ''; }
   }
   function resetSeedChoice(){
     seedOBtn.classList.remove('selected');
@@ -1609,13 +1607,13 @@
   }
   function openModal(){
     uidInput.value = '';
-    verifyResult.className = 'verify-result';
-    verifyResult.textContent = '';
+    uidResult.className = 'verify-result';
+    uidResult.textContent = '';
     telegramStep.hidden = true;
     resetSeedChoice();
     tgResult.className = 'verify-result';
     tgInput.value = '';
-    verifiedUid = null;
+    submittedUid = null;
     backdrop.hidden = false;
     document.body.style.overflow = 'hidden';
     uidInput.focus();
@@ -1626,27 +1624,13 @@
   }
   window.openBitgetModal = openModal;
 
-  verifyBtn.addEventListener('click', function(){
+  nextBtn.addEventListener('click', function(){
     var uid = (uidInput.value || '').trim();
-    if(!uid){ showResult(verifyResult, false, 'UID를 입력해주세요.'); return; }
-    verifyBtn.disabled = true;
-    verifyBtn.textContent = '확인 중...';
-    telegramStep.hidden = true;
+    if(!uid){ showResult(uidResult, false, 'UID를 입력해주세요.'); return; }
+    submittedUid = uid;
+    showResult(uidResult, true, '✅ 접수됐어요. 다음 단계로 진행해주세요.');
+    telegramStep.hidden = false;
     resetSeedChoice();
-    verifiedUid = null;
-    fetch('/api/check-uid-bitget?uid=' + encodeURIComponent(uid), { credentials:'same-origin' })
-      .then(function(res){ return res.json(); })
-      .then(function(data){
-        if(data.ok && data.status === 'direct_referral'){
-          showResult(verifyResult, true, '✅ ' + data.message);
-          verifiedUid = uid;
-          telegramStep.hidden = false;
-        } else {
-          showResult(verifyResult, false, '❌ ' + (data.message || data.error || '확인할 수 없습니다.') + detailSuffix(data));
-        }
-      })
-      .catch(function(){ showResult(verifyResult, false, '❌ 확인 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.'); })
-      .finally(function(){ verifyBtn.disabled = false; verifyBtn.textContent = '확인하기'; });
   });
   seedOBtn.addEventListener('click', function(){
     seedOBtn.classList.add('selected');
@@ -1662,28 +1646,31 @@
   });
   tgSubmitBtn.addEventListener('click', function(){
     var tg = (tgInput.value || '').trim();
-    if(!verifiedUid){ showResult(tgResult, false, '먼저 UID 확인을 완료해주세요.'); return; }
+    if(!submittedUid){ showResult(tgResult, false, '먼저 UID를 입력해주세요.'); return; }
     if(!tg){ showResult(tgResult, false, '텔레그램 아이디를 입력해주세요.'); return; }
     tgSubmitBtn.disabled = true;
-    tgSubmitBtn.textContent = '신청 중...';
+    tgSubmitBtn.textContent = '제출 중...';
     fetch('/api/bitget-join', {
       method:'POST', credentials:'same-origin',
       headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ uid: verifiedUid, telegram_id: tg })
+      body: JSON.stringify({ uid: submittedUid, telegram_id: tg })
     })
       .then(function(res){ return res.json(); })
       .then(function(data){
         if(data.ok){
-          showResult(tgResult, true, '✅ 신청이 접수됐습니다! 곧 텔레그램으로 연락드릴게요.');
+          showResult(tgResult, true, '✅ 접수됐어요! Bitget 가입 확인 후 텔레그램으로 안내드릴게요.');
           tgInput.value = '';
         } else {
-          showResult(tgResult, false, '❌ ' + (data.error || '신청 중 오류가 발생했습니다.'));
+          showResult(tgResult, false, '❌ ' + (data.error || '제출 중 오류가 발생했습니다.'));
         }
       })
-      .catch(function(){ showResult(tgResult, false, '❌ 신청 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.'); })
-      .finally(function(){ tgSubmitBtn.disabled = false; tgSubmitBtn.textContent = '신청하기'; });
+      .catch(function(){ showResult(tgResult, false, '❌ 제출 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.'); })
+      .finally(function(){ tgSubmitBtn.disabled = false; tgSubmitBtn.textContent = '제출하기'; });
   });
 
+  document.querySelectorAll('.js-open-bitget-apply').forEach(function(el){
+    el.addEventListener('click', function(e){ e.preventDefault(); openModal(); });
+  });
   closeBtn.addEventListener('click', closeModal);
   backdrop.addEventListener('click', function(e){ if(e.target === backdrop) closeModal(); });
   document.addEventListener('keydown', function(e){

@@ -8,12 +8,10 @@
 //   POST /api/bydfi-join            BYDFi UID + 텔레그램 아이디 제출 (20-40단계) — BYDFi는 공개
 //                                    레퍼럴확인 API가 없어서 서버 재검증 없이 bydfi_join_requests에
 //                                    저장 + 운영자에게 "수동 확인 필요" 알림만 보냄
-//   GET  /api/check-uid-bitget?uid=... Bitget UID가 전용 링크로 가입했는지 확인 (20-44단계, 어필리에이트
-//                                    customer-list API로 그 UID가 내 고객 목록에 있는지만 확인 — Gate.io처럼
-//                                    관계 종류(직속/간접)까지 세분화해서 알려주지는 않음, 베타)
-//   POST /api/bitget-join            Bitget UID + 텔레그램 아이디로 전용 텔레그램방 가입 신청 →
-//                                    서버가 UID를 다시 한 번 검증 후 bitget_join_requests에 저장 +
-//                                    운영자에게 텔레그램 알림 (Gate.io와 동일하게 자동 재검증, 20-44단계)
+//   POST /api/bitget-join            Bitget UID + 텔레그램 아이디 제출 (20-44단계 자동 확인 → 20-49단계
+//                                    수동 확인으로 전환, BYDFi와 동일 패턴) — Bitget API 앞 Cloudflare WAF가
+//                                    서버 간 호출을 계속 차단해서(20-46단계) 서버 재검증 없이
+//                                    bitget_join_requests에 저장 + 운영자에게 "수동 확인 필요" 알림만 보냄
 //   GET  /api/payback-total?uid=... 그 UID의 누적 페이백 추정액 조회 (아래 "페이백 계산 방식" 참고)
 //   GET  /api/payback-feed          최근 페이백 내역 공개 피드 (UID 마스킹, 최대 300건, 20-26단계)
 //   POST /api/telegram-link         UID 재검증 후 스터디방 신청용 1회용 봇 딥링크 발급 (study-bot.js)
@@ -45,8 +43,7 @@
 //
 // 환경변수(Settings > Variables and Secrets):
 //   GATE_API_KEY, GATE_API_SECRET        Gate.io 파트너 API (레퍼럴 확인 + 커미션 내역 조회, Rebate 권한만 필요 — 출금 권한 불필요)
-//   BITGET_API_KEY, BITGET_API_SECRET, BITGET_API_PASSPHRASE  Bitget 어필리에이트 API (20-44단계, UID 자동 확인용 —
-//                                    일반 개인 API 키 + 어필리에이트 권한 필요, 출금 권한 불필요)
+//   (Bitget은 20-49단계부터 자동 확인을 쓰지 않음 — BITGET_API_KEY 등 환경변수는 더 이상 안 읽힘)
 //   TELEGRAM_BOT_TOKEN, TELEGRAM_ADMIN_CHAT_ID  (선택) 가입 신청 알림 — 없으면 신청 저장만 되고 알림은 생략됨
 //   TELEGRAM_WEBHOOK_SECRET, TELEGRAM_GROUP_CHAT_ID  (선택) 스터디방 관리 봇 — 자세한 건 study-bot.js 맨 위 주석
 // 필요한 바인딩: D1 데이터베이스 → env.DB
@@ -98,7 +95,6 @@ export default {
       if (path === '/api/check-uid' && method === 'GET') return await handleCheckUid(request, env);
       if (path === '/api/telegram-join' && method === 'POST') return await handleTelegramJoin(request, env);
       if (path === '/api/bydfi-join' && method === 'POST') return await handleBydfiJoin(request, env);
-      if (path === '/api/check-uid-bitget' && method === 'GET') return await handleCheckUidBitget(request, env);
       if (path === '/api/bitget-join' && method === 'POST') return await handleBitgetJoin(request, env);
       if (path === '/api/payback-total' && method === 'GET') return await handlePaybackTotal(request, env);
       if (path === '/api/payback-feed' && method === 'GET') return await handlePaybackFeed(request, env);
@@ -279,166 +275,14 @@ async function handleBydfiJoin(request, env) {
   return json({ ok: true });
 }
 
-// ───────────────────────── Bitget API 공통 (서명: HMAC-SHA256 + Base64, 20-44단계) ─────────────────────────
-// Gate.io(HMAC-SHA512, hex)와 서명 알고리즘 자체가 다름 — Bitget은 timestamp+method+requestPath+body
-// 문자열을 HMAC-SHA256으로 서명한 뒤 Base64로 인코딩해서 ACCESS-KEY/ACCESS-SIGN/ACCESS-TIMESTAMP/
-// ACCESS-PASSPHRASE 헤더로 전송하는 방식(공개적으로 안정적으로 알려진 Bitget API v2 공통 규격).
-// ⚠️ 이 세션은 egress 제약으로 bitget.com 공식 문서 원문을 못 읽어서(gate.com/bydfi.com과 동일한 제약,
-// WebFetch 시도 전부 DNS 단계에서 실패) 공개적으로 알려진 규격을 기반으로 구현함 — 실제 키로 응답을
-// 검증한 적은 없는 베타. 호출해서 서명 오류(권한/서명 불일치 등)가 나면 이 함수의 서명 문자열
-// 조합 순서나 헤더명부터 의심할 것.
-
-async function hmacSha256Base64(secret, message) {
-  const enc = new TextEncoder();
-  const key = await crypto.subtle.importKey('raw', enc.encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
-  const sig = await crypto.subtle.sign('HMAC', key, enc.encode(message));
-  return base64FromBuffer(sig);
-}
-
-function base64FromBuffer(buffer) {
-  const bytes = new Uint8Array(buffer);
-  let binary = '';
-  for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
-  return btoa(binary);
-}
-
-// 20-47단계: Bitget 어필리에이트 API 키 발급 페이지가 일반 HMAC 대신 RSA 키 쌍(공개키 제출)을
-// 요구하는 유형이었음 — ACCESS-SIGN 헤더 구성/프리해시 문자열은 HMAC과 동일하고(공식 문서 +
-// 공개 Node.js SDK 소스 확인), 서명 알고리즘만 RSA-SHA256(PKCS1v15 패딩)으로 바뀜. 개인키는
-// PKCS8 PEM 형식이어야 함(PKCS1 "RSA PRIVATE KEY" 헤더면 import 실패 — openssl로 발급 시
-// `openssl pkcs8 -topk8 ...`로 변환 필요). `BITGET_API_RSA_PRIVATE_KEY` 환경변수가 설정돼
-// 있으면 RSA로, 없으면 기존 HMAC(`BITGET_API_SECRET`)으로 자동 분기함.
-async function bitgetRsaSignBase64(privateKeyPem, message) {
-  // 20-48단계: Cloudflare 시크릿에 여러 줄 PEM을 저장할 때, 실제 줄바꿈이 사라지거나
-  // "\n"이라는 리터럴 두 글자(백슬래시+n)로 바뀌어 들어오는 경우가 있었음(흔한 환경변수
-  // 함정) — 기존엔 `\s+` 제거만 했어서 이 리터럴 백슬래시가 base64 문자가 아니라서
-  // atob()가 그대로 터졌음. 먼저 리터럴 \r\n/\n을 실제 줄바꿈으로 되돌린 뒤 헤더/푸터(공개키를
-  // 잘못 넣었을 경우까지 전부 걸러서 atob() 에러 대신 더 명확한 에러가 나도록)와 공백을 제거함.
-  const normalized = privateKeyPem.replace(/\\r\\n/g, '\n').replace(/\\n/g, '\n');
-  const base64Key = normalized
-    .replace(/-----BEGIN [^-]*-----/g, '')
-    .replace(/-----END [^-]*-----/g, '')
-    .replace(/\s+/g, '');
-  if (!base64Key) {
-    throw new Error('BITGET_API_RSA_PRIVATE_KEY 값이 비어있거나 형식이 올바르지 않습니다.');
-  }
-  let binary;
-  try {
-    binary = atob(base64Key);
-  } catch (e) {
-    throw new Error('BITGET_API_RSA_PRIVATE_KEY가 올바른 base64 PEM 형식이 아니에요 — 저장할 때 줄바꿈이 깨졌거나 값이 일부만 복사됐을 수 있어요. 다시 전체를 복사해서 저장해주세요.');
-  }
-  const bytes = new Uint8Array(binary.length);
-  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-  let key;
-  try {
-    key = await crypto.subtle.importKey(
-      'pkcs8',
-      bytes.buffer,
-      { name: 'RSASSA-PKCS1-v1_5', hash: { name: 'SHA-256' } },
-      false,
-      ['sign']
-    );
-  } catch (e) {
-    throw new Error('BITGET_API_RSA_PRIVATE_KEY를 PKCS8 개인키로 인식할 수 없어요 — 공개키를 잘못 넣었거나 PKCS1("RSA PRIVATE KEY") 형식일 수 있어요. 전달받은 PKCS8 개인키 파일 내용을 다시 확인해주세요.');
-  }
-  const sigBuf = await crypto.subtle.sign({ name: 'RSASSA-PKCS1-v1_5' }, key, new TextEncoder().encode(message));
-  return base64FromBuffer(sigBuf);
-}
-
-async function bitgetApiPost(path, bodyObj, env) {
-  const KEY = env.BITGET_API_KEY;
-  const SECRET = env.BITGET_API_SECRET;
-  const RSA_PRIVATE_KEY = env.BITGET_API_RSA_PRIVATE_KEY;
-  const PASSPHRASE = env.BITGET_API_PASSPHRASE;
-  if (!KEY || !PASSPHRASE || (!SECRET && !RSA_PRIVATE_KEY)) {
-    const err = new Error('서버에 Bitget API 키가 설정되지 않았습니다.');
-    err.status = 500;
-    throw err;
-  }
-
-  const host = 'https://api.bitget.com';
-  const method = 'POST';
-  const timestamp = Date.now().toString();
-  const bodyStr = JSON.stringify(bodyObj || {});
-  const signStr = `${timestamp}${method}${path}${bodyStr}`;
-  const sign = RSA_PRIVATE_KEY
-    ? await bitgetRsaSignBase64(RSA_PRIVATE_KEY, signStr)
-    : await hmacSha256Base64(SECRET, signStr);
-
-  // 20-46단계: 헤더 없이 보내면 일부 거래소 WAF가 "브라우저가 아닌 자동화 요청"으로 보고
-  // 차단할 수 있어서(실제로 관측됨 — 응답 본문이 Bitget의 정상 에러 포맷이 아니라
-  // `{"cloudflare":"block"}` 같은 생소한 형태로 온 경우가 있었음) Accept/User-Agent를
-  // 일반 브라우저 요청처럼 명시적으로 붙임. 그래도 차단되면 네트워크/WAF 단 문제이지
-  // 서명 로직 문제가 아님 — 아래 detail에 HTTP 상태코드와 원본 응답을 그대로 남겨서
-  // 다음에 또 막히면 화면에서 바로 구분할 수 있게 함.
-  const res = await fetch(`${host}${path}`, {
-    method,
-    headers: {
-      'Content-Type': 'application/json',
-      'Accept': 'application/json',
-      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
-      'ACCESS-KEY': KEY,
-      'ACCESS-SIGN': sign,
-      'ACCESS-TIMESTAMP': timestamp,
-      'ACCESS-PASSPHRASE': PASSPHRASE,
-      locale: 'en-US',
-    },
-    body: bodyStr,
-  });
-
-  const rawText = await res.text();
-  let data = {};
-  try { data = JSON.parse(rawText); } catch (e) { data = { raw: rawText.slice(0, 200) }; }
-
-  if (!res.ok || (data && typeof data.code === 'string' && data.code !== '00000')) {
-    const err = new Error(`Bitget API 오류 (HTTP ${res.status})`);
-    err.status = res.ok ? 502 : res.status;
-    err.detail = data;
-    throw err;
-  }
-  return data;
-}
-
-// ───────────────────────── Bitget UID 확인 (자동, 어필리에이트 customer-list 기반) ─────────────────────────
-// Bitget은 Gate.io의 sub_relation처럼 관계 종류(직속/간접/에이전트)를 세분화해서 알려주는 API가 아니라,
-// 내 어필리에이트 고객 목록(customer-list)에서 그 UID를 검색해 "찾으면 내 추천인, 못 찾으면 아님" 식의
-// 단순 포함 여부 확인만 가능함(20-44단계 조사 — 공식 문서 원문 미확인). 응답 필드명이 확정되지 않아서
-// 여러 응답 형태(data가 배열 그대로 / data.list / data.customerList / data.rows / data.records)를
-// 방어적으로 다 처리함 — 실제 키로 호출해본 뒤 맞는 형태로 좁혀야 할 수 있음.
-function extractBitgetCustomerList(data) {
-  const d = data && data.data;
-  if (Array.isArray(d)) return d;
-  if (d && Array.isArray(d.list)) return d.list;
-  if (d && Array.isArray(d.customerList)) return d.customerList;
-  if (d && Array.isArray(d.rows)) return d.rows;
-  if (d && Array.isArray(d.records)) return d.records;
-  return [];
-}
-
-async function checkBitgetReferral(uid, env) {
-  const data = await bitgetApiPost('/api/v2/broker/customer-list', { uid: String(uid), pageNo: '1', pageSize: '20' }, env);
-  const list = extractBitgetCustomerList(data);
-  const found = list.some((item) => String(item.uid ?? item.userId ?? item.customerUid ?? '') === String(uid));
-  if (found) {
-    return { status: 'direct_referral', message: '전용 링크로 가입한 회원입니다.' };
-  }
-  return { status: 'not_my_referral', message: '전용 링크로 가입한 회원이 아니거나, 등록되지 않은 UID입니다.' };
-}
-
-async function handleCheckUidBitget(request, env) {
-  const url = new URL(request.url);
-  const uid = (url.searchParams.get('uid') || '').trim();
-  if (!isValidExchangeUid(uid)) {
-    return json({ ok: false, error: 'UID를 2~30자로 입력해주세요.' }, 400);
-  }
-  try {
-    const result = await checkBitgetReferral(uid, env);
-    return json({ ok: true, uid, ...result });
-  } catch (err) {
-    return json({ ok: false, error: err.message || 'Bitget 조회 중 오류', detail: err.detail }, err.status || 500);
-  }
-}
+// ───────────────────────── Bitget 가입 신청 (수동 확인으로 전환, 20-49단계) ─────────────────────────
+// 20-44~20-47단계에서 어필리에이트 customer-list API로 자동 확인을 구현했었지만, 실제 운영
+// 중 Bitget API 앞의 Cloudflare WAF가 Cloudflare Workers의 발신 요청을 계속 차단함
+// (`{"cloudflare":"block"}` — 서명/인증 문제가 아니라 네트워크 단 차단, 20-46단계에서 이미
+// 진단됨). RSA 서명까지 구현해도(20-47/20-48단계) 이 차단 자체는 해결되지 않아서, 사용자가
+// BYDFi와 동일한 수동 확인 방식으로 전환하기로 결정함 — Bitget API를 아예 호출하지 않고,
+// BYDFi처럼 형식 검증만 하고 저장 + "수동 확인 필요" 알림만 보냄. 실제 "전용 링크로
+// 가입했는지"는 운영자가 Bitget 어필리에이트 대시보드에서 직접 확인 후 텔레그램으로 안내함.
 
 async function handleBitgetJoin(request, env) {
   if (!env.DB) return json({ ok: false, error: 'DB가 연결되지 않았습니다.' }, 500);
@@ -453,21 +297,11 @@ async function handleBitgetJoin(request, env) {
     return json({ ok: false, error: '텔레그램 아이디를 2~100자로 입력해주세요.' }, 400);
   }
 
-  let referral;
-  try {
-    referral = await checkBitgetReferral(uid, env);
-  } catch (err) {
-    return json({ ok: false, error: err.message || 'Bitget 조회 중 오류', detail: err.detail }, err.status || 500);
-  }
-  if (referral.status !== 'direct_referral') {
-    return json({ ok: false, error: '전용 링크로 가입이 확인된 UID만 신청할 수 있습니다. 먼저 UID 확인을 통과해주세요.' }, 403);
-  }
-
   await env.DB.prepare(
     `INSERT INTO bitget_join_requests (uid, telegram_id, created_at) VALUES (?, ?, ?)`
   ).bind(uid, telegramId, Date.now()).run();
 
-  await notifyAdminTelegram(env, `📨 Bitget 텔레그램 전용방 가입 신청\nUID: ${uid}\n텔레그램: ${telegramId}`);
+  await notifyAdminTelegram(env, `🆕 Bitget 가입 확인 요청 (수동 확인 필요)\nUID: ${uid}\n텔레그램: ${telegramId}\n\n⚠️ Bitget은 Cloudflare WAF가 자동 확인 API를 차단해서 수동 확인으로 전환했어요 — 어필리에이트 대시보드에서 직접 확인 후 개별 안내해주세요.`);
 
   return json({ ok: true });
 }
