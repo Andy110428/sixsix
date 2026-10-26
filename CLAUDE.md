@@ -1442,6 +1442,11 @@ extra_usdt       = received_usdt - generic20_usdt        (50% 요율 덕분에 �
 - **백엔드는 그대로 둠**: `GET /api/payback-feed` 라우트와 1분 크론(`syncPaybackFeed`, payback_feed 적재)은 아직 살아있음 — 화면에서 안 쓰이니 Gate API 호출만 낭비되는 상태. 지울지는 사용자 결정(크론 문자열 `* * * * *` 제거 + 라우트/함수 정리).
 - 검증: 인라인 스크립트 `node --check`, `<section>` 열고 닫기 개수 일치(8/8), 삭제한 id/클래스 참조 grep 0건.
 
+## 20-53단계: 상단 메뉴 정리(☰) + 페이백 피드 크론/API 끄기 (2026-10-26, 클라우드 자비스 세션)
+- 헤더: 대표 버튼 2개(✅ UID 확인 → 통합 UID 모달에서 거래소 선택 / 입장 신청)만 보이고, 나머지 링크는 전부 ☰ 메뉴(바로가기/도구 그룹)로. ☰는 모든 화면 폭에서 보임. 420px 이하에선 UID 버튼이 ✅ 아이콘만. 안 쓰는 `.nav-links`/`.nav-drop*` CSS 삭제.
+- 사용자 "페이백 조회만 남기고 나머진 꺼": wrangler.jsonc에서 1분 크론 `* * * * *` 제거, `/api/payback-feed` 라우트 제거, scheduled()는 MEMBERSHIP_CRON만 처리. `syncPaybackFeed`/`handlePaybackFeed` 함수와 payback_feed 테이블은 코드에 남아있지만 호출 안 됨. `/api/payback-total`(내 누적 조회)은 그대로.
+- 검증: node --check, 인라인 스크립트 체크, 회귀 하네스 12/12. 브라우저 실화면 확인은 못 함.
+
 ## 환경변수 목록 (Cloudflare 대시보드 Settings > Variables and Secrets)
 
 ```

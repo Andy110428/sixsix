@@ -72,9 +72,6 @@
   .brand{ display:flex; align-items:center; gap:10px; font-weight:700; font-size:1.05rem; flex-shrink:0; }
   .brand .mark{ width:32px; height:32px; border-radius:10px; background:#0d1210; border:1px solid rgba(255,255,255,0.08); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
   .brand .mark svg{ display:block; }
-  .nav-links{ display:flex; gap:28px; align-items:center; }
-  .nav-links a{ font-size:1rem; color:var(--text-dim); font-weight:600; }
-  .nav-links a:hover{ color:var(--text); }
   .nav-admin-link{ color:var(--text-dim); opacity:0.55; font-size:0.86rem !important; }
   .nav-admin-link:hover{ opacity:1; }
   /* 20-35단계: "스터디방 신청 어디서 하냐"는 문의가 반복돼서, 네비에 숨겨진 드롭다운 대신
@@ -82,15 +79,6 @@
   .nav-apply-link{ color:var(--accent-a) !important; background:rgba(52,211,153,0.12); border:1px solid rgba(52,211,153,0.35); padding:6px 14px; border-radius:999px; font-size:0.92rem !important; }
   .nav-apply-link:hover{ background:rgba(52,211,153,0.2); color:var(--accent-a) !important; }
   .menu-dropdown .nav-apply-link{ color:var(--accent-a); background:rgba(52,211,153,0.1); border-radius:10px; padding:10px 14px; font-weight:800; }
-  .nav-drop{ position:relative; }
-  .nav-drop-btn{ background:none; border:none; padding:0; font:inherit; font-size:1rem; color:var(--text-dim); font-weight:600; cursor:pointer; display:inline-flex; align-items:center; gap:4px; }
-  .nav-drop-btn:hover{ color:var(--text); }
-  .nav-drop .caret{ font-size:0.72em; transition:transform .15s ease; }
-  .nav-drop:hover .caret, .nav-drop:focus-within .caret{ transform:rotate(180deg); }
-  .nav-drop-menu{ position:absolute; top:calc(100% + 14px); left:50%; transform:translateX(-50%) translateY(-6px); min-width:170px; background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:8px; box-shadow:0 16px 40px -12px rgba(0,0,0,0.6); opacity:0; visibility:hidden; transition:opacity .15s ease, transform .15s ease, visibility .15s; z-index:70; }
-  .nav-drop:hover .nav-drop-menu, .nav-drop:focus-within .nav-drop-menu{ opacity:1; visibility:visible; transform:translateX(-50%) translateY(0); }
-  .nav-drop-menu a{ display:block; padding:9px 12px; border-radius:8px; font-size:0.92rem; font-weight:600; color:var(--text-dim); white-space:nowrap; }
-  .nav-drop-menu a:hover{ color:var(--text); background:rgba(255,255,255,0.05); }
   .nav-cta{ display:flex; align-items:center; gap:10px; }
   .btn{ display:inline-flex; align-items:center; justify-content:center; gap:6px; padding:12px 22px; border-radius:999px; font-size:1rem; font-weight:700; cursor:pointer; transition: filter .15s ease, border-color .15s ease, transform .15s ease; white-space:nowrap; }
   .btn[hidden]{ display:none; } /* .btn의 무조건 display:inline-flex가 [hidden]을 이기는 것 방지(이 프로젝트에 반복된 패턴) */
@@ -100,7 +88,7 @@
   .btn-ghost:hover{ border-color:rgba(255,255,255,0.3); }
   .btn-sm{ padding:9px 16px; font-size:0.9rem; }
 
-  .menu-btn{ display:none; width:42px; height:42px; border-radius:8px; border:1px solid var(--line); background:rgba(255,255,255,0.03); flex-direction:column; align-items:center; justify-content:center; gap:5px; cursor:pointer; }
+  .menu-btn{ display:flex; width:42px; height:42px; border-radius:8px; border:1px solid var(--line); background:rgba(255,255,255,0.03); flex-direction:column; align-items:center; justify-content:center; gap:5px; cursor:pointer; }
   .menu-btn span{ display:block; width:18px; height:2px; background:var(--text); border-radius:2px; transition:transform .15s ease, opacity .15s ease; }
   .menu-btn[aria-expanded="true"] span:nth-child(1){ transform:translateY(7px) rotate(45deg); }
   .menu-btn[aria-expanded="true"] span:nth-child(2){ opacity:0; }
@@ -109,6 +97,9 @@
   .menu-dropdown.open{ opacity:1; visibility:visible; transform:translateY(0); }
   .menu-dropdown a{ display:block; padding:10px 12px; border-radius:8px; font-size:0.92rem; font-weight:600; color:var(--text-dim); }
   .menu-dropdown a:hover{ color:var(--text); background:rgba(255,255,255,0.05); }
+  .menu-dropdown a small{ color:var(--text-dim); font-weight:500; font-size:0.78rem; opacity:0.8; }
+  .menu-group-label{ padding:10px 12px 4px; font-size:0.72rem; font-weight:700; letter-spacing:0.08em; color:var(--text-dim); opacity:0.7; }
+  .menu-divider{ height:1px; background:var(--line); margin:6px 4px; }
 
   /* 20-45단계: 거래소가 3개(Gate.io/BYDFi/Bitget)로 늘어나고 nav 항목도 9개까지 늘면서,
      기존 860px 기준으로는 861~1150px 구간(노트북 창 크기)에서 nav-links가 가로 폭이 모자라
@@ -116,10 +107,12 @@
      이 구간은 사이트 다른 860px 기준 모바일 레이아웃(.ex-table-head 등)과는 무관하게 nav 전용
      문제라서, nav 전환 기준만 1180px로 넓힘(다른 860px 미디어쿼리는 그대로 둠).
   */
-  @media (max-width:1180px){
-    .nav-links{ display:none; }
-    .nav-cta .btn span.txt{ display:none; }
-    .menu-btn{ display:flex; }
+  /* 20-53단계: 상단은 대표 버튼 2개(UID 확인 / 입장 신청) + ☰ 메뉴만 — 나머지 링크는 전부 ☰ 안으로.
+     좁은 폰에서는 UID 버튼을 ✅ 아이콘만 남겨서 한 줄에 들어가게 함. */
+  .nav-cta .btn .txt{ margin-left:4px; }
+  @media (max-width:420px){
+    .nav-cta .btn .txt{ display:none; }
+    .nav-cta{ gap:8px; }
   }
 
   /* 20-36단계: 모바일은 헤더의 "입장 신청" 알약이 햄버거 안에 숨어있어서 한눈에 안 보임 —
@@ -430,34 +423,26 @@
 <header>
   <div class="nav">
     <a class="brand" href="#top"><span class="mark" aria-hidden="true"><svg viewBox="0 0 24 24" width="19" height="19"><defs><linearGradient id="markGradNav" x1="0" y1="0" x2="24" y2="24"><stop offset="0" stop-color="#34d399"/><stop offset="0.55" stop-color="#22c3b6"/><stop offset="1" stop-color="#2dd4ec"/></linearGradient><filter id="markGlowNav" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="0.9" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs><g filter="url(#markGlowNav)"><circle cx="7" cy="7" r="2.3" fill="none" stroke="url(#markGradNav)" stroke-width="1.7"/><circle cx="17" cy="17" r="2.3" fill="none" stroke="url(#markGradNav)" stroke-width="1.7"/><line x1="18" y1="6" x2="6" y2="18" stroke="url(#markGradNav)" stroke-width="1.7" stroke-linecap="round"/></g></svg></span>TEAM SIXX</a>
-    <nav class="nav-links">
-      <a href="#studyroom">스터디방</a>
-      <a href="#exchanges">거래소</a>
-      <a href="#how">입장 방법</a>
-      <a href="#" class="js-open-uid-modal">✅ UID 확인</a>
-      <a href="#payback">💰 페이백 조회</a>
-      <a href="#" class="nav-apply-link js-open-apply-modal">🔒 입장 신청</a>
-      <a href="#events">이벤트</a>
-      <a href="#faq">FAQ</a>
-      <a href="#admin" class="nav-admin-link">관리자</a>
-    </nav>
     <div class="nav-cta">
-      <a class="btn btn-ghost btn-sm" href="https://t.me/team_sixx" target="_blank" rel="noopener"><span class="txt">텔레그램</span> ✈</a>
-      <a class="btn btn-primary btn-sm js-open-apply-modal" href="#"><span class="txt">입장 신청</span> →</a>
-      <button class="menu-btn" id="menu-btn" aria-expanded="false" aria-label="메뉴"><span></span><span></span><span></span></button>
+      <a class="btn btn-ghost btn-sm js-open-uid-modal" href="#" aria-label="UID 확인"><span aria-hidden="true">✅</span><span class="txt">UID 확인</span></a>
+      <a class="btn btn-primary btn-sm js-open-apply-modal" href="#">입장 신청 →</a>
+      <button class="menu-btn" id="menu-btn" aria-expanded="false" aria-controls="menu-dropdown" aria-label="메뉴"><span></span><span></span><span></span></button>
     </div>
-    <div class="menu-dropdown" id="menu-dropdown">
-      <a href="#studyroom">스터디방</a>
-      <a href="#exchanges">거래소</a>
+    <nav class="menu-dropdown" id="menu-dropdown" aria-label="전체 메뉴">
+      <div class="menu-group-label">바로가기</div>
+      <a href="#studyroom">스터디방 소개</a>
+      <a href="#exchanges">파트너 거래소</a>
       <a href="#how">입장 방법</a>
-      <a href="#" class="js-open-uid-modal">✅ UID 확인</a>
-      <a href="#" class="nav-apply-link js-open-apply-modal">🔒 스터디방 입장 신청</a>
-      <a href="#payback">페이백 조회</a>
       <a href="#events">이벤트</a>
       <a href="#faq">FAQ</a>
+      <div class="menu-group-label">도구</div>
+      <a href="#" class="js-open-uid-modal">✅ UID 확인 <small>(Gate.io · Bitget · BYDFi)</small></a>
+      <a href="#payback">💰 내 페이백 조회</a>
+      <a href="#" class="nav-apply-link js-open-apply-modal">🔒 스터디방 입장 신청</a>
+      <div class="menu-divider"></div>
       <a href="https://t.me/team_sixx" target="_blank" rel="noopener">텔레그램 문의 ↗</a>
       <a href="#admin" class="nav-admin-link">관리자</a>
-    </div>
+    </nav>
   </div>
 </header>
 

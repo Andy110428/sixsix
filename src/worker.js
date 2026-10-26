@@ -15,7 +15,7 @@
 //                                    어필리에이트 customer-list로 자동 확인한 결과를 알림에 함께 표시함
 //                                    (중계기가 없거나 실패하면 20-49단계처럼 "수동 확인 필요"로 그대로 동작)
 //   GET  /api/payback-total?uid=... 그 UID의 누적 페이백 추정액 조회 (아래 "페이백 계산 방식" 참고)
-//   GET  /api/payback-feed          최근 페이백 내역 공개 피드 (UID 마스킹, 최대 300건, 20-26단계)
+//   (GET /api/payback-feed + 1분 크론은 20-53단계에서 껐음 — 화면의 실시간 피드를 20-52단계에서 없애서 안 쓰임)
 //   POST /api/telegram-link         UID 재검증 후 스터디방 신청용 1회용 봇 딥링크 발급 (study-bot.js)
 //   POST /api/telegram-webhook      텔레그램 봇 웹훅 — 신청 연결/승인 버튼/그룹 입장 감지 (study-bot.js)
 //   GET  /api/events                공개 이벤트/공지 목록 (status='active'만, 20-28단계)
@@ -102,7 +102,6 @@ export default {
       if (path === '/api/check-uid-bitget' && method === 'GET') return await handleCheckUidBitget(request, env);
       if (path === '/api/bitget-join' && method === 'POST') return await handleBitgetJoin(request, env);
       if (path === '/api/payback-total' && method === 'GET') return await handlePaybackTotal(request, env);
-      if (path === '/api/payback-feed' && method === 'GET') return await handlePaybackFeed(request, env);
       if (path === '/api/telegram-link' && method === 'POST') return await handleTelegramLink(request, env, botDeps);
       if (path === '/api/telegram-webhook' && method === 'POST') return await handleTelegramWebhook(request, env, ctx);
       if (path === '/api/events' && method === 'GET') return await handleEventsPublic(request, env);
@@ -121,11 +120,11 @@ export default {
   },
 
   async scheduled(event, env, ctx) {
+    // 20-53단계: 1분짜리 페이백 피드 크론(syncPaybackFeed)은 wrangler.jsonc에서 뺐음 — 남은 크론은
+    // 스터디방 활동 검사 하나뿐. 혹시 다른 크론 문자열로 불려도 피드 동기화는 다시 돌리지 않음.
     if (event.cron === MEMBERSHIP_CRON) {
       ctx.waitUntil((async () => { await ensureSchema(env); await runMembershipCheck(env, botDeps); })());
-      return;
     }
-    ctx.waitUntil(syncPaybackFeed(env));
   },
 };
 
