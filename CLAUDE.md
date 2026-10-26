@@ -1320,6 +1320,23 @@ extra_usdt       = received_usdt - generic20_usdt        (50% 요율 덕분에 �
 - nav 전환 기준(1180px)은 현재 nav 항목 개수(9개) 기준 실측값 — 나중에 nav 항목이 더 늘어나면(예: 거래소가 4개 되면서 "도구" 드롭다운이 아니라 다른 곳에 항목이 추가되는 식) 이 기준을 다시 재야 할 수 있음, `.nav-links`가 깨지는지 Playwright로 870~1200px 구간을 훑어보는 방법을 재사용하면 됨.
 - `uid-modal-exchange` 드롭다운과 거래소 선택(입장 신청) 모달(`#exchange-choice-modal-backdrop`)은 서로 다른 컴포넌트로 독립적으로 유지됨(전자는 확인 전용, 후자는 신청 전용) — 혼동하지 않도록 주의.
 
+## 20-46단계: Bitget API 호출이 네트워크 단계에서 차단되고 있음을 확인 — WAF 우회 시도 (2026-10-26)
+
+20-45단계 배포 직후 사용자가 실제 Bitget UID(`5548526762`)로 테스트해준 결과, 화면에 **"❌ Bitget API 오류 ({"cloudflare":"block"})"**가 떴다고 보고.
+
+**진단**: `{"cloudflare":"block"}`은 Bitget의 정상적인 API 에러 포맷(`{code, msg}`)이 전혀 아님 — 이건 **서명이나 인증 실패가 아니라, 요청이 Bitget 서버에 닿기도 전에 네트워크/WAF 단계에서 차단됐다는 신호**로 판단함. Bitget API가 Cloudflare로 보호되고 있고, 그 WAF가 Cloudflare Workers의 발신 IP(다른 다양한 Cloudflare Workers 트래픽과 공유되는 대역, 데이터센터/클라우드 IP로 분류됨)를 자동화된 봇 트래픽으로 보고 차단했을 가능성이 가장 유력함 — Gate.io/BYDFi 때와는 종류가 다른 문제(그땐 우리 세션이 `gate.com`/`bydfi.com`에 못 간 것, 이번엔 운영 중인 실제 Cloudflare Worker가 `api.bitget.com`에 요청했는데 막힌 것).
+
+**시도한 완화 조치**: `bitgetApiPost()`에 일반 브라우저처럼 보이는 헤더(`Accept: application/json`, `User-Agent: Mozilla/5.0 ... Chrome/124...`)를 추가 — 헤더가 아예 없는 요청을 WAF가 봇으로 더 쉽게 분류할 수 있어서, 최소한의 비용으로 시도해볼 만한 조치. 효과가 있을지는 불확실함(Cloudflare Workers 발신 IP 자체가 차단 대상이라면 헤더로는 안 풀림). 그와 별개로 **진단성 개선**도 함께 함 — 기존엔 `res.json().catch(()=>({}))`라서 응답이 JSON이 아니면(HTML 차단 페이지 등) `detail`이 빈 객체 `{}`로 뭉개져서 아무 정보도 안 남았는데, 이제 `res.text()`로 먼저 받아서 JSON 파싱 실패 시 응답 본문 앞 200자를 `detail.raw`로 남기도록 바꿈 — 다음에 또 막히면 HTML 차단 페이지 내용도 화면에서 바로 확인 가능. 에러 메시지에 HTTP 상태코드도 추가함(`Bitget API 오류 (HTTP 403)` 식).
+
+⚠️ **이 조치로 해결될지는 미확인** — 헤더 추가가 핵심 원인(Cloudflare Workers IP 자체에 대한 차단)을 해결 못 할 가능성이 있음. 만약 계속 막히면 근본적인 선택지는: (1) Bitget 고객지원에 문의해서 Cloudflare Workers 발신 대역을 허용 목록에 올려달라고 요청, (2) 자동 확인을 포기하고 BYDFi처럼 **수동 확인 방식**(UID 제출 → 운영자가 Bitget 어필리에이트 대시보드에서 직접 대조)으로 전환 — 이게 더 현실적인 차선책일 수 있음.
+
+로컬 `node --check` + `wrangler deploy --dry-run` 검증 후 배포. 병합 전 `git log origin/main`으로 다른 세션의 동시 커밋 없는지 확인(20-17단계 교훈).
+
+### 다음에 볼 것
+- **사용자 확인 필요(최우선)**: 배포 후 같은 UID로 다시 테스트해서 에러가 바뀌었는지(여전히 `{"cloudflare":"block"}`인지, HTML `raw` 내용이 보이는지, 아니면 정상적인 Bitget 에러 코드가 보이는지) 확인 필요 — 결과에 따라 다음 단계가 완전히 달라짐.
+- 계속 막히면 Bitget 쪽에 "서버 간(S2S) API 호출이 차단된다"고 문의하거나, 20-40단계의 BYDFi 패턴(수동 확인)으로 전환하는 걸 고려할 것 — 둘 다 코드 변경이 필요한 사용자 결정 사항.
+- 이 문제가 Bitget에만 국한된 것인지, Gate.io/BYDFi에도 비슷한 리스크가 있는지는 불명확함(Gate.io는 지금까지 비슷한 신고가 없었음 — 다만 Gate.io도 실 키로 완전히 검증된 적은 없다는 베타 리스크는 20-6단계부터 동일하게 남아있음).
+
 ## 환경변수 목록 (Cloudflare 대시보드 Settings > Variables and Secrets)
 
 ```

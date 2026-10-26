@@ -319,10 +319,18 @@ async function bitgetApiPost(path, bodyObj, env) {
   const signStr = `${timestamp}${method}${path}${bodyStr}`;
   const sign = await hmacSha256Base64(SECRET, signStr);
 
+  // 20-46단계: 헤더 없이 보내면 일부 거래소 WAF가 "브라우저가 아닌 자동화 요청"으로 보고
+  // 차단할 수 있어서(실제로 관측됨 — 응답 본문이 Bitget의 정상 에러 포맷이 아니라
+  // `{"cloudflare":"block"}` 같은 생소한 형태로 온 경우가 있었음) Accept/User-Agent를
+  // 일반 브라우저 요청처럼 명시적으로 붙임. 그래도 차단되면 네트워크/WAF 단 문제이지
+  // 서명 로직 문제가 아님 — 아래 detail에 HTTP 상태코드와 원본 응답을 그대로 남겨서
+  // 다음에 또 막히면 화면에서 바로 구분할 수 있게 함.
   const res = await fetch(`${host}${path}`, {
     method,
     headers: {
       'Content-Type': 'application/json',
+      'Accept': 'application/json',
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
       'ACCESS-KEY': KEY,
       'ACCESS-SIGN': sign,
       'ACCESS-TIMESTAMP': timestamp,
@@ -332,9 +340,12 @@ async function bitgetApiPost(path, bodyObj, env) {
     body: bodyStr,
   });
 
-  const data = await res.json().catch(() => ({}));
+  const rawText = await res.text();
+  let data = {};
+  try { data = JSON.parse(rawText); } catch (e) { data = { raw: rawText.slice(0, 200) }; }
+
   if (!res.ok || (data && typeof data.code === 'string' && data.code !== '00000')) {
-    const err = new Error('Bitget API 오류');
+    const err = new Error(`Bitget API 오류 (HTTP ${res.status})`);
     err.status = res.ok ? 502 : res.status;
     err.detail = data;
     throw err;
