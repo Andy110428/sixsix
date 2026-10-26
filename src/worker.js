@@ -302,11 +302,37 @@ function base64FromBuffer(buffer) {
   return btoa(binary);
 }
 
+// 20-47단계: Bitget 어필리에이트 API 키 발급 페이지가 일반 HMAC 대신 RSA 키 쌍(공개키 제출)을
+// 요구하는 유형이었음 — ACCESS-SIGN 헤더 구성/프리해시 문자열은 HMAC과 동일하고(공식 문서 +
+// 공개 Node.js SDK 소스 확인), 서명 알고리즘만 RSA-SHA256(PKCS1v15 패딩)으로 바뀜. 개인키는
+// PKCS8 PEM 형식이어야 함(PKCS1 "RSA PRIVATE KEY" 헤더면 import 실패 — openssl로 발급 시
+// `openssl pkcs8 -topk8 ...`로 변환 필요). `BITGET_API_RSA_PRIVATE_KEY` 환경변수가 설정돼
+// 있으면 RSA로, 없으면 기존 HMAC(`BITGET_API_SECRET`)으로 자동 분기함.
+async function bitgetRsaSignBase64(privateKeyPem, message) {
+  const base64Key = privateKeyPem.replace(
+    /-----BEGIN (RSA )?PRIVATE KEY-----|-----END (RSA )?PRIVATE KEY-----|\s+/g,
+    ''
+  );
+  const binary = atob(base64Key);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  const key = await crypto.subtle.importKey(
+    'pkcs8',
+    bytes.buffer,
+    { name: 'RSASSA-PKCS1-v1_5', hash: { name: 'SHA-256' } },
+    false,
+    ['sign']
+  );
+  const sigBuf = await crypto.subtle.sign({ name: 'RSASSA-PKCS1-v1_5' }, key, new TextEncoder().encode(message));
+  return base64FromBuffer(sigBuf);
+}
+
 async function bitgetApiPost(path, bodyObj, env) {
   const KEY = env.BITGET_API_KEY;
   const SECRET = env.BITGET_API_SECRET;
+  const RSA_PRIVATE_KEY = env.BITGET_API_RSA_PRIVATE_KEY;
   const PASSPHRASE = env.BITGET_API_PASSPHRASE;
-  if (!KEY || !SECRET || !PASSPHRASE) {
+  if (!KEY || !PASSPHRASE || (!SECRET && !RSA_PRIVATE_KEY)) {
     const err = new Error('서버에 Bitget API 키가 설정되지 않았습니다.');
     err.status = 500;
     throw err;
@@ -317,7 +343,9 @@ async function bitgetApiPost(path, bodyObj, env) {
   const timestamp = Date.now().toString();
   const bodyStr = JSON.stringify(bodyObj || {});
   const signStr = `${timestamp}${method}${path}${bodyStr}`;
-  const sign = await hmacSha256Base64(SECRET, signStr);
+  const sign = RSA_PRIVATE_KEY
+    ? await bitgetRsaSignBase64(RSA_PRIVATE_KEY, signStr)
+    : await hmacSha256Base64(SECRET, signStr);
 
   // 20-46단계: 헤더 없이 보내면 일부 거래소 WAF가 "브라우저가 아닌 자동화 요청"으로 보고
   // 차단할 수 있어서(실제로 관측됨 — 응답 본문이 Bitget의 정상 에러 포맷이 아니라

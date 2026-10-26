@@ -1337,14 +1337,38 @@ extra_usdt       = received_usdt - generic20_usdt        (50% 요율 덕분에 �
 - 계속 막히면 Bitget 쪽에 "서버 간(S2S) API 호출이 차단된다"고 문의하거나, 20-40단계의 BYDFi 패턴(수동 확인)으로 전환하는 걸 고려할 것 — 둘 다 코드 변경이 필요한 사용자 결정 사항.
 - 이 문제가 Bitget에만 국한된 것인지, Gate.io/BYDFi에도 비슷한 리스크가 있는지는 불명확함(Gate.io는 지금까지 비슷한 신고가 없었음 — 다만 Gate.io도 실 키로 완전히 검증된 적은 없다는 베타 리스크는 20-6단계부터 동일하게 남아있음).
 
+## 20-47단계: Bitget RSA 서명 방식 추가 지원 (2026-10-26)
+
+사용자가 Bitget에서 API 키를 발급받으려고 보니, 지금까지 가정했던 일반 HMAC 키 발급 폼이 아니라 **RSA 키 쌍(공개키 제출)을 요구하는 폼**이었음("Your public key" 입력란 + "How do I create a RSA key pair?" 링크가 있는 화면). 20-44단계에서 "사용자 생성 API vs 시스템 생성 API" 구분은 서브계정 전용이고 이 어필리에이트 엔드포인트와 무관하다고 판단했었는데, **실제로는 Bitget의 Broker/어필리에이트 API 키 발급 자체가 RSA 방식을 요구하는 것으로 보임** — 지금까지의 HMAC 가정이 틀렸을 가능성이 높아짐.
+
+**RSA 키 쌍 생성**: `openssl genrsa` + `openssl rsa -pubout`로 2048비트 RSA 키 쌍을 생성해서 공개키를 사용자에게 전달(그대로 "Your public key" 칸에 입력). 개인키는 처음엔 PKCS1 형식(`-----BEGIN RSA PRIVATE KEY-----`)으로 나왔는데, Cloudflare Workers의 Web Crypto API(`crypto.subtle.importKey('pkcs8', ...)`)는 **PKCS8 형식만 지원**해서 `openssl pkcs8 -topk8`로 변환함(공개키는 개인키 형식과 무관하게 동일하게 유지되므로, 사용자가 이미 제출한 공개키는 다시 바꿀 필요 없음 — modulus 해시로 동일 키 쌍인 것 확인).
+
+**서명 규격 확인(WebSearch + 공개 Node.js SDK 소스 교차 확인)**: `bitget.com` 공식 문서는 이번에도 이 세션에서 직접 못 읽었지만(egress 차단 동일), WebSearch로 찾은 요약과 `sieblyio/bitget-api`(공개 Node.js SDK, GitHub)의 실제 소스 코드(`src/util/webCryptoAPI.ts`, `src/util/BaseRestClient.ts`)를 `add_repo`로 클론해서 직접 대조 확인함:
+- 프리해시 문자열(`timestamp + method.toUpperCase() + endpoint + body`)은 기존 HMAC 구현과 **완전히 동일** — Gate.io 때처럼 알고리즘만 다르고 구조는 같음.
+- RSA 서명은 `RSASSA-PKCS1-v1_5`(PKCS1v15 패딩) + SHA-256 해시, 개인키는 PKCS8 PEM, 서명 결과는 Base64 — 이것도 HMAC과 출력 인코딩(Base64)은 동일.
+- 흥미롭게도 이 SDK가 **Cloudflare Workers와 똑같은 Web Crypto API(`crypto.subtle`)를 쓰도록 작성돼 있어서**, Node.js 전용 예제(Java/`node:crypto`)보다 오히려 우리 환경에 바로 이식 가능한 참고 코드였음.
+- 로컬 Node 스크립트로 실제 서명→검증 왕복 테스트: `crypto.subtle.sign({name:'RSASSA-PKCS1-v1_5'}, ...)`로 만든 서명을 Node의 `crypto.createVerify('RSA-SHA256')`로 검증해서 `true`가 나오는 것까지 확인 — 서명 로직 자체의 암호학적 정확성은 검증됨(Bitget 서버가 실제로 이 형식을 받아주는지는 별개 — 아래 참고).
+
+**구현**: `src/worker.js`에 `bitgetRsaSignBase64(privateKeyPem, message)` 추가, `bitgetApiPost()`가 **`BITGET_API_RSA_PRIVATE_KEY` 환경변수가 설정돼 있으면 RSA로, 없으면 기존 HMAC(`BITGET_API_SECRET`)으로 자동 분기**하도록 수정 — 어느 쪽을 쓰게 되든 코드 변경 없이 환경변수만으로 전환 가능.
+
+⚠️ **여전히 미확인인 부분**: ① Bitget이 정말 PKCS1v15 패딩을 쓰는지(PSS일 가능성은 낮지만 공식 문서 원문을 못 읽어서 100% 확정은 아님). ② 20-46단계에서 겪은 `{"cloudflare":"block"}` 네트워크 차단이 RSA로 바꾼다고 해결되는지는 전혀 별개 문제 — 서명 방식이 맞아도 Cloudflare Workers 발신 IP 자체가 막혀있다면 여전히 실패함.
+
+로컬 `node --check` + `wrangler deploy --dry-run` 검증 후 배포. 병합 전 `git log origin/main`으로 다른 세션의 동시 커밋 없는지 확인(20-17단계 교훈).
+
+### 다음에 볼 것
+- **사용자 확인 필요(최우선)**: Bitget 쪽에서 RSA API 키 발급(Note/Passphrase 입력 후 승인)이 끝나면, Cloudflare 대시보드에 `BITGET_API_KEY`(Bitget이 발급한 키 식별자)/`BITGET_API_PASSPHRASE`(직접 만든 값)/`BITGET_API_RSA_PRIVATE_KEY`(이번에 생성한 PKCS8 개인키, Claude가 파일로 전달함)를 설정하고 다시 테스트 필요 — `BITGET_API_SECRET`는 이제 RSA 모드에선 안 쓰이므로 비워두거나 지워도 무방.
+- RSA로 바꿔도 20-46단계의 네트워크 차단이 계속되면, 서명 방식 문제가 아니라는 게 다시 한 번 확인되는 셈 — 그땐 Bitget 고객센터 문의 또는 BYDFi식 수동 확인 전환을 검토할 것(20-46단계에 적어둔 그대로).
+- 개인키 파일은 이 세션의 스크래치패드(`/tmp/.../scratchpad/bitget-rsa/`)에만 있고 저장소에는 커밋하지 않음 — 세션 종료 시 사라지므로, 사용자가 Cloudflare에 설정을 마치기 전에 반드시 안전한 곳에 보관해둬야 함.
+
 ## 환경변수 목록 (Cloudflare 대시보드 Settings > Variables and Secrets)
 
 ```
 GATE_API_KEY            Gate.io API 키 (UID 확인용)
 GATE_API_SECRET         Gate.io API 시크릿
 BITGET_API_KEY          (20-44단계) Bitget 어필리에이트 API 키 — customer-list로 UID 자동 확인용
-BITGET_API_SECRET       (20-44단계) Bitget API 시크릿
-BITGET_API_PASSPHRASE   (20-44단계) Bitget API 키 발급 시 직접 설정한 Passphrase(8~32자 영숫자) — 키/시크릿과 별개로 꼭 필요
+BITGET_API_SECRET       (20-44단계, HMAC 방식일 때만) Bitget API 시크릿 — RSA 방식(아래)을 쓰면 안 읽힘
+BITGET_API_RSA_PRIVATE_KEY (20-47단계, RSA 방식일 때만) Bitget이 RSA 공개키 제출 방식을 요구하는 경우용 — PKCS8 PEM 개인키 전체(줄바꿈 포함) 그대로 붙여넣기. 설정돼 있으면 이게 우선, 없으면 BITGET_API_SECRET(HMAC)으로 자동 대체됨
+BITGET_API_PASSPHRASE   (20-44단계) Bitget API 키 발급 시 직접 설정한 Passphrase(8~32자 영숫자) — HMAC/RSA 둘 다 공통으로 필요
 TELEGRAM_BOT_TOKEN      (선택) 텔레그램 가입 신청 알림용 봇 토큰 — 없으면 알림만 생략되고 신청 저장은 항상 됨
 TELEGRAM_ADMIN_CHAT_ID  (선택) 알림 받을 chat_id — 위와 세트로 필요. 스터디방 봇에서는 "운영자 본인 개인 user_id"로도 쓰임(관리 명령/승인 버튼 권한)
 TELEGRAM_WEBHOOK_SECRET (선택, 20-16) 스터디방 봇 웹훅 비밀값 — setWebhook의 secret_token과 같아야 함. 없으면 봇 기능 꺼지고 사이트는 @아이디 입력 방식
