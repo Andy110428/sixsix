@@ -8,10 +8,10 @@
 //   POST /api/bydfi-join            BYDFi UID + 텔레그램 아이디 제출 (20-40단계) — BYDFi는 공개
 //                                    레퍼럴확인 API가 없어서 서버 재검증 없이 bydfi_join_requests에
 //                                    저장 + 운영자에게 "수동 확인 필요" 알림만 보냄
-//   POST /api/bitget-join            Bitget UID + 텔레그램 아이디 제출 (20-44단계 자동 확인 → 20-49단계
-//                                    수동 확인으로 전환, BYDFi와 동일 패턴) — Bitget API 앞 Cloudflare WAF가
-//                                    서버 간 호출을 계속 차단해서(20-46단계) 서버 재검증 없이
-//                                    bitget_join_requests에 저장 + 운영자에게 "수동 확인 필요" 알림만 보냄
+//   POST /api/bitget-join            Bitget UID + 텔레그램 아이디 제출 — bitget_join_requests에 저장 +
+//                                    운영자 알림. 20-50단계부터 고정 IP 중계 서버(jarvis-core)를 거쳐
+//                                    어필리에이트 customer-list로 자동 확인한 결과를 알림에 함께 표시함
+//                                    (중계기가 없거나 실패하면 20-49단계처럼 "수동 확인 필요"로 그대로 동작)
 //   GET  /api/payback-total?uid=... 그 UID의 누적 페이백 추정액 조회 (아래 "페이백 계산 방식" 참고)
 //   GET  /api/payback-feed          최근 페이백 내역 공개 피드 (UID 마스킹, 최대 300건, 20-26단계)
 //   POST /api/telegram-link         UID 재검증 후 스터디방 신청용 1회용 봇 딥링크 발급 (study-bot.js)
@@ -43,7 +43,9 @@
 //
 // 환경변수(Settings > Variables and Secrets):
 //   GATE_API_KEY, GATE_API_SECRET        Gate.io 파트너 API (레퍼럴 확인 + 커미션 내역 조회, Rebate 권한만 필요 — 출금 권한 불필요)
-//   (Bitget은 20-49단계부터 자동 확인을 쓰지 않음 — BITGET_API_KEY 등 환경변수는 더 이상 안 읽힘)
+//   BITGET_RELAY_TOKEN                   (선택, 20-50단계) Bitget 자동 확인 중계 서버 토큰 — 없으면 Bitget은 수동 확인만
+//   BITGET_RELAY_URL                     (선택) 중계 서버 주소, 기본값 BITGET_RELAY_DEFAULT_URL
+//   (BITGET_API_KEY/SECRET/RSA_PRIVATE_KEY/PASSPHRASE는 더 이상 안 읽힘 — Bitget 키는 중계 서버에만 있음)
 //   TELEGRAM_BOT_TOKEN, TELEGRAM_ADMIN_CHAT_ID  (선택) 가입 신청 알림 — 없으면 신청 저장만 되고 알림은 생략됨
 //   TELEGRAM_WEBHOOK_SECRET, TELEGRAM_GROUP_CHAT_ID  (선택) 스터디방 관리 봇 — 자세한 건 study-bot.js 맨 위 주석
 // 필요한 바인딩: D1 데이터베이스 → env.DB
@@ -275,7 +277,7 @@ async function handleBydfiJoin(request, env) {
   return json({ ok: true });
 }
 
-// ───────────────────────── Bitget 가입 신청 (수동 확인으로 전환, 20-49단계) ─────────────────────────
+// ───────────────────────── Bitget 가입 신청 (20-49단계 수동 확인 + 20-50단계 중계 자동 확인) ─────────────────────────
 // 20-44~20-47단계에서 어필리에이트 customer-list API로 자동 확인을 구현했었지만, 실제 운영
 // 중 Bitget API 앞의 Cloudflare WAF가 Cloudflare Workers의 발신 요청을 계속 차단함
 // (`{"cloudflare":"block"}` — 서명/인증 문제가 아니라 네트워크 단 차단, 20-46단계에서 이미
@@ -283,6 +285,39 @@ async function handleBydfiJoin(request, env) {
 // BYDFi와 동일한 수동 확인 방식으로 전환하기로 결정함 — Bitget API를 아예 호출하지 않고,
 // BYDFi처럼 형식 검증만 하고 저장 + "수동 확인 필요" 알림만 보냄. 실제 "전용 링크로
 // 가입했는지"는 운영자가 Bitget 어필리에이트 대시보드에서 직접 확인 후 텔레그램으로 안내함.
+//
+// 20-50단계(2026-10-26): 차단은 "Cloudflare Workers에서 나가는 요청"에만 걸리고, 고정 IP 서버
+// (jarvis-core, Vultr)에서는 같은 customer-list 호출이 정상 동작하는 걸 확인함(실 고객 UID로
+// found 확인, HMAC 시스템 생성 키). 그래서 그 서버에 작은 중계기를 두고 Worker는 중계기에만 물어봄
+// — Bitget 키는 중계 서버에만 있고 Worker에는 중계 토큰(BITGET_RELAY_TOKEN)만 있음.
+// 프론트 흐름(UID → 다음 → 텔레그램 제출)은 그대로 두고, 서버가 신청을 받을 때 자동 확인해서
+// 운영자 알림에 결과를 붙여주는 방식 — 중계기가 꺼져 있거나 실패해도 신청 자체는 막지 않음.
+// ⚠️ customer-list는 문서 버전에 따라 "가입 30일 이내 고객만" 조회될 수 있어서, "고객 아님"은
+// 확정이 아니라 "대시보드에서 한 번 더 확인" 의미로만 씀.
+const BITGET_RELAY_DEFAULT_URL = 'https://jarvis-core.taild16b4b.ts.net:8443/bitget/check-uid';
+
+async function checkBitgetViaRelay(uid, env) {
+  if (!env.BITGET_RELAY_TOKEN) return { status: 'unconfigured' };
+  const base = env.BITGET_RELAY_URL || BITGET_RELAY_DEFAULT_URL;
+  try {
+    const res = await fetch(`${base}?uid=${encodeURIComponent(uid)}`, {
+      headers: { Authorization: `Bearer ${env.BITGET_RELAY_TOKEN}` },
+      signal: AbortSignal.timeout(8000),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (data.ok) return { status: data.is_customer ? 'customer' : 'not_customer' };
+    return { status: 'error', detail: `${res.status} ${data.code || ''} ${data.msg || data.error || ''}`.trim() };
+  } catch (e) {
+    return { status: 'error', detail: e.message };
+  }
+}
+
+function bitgetCheckLine(check) {
+  if (check.status === 'customer') return '✅ 자동 확인: 전용 링크로 가입한 고객이 맞아요.';
+  if (check.status === 'not_customer') return '❌ 자동 확인: 고객 목록에 없어요 (가입 30일 지난 고객일 수 있으니 대시보드에서 한 번 더 확인).';
+  if (check.status === 'error') return `⚠️ 자동 확인 실패 (${check.detail}) — 어필리에이트 대시보드에서 직접 확인해주세요.`;
+  return '⚠️ 자동 확인 미설정(BITGET_RELAY_TOKEN 없음) — 어필리에이트 대시보드에서 직접 확인해주세요.';
+}
 
 async function handleBitgetJoin(request, env) {
   if (!env.DB) return json({ ok: false, error: 'DB가 연결되지 않았습니다.' }, 500);
@@ -301,7 +336,8 @@ async function handleBitgetJoin(request, env) {
     `INSERT INTO bitget_join_requests (uid, telegram_id, created_at) VALUES (?, ?, ?)`
   ).bind(uid, telegramId, Date.now()).run();
 
-  await notifyAdminTelegram(env, `🆕 Bitget 가입 확인 요청 (수동 확인 필요)\nUID: ${uid}\n텔레그램: ${telegramId}\n\n⚠️ Bitget은 Cloudflare WAF가 자동 확인 API를 차단해서 수동 확인으로 전환했어요 — 어필리에이트 대시보드에서 직접 확인 후 개별 안내해주세요.`);
+  const check = await checkBitgetViaRelay(uid, env);
+  await notifyAdminTelegram(env, `🆕 Bitget 가입 확인 요청\nUID: ${uid}\n텔레그램: ${telegramId}\n\n${bitgetCheckLine(check)}`);
 
   return json({ ok: true });
 }

@@ -1399,12 +1399,30 @@ extra_usdt       = received_usdt - generic20_usdt        (50% 요율 덕분에 �
 - 혹시 나중에 Bitget이나 Cloudflare 쪽에서 이 WAF 차단이 풀리거나, Bitget이 서버-간 통합용 별도 엔드포인트/화이트리스트를 지원하게 되면, 20-44단계의 자동 확인 코드(이번에 삭제됨)를 git 히스토리에서 복구해서 다시 시도할 수 있음 — 다만 그 경우에도 20-47/20-48단계에서 겪은 RSA 서명/PEM 이스케이프 함정은 그대로 참고할 것.
 - 이번 일로 "거래소 API 자동 연동"을 시도하기 전에, **그 거래소 API가 Cloudflare로 보호되고 있는지, 서버-간(S2S) 호출에 대한 봇 차단 정책이 있는지**를 먼저 확인하는 게 이 프로젝트에 재발 가능한 패턴(Gate.io는 지금까지 문제없이 동작 중이지만 검증된 적 없음, BYDFi는 애초에 관련 API가 없음)으로 남음.
 
+## 20-50단계: 고정 IP 중계 서버로 Bitget 자동 확인 부활 (2026-10-26, 클라우드 자비스 세션)
+
+20-49단계 "최대 블로커"에 적어둔 해결책 (c) "Workers가 아닌 인프라로 프록시"를 실제로 구현함 — 사용자가 24시간 돌리는 개인 서버(jarvis-core, Vultr, 고정 IP 158.247.246.165)가 있어서 가능해짐.
+
+**확인한 사실**: 같은 `POST /api/v2/broker/customer-list` 호출이 jarvis-core에서는 `{"cloudflare":"block"}` 없이 정상 응답함(`code 00000`). 즉 차단은 Cloudflare Workers 발신 트래픽에만 걸림. 또 **시스템 생성(HMAC) 키도 이 어필리에이트 엔드포인트에서 동작**함(20-47단계의 "RSA 필수" 추정은 틀림 — 사용자가 새로 만든 읽기 전용 시스템 생성 키로 확인). 실 고객 UID로 `data:[{"uid":"…","registerTime":"…"}]`가 오는 것(found)과 모르는 UID로 `data:[]`(not found)인 것까지 확인.
+
+**구조**: Worker → `https://jarvis-core.taild16b4b.ts.net:8443/bitget/check-uid?uid=…` (Tailscale Funnel, `Authorization: Bearer BITGET_RELAY_TOKEN`) → 중계기(`/opt/jarvis/relay/bitget_relay.py`, 파이썬 표준 라이브러리, 분당 30회 제한, Bitget 공식 HMAC 서명; RSA 키 파일이 있으면 RSA로 서명) → Bitget. **Bitget 키는 중계 서버에만 있고 Worker엔 중계 토큰만 있음.** 응답: `{"ok":true,"uid":"…","is_customer":true|false,"code":"00000","msg":"success"}`.
+
+**이번 변경(src/worker.js)**: 프론트 흐름(UID → 다음 → 텔레그램 제출)은 20-49단계 그대로 두고, `handleBitgetJoin()`이 신청을 저장한 뒤 `checkBitgetViaRelay()`로 자동 확인해서 **운영자 알림에 결과 한 줄**("✅ 고객 맞음 / ❌ 목록에 없음 / ⚠️ 확인 실패 / ⚠️ 미설정")을 붙임. 중계기가 꺼져 있거나 토큰이 없어도 신청 자체는 막지 않음(8초 타임아웃). "목록에 없음"은 customer-list의 30일 조회 제한 가능성 때문에 확정 거절이 아니라 "대시보드에서 재확인" 의미로만 씀.
+
+**검증**: `node --check` 통과, 새 함수 2개를 실제 중계기(공개 Funnel 주소)로 호출해서 customer / not_customer / 토큰 없음 / 잘못된 토큰(401) / 중계기 다운(fetch failed) 5가지 경우 모두 의도대로 나오는 것 확인. ⚠️ `wrangler deploy --dry-run`은 이번엔 못 돌림 — 작업한 jarvis-core가 RAM 1GB라 wrangler 설치/번들링이 그 서버의 다른 상시 프로세스를 OOM으로 죽일 위험이 있어서 생략(변경은 `fetch`/`AbortSignal.timeout`만 쓰는 순수 함수 추가라 번들 위험은 낮음). 다음 세션이 PC에서 작업할 땐 dry-run을 다시 습관대로 돌릴 것.
+
+**사용자 할 일**: Cloudflare 시크릿 `BITGET_RELAY_TOKEN` 추가(값은 jarvis-core `/opt/jarvis/secrets/bitget.env`의 RELAY_TOKEN). 옛 `BITGET_API_*` 시크릿 4개는 지워도 무해.
+
+**다음 후보(사용자 결정)**: 자동 확인이 안정적이면 Gate처럼 1단계에서 바로 확인하는 UX(20-44단계 코드, git 히스토리)로 되돌리는 것 — 지금은 운영 알림에만 반영.
+
 ## 환경변수 목록 (Cloudflare 대시보드 Settings > Variables and Secrets)
 
 ```
 GATE_API_KEY            Gate.io API 키 (UID 확인용)
 GATE_API_SECRET         Gate.io API 시크릿
-(Bitget은 20-49단계부터 BYDFi와 동일하게 수동 확인 방식 — BITGET_API_KEY/BITGET_API_SECRET/BITGET_API_RSA_PRIVATE_KEY/BITGET_API_PASSPHRASE 전부 코드에서 더 이상 안 읽힘, 대시보드에 남아있어도 무해)
+BITGET_RELAY_TOKEN      (선택, 20-50단계) Bitget 자동 확인 중계 서버 토큰 — 없으면 Bitget은 운영자 수동 확인만(알림에 "미설정" 표시)
+BITGET_RELAY_URL        (선택) 중계 서버 주소 — 기본값은 worker.js의 BITGET_RELAY_DEFAULT_URL
+(BITGET_API_KEY/BITGET_API_SECRET/BITGET_API_RSA_PRIVATE_KEY/BITGET_API_PASSPHRASE는 코드에서 안 읽힘 — Bitget 키는 중계 서버에만 있음, 대시보드에 남아있어도 무해)
 TELEGRAM_BOT_TOKEN      (선택) 텔레그램 가입 신청 알림용 봇 토큰 — 없으면 알림만 생략되고 신청 저장은 항상 됨
 TELEGRAM_ADMIN_CHAT_ID  (선택) 알림 받을 chat_id — 위와 세트로 필요. 스터디방 봇에서는 "운영자 본인 개인 user_id"로도 쓰임(관리 명령/승인 버튼 권한)
 TELEGRAM_WEBHOOK_SECRET (선택, 20-16) 스터디방 봇 웹훅 비밀값 — setWebhook의 secret_token과 같아야 함. 없으면 봇 기능 꺼지고 사이트는 @아이디 입력 방식
